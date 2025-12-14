@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/3-Services/">
+    <Project Path="PuppyWorkbooks/PuppyWorkbooks.csproj" />
+  </Folder>
+  <Folder Name="/5-Presentation/" />
+  <Folder Name="/7-Tests/" />
+</Solution>
