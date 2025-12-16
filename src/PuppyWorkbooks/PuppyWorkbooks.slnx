@@ -1,7 +1,11 @@
 <Solution>
   <Folder Name="/3-Services/">
-    <Project Path="PuppyWorkbooks/PuppyWorkbooks.csproj" />
+    <Project Path="3-Services/PuppyWorkbooks/PuppyWorkbooks.csproj" />
   </Folder>
-  <Folder Name="/5-Presentation/" />
-  <Folder Name="/7-Tests/" />
+  <Folder Name="/5-Presentation/">
+    <Project Path="5-Presentation/PuppyWorkbooks.ViewModels/PuppyWorkbooks.ViewModels.csproj" />
+  </Folder>
+  <Folder Name="/7-Tests/">
+    <Project Path="7-Tests/PuppyWorkbooks.Tests/PuppyWorkbooks.Tests.csproj" />
+  </Folder>
 </Solution>
