@@ -22,7 +22,10 @@ public class WorkbookInterpreter
 
     private static string ToDisplayOutput(FormulaValue result)
     {
-        if (result?.Type == FormulaType.)
+        if (result?.Type == FormulaType.UntypedObject) 
+        {        
+
+        }
         return result?.ToObject().ToString() ?? string.Empty;
     }
 

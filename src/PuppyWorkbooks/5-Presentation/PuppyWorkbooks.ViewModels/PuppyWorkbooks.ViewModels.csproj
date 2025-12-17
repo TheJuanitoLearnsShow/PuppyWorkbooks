@@ -10,4 +10,11 @@
       <ProjectReference Include="..\..\3-Services\PuppyWorkbooks\PuppyWorkbooks.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.5.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
 </Project>
