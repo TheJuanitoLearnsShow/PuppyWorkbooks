@@ -1,24 +1,19 @@
-﻿using Microsoft.PowerFx.Types;
+﻿using Microsoft.PowerFx;
+using Microsoft.PowerFx.Types;
 
 namespace PuppyWorkbooks;
 
-public class FileLinesFunction : CustomFunction
+public class FileLinesFunction : ReflectionFunction
 {
     public FileLinesFunction()
-        : base("FileLines", FormulaType.Table, new[] { FormulaType.String })
+        : base("FileLines", FormulaType.UntypedObject, [ FormulaType.String ])
     {
     }
 
-    public override Task<FormulaValue> InvokeAsync(
-        FormulaValue[] args,
-        CancellationToken cancellationToken)
+    public FormulaValue Execute(StringValue option)
     {
-        if (args.Length != 1 || args[0] is not StringValue pathArg)
-        {
-            throw new ArgumentException("FileLines requires a single string argument (file path).");
-        }
-
-        var table = new FileLinesTableValue(IRContext.NotInSource(FormulaType.Table), pathArg.Value);
-        return Task.FromResult<FormulaValue>(table);
+        var record = FormulaValue.NewRecordFromFields(
+            new NamedValue("NewValue", option));
+        return record;
     }
 }
