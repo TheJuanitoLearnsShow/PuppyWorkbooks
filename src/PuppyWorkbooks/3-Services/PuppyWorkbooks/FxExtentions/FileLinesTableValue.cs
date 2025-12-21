@@ -23,10 +23,24 @@ public class FileLinesTableValue : TableValue
             var line = reader.ReadLine();
 
             // Wrap each line into a RecordValue with a single column "Value"
-            var record = RecordValue.NewRecordFromFields(
-                new NamedValue("Value", FormulaValue.New(line)));
+            // var record = RecordValue.NewRecordFromFields(
+            //     new NamedValue("Value", FormulaValue.New(line)));
 
-            yield return DValue<RecordValue>.Of(record);
+            if (decimal.TryParse(line, out var numberValue))
+            {
+                
+                var recordDecimal = RecordValue.NewRecordFromFields(
+                    new NamedValue("Value", FormulaValue.New(numberValue)));
+
+                yield return DValue<RecordValue>.Of(recordDecimal);
+            }
+            else
+            {
+                var record = RecordValue.NewRecordFromFields(
+                    new NamedValue("Value", FormulaValue.New(line)));
+
+                yield return DValue<RecordValue>.Of(record);
+            }
         }
     }
 

@@ -22,4 +22,10 @@
       <ProjectReference Include="..\..\3-Services\PuppyWorkbooks\PuppyWorkbooks.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="SampleFiles\Input1.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

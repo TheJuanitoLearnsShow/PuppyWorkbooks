@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.PowerFx;
 using Microsoft.PowerFx.Types;
 
@@ -12,44 +13,21 @@ public class WorkbookInterpreter
     {
         _engineConfig = new PowerFxConfig();
         _engineConfig.AddFunction(new FileLinesFunction());
+        _engineConfig.AddFunction(new AsyncSampleFunction());
     }
-    public async IAsyncEnumerable<CellResult> ExecuteAsync(PuppyWorkbooks.WorkSheet worksheet, int uptToRow = -1, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<CellResult> ExecuteAsync(WorkSheet worksheet, int uptToRow = -1, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var cellsToExecute = uptToRow == -1 ?  worksheet.Cells : worksheet.Cells.Take(uptToRow);
-        RecalcEngine engine = new RecalcEngine(_engineConfig);
+        var engine = new RecalcEngine(_engineConfig);
         foreach (var cell in cellsToExecute)
         {
             if (string.IsNullOrEmpty(cell.Formula)) continue;
             engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
             var result = await engine.EvalAsync(cell.Name, cancellationToken);
-            yield return new CellResult(ToDisplayOutput(result));
+            yield return new CellResult(ValueFormatter.ToDisplayOutput(result));
         }
     }
 
-    private static string ToDisplayOutput(FormulaValue result)
-    {
-        return result.Type switch
-        {
-            TableType tableType => DisplayTable(result as TableValue),
-            // Runtime tableType => DisplayTable(result as TableValue),
-            RecordType recordType => DisplayRecord(result as RecordValue),
-            _ => result?.ToObject().ToString() ?? string.Empty
-        };
-    }
-
-    private static string DisplayRecord(RecordValue? result)
-    {
-        if (result == null) return string.Empty;
-        var fields = string.Join(", ", result.Fields.Select(f => $"{f.Name}: {ToDisplayOutput(f.Value)}"));
-        return fields;
-    }
-
-    private static string DisplayTable(TableValue table)
-    {
-        IList<string> colNames = [string.Join(", ", table.Type.FieldNames)];
-        var rows = table.Rows.Select(r => ToDisplayOutput(r.Value));// string.Join(", ", r.Value)).ToList();
-        return string.Join(Environment.NewLine, colNames.Concat(rows));
-    }
     private void OnFormulaUpdate(string arg1, FormulaValue arg2)
     {
         var output = arg2.ToObject();

@@ -6,14 +6,15 @@ namespace PuppyWorkbooks;
 public class FileLinesFunction : ReflectionFunction
 {
     public FileLinesFunction()
-        : base("FileLines", FormulaType.UntypedObject, [ FormulaType.String ])
+        : base("FileLines", TableType.Empty(), [ FormulaType.String ])
     {
     }
 
     public FormulaValue Execute(StringValue option)
     {
-        var record = FormulaValue.NewRecordFromFields(
-            new NamedValue("NewValue", option));
-        return record;
+        // var record = FormulaValue.NewRecordFromFields(
+        //     new NamedValue("NewValue", option));
+        var table = new FileLinesTableValue(option.Value);
+        return table;
     }
 }
