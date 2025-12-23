@@ -3,6 +3,7 @@
     <Project Path="3-Services/PuppyWorkbooks/PuppyWorkbooks.csproj" />
   </Folder>
   <Folder Name="/5-Presentation/">
+    <Project Path="5-Presentation/MinimalInterpreterExamples/MinimalInterpreterExamples.csproj" />
     <Project Path="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
     <Project Path="5-Presentation/PuppyWorkbooks.ViewModels/PuppyWorkbooks.ViewModels.csproj" />
   </Folder>

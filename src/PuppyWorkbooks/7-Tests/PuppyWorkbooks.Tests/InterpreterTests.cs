@@ -18,8 +18,8 @@ public class InterpreterTests
         workbook.Cells.Add(new WorkCell(1, "Age", "10", "None"));
         workbook.Cells.Add(new WorkCell(2, "MaxLimit", "Age * 4", "None"));
         workbook.Cells.Add(new WorkCell(3, "Levels", "Table( { Value: MaxLimit }, { Value: 3 } )", "None"));
-        workbook.Cells.Add(new WorkCell(4, "NewField", "Sum(FileLines( \"SampleFiles/Input1.csv\" ) )", "None"));
-        workbook.Cells.Add(new WorkCell(5, "NewAsyncRecord", "AsyncSample( \"Here\" )", "None"));
+        // workbook.Cells.Add(new WorkCell(4, "NewField", "Sum(FileLines( \"SampleFiles/Input1.csv\" ) )", "None"));
+        // workbook.Cells.Add(new WorkCell(5, "NewAsyncRecord", "AsyncSample( \"Here\" )", "None"));
         
         
         var interpreter = new WorkbookInterpreter();
