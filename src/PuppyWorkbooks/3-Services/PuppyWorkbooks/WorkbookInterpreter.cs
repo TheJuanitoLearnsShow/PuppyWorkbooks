@@ -14,6 +14,7 @@ public class WorkbookInterpreter
         _engineConfig = new PowerFxConfig();
         _engineConfig.AddFunction(new FileLinesFunction());
         _engineConfig.AddFunction(new AsyncSampleFunction());
+        _engineConfig.AddFunction(new AddTaxFunction());
     }
     public async IAsyncEnumerable<CellResult> ExecuteAsync(WorkSheet worksheet, int uptToRow = -1, bool yieldResultsForEachCell = false,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)

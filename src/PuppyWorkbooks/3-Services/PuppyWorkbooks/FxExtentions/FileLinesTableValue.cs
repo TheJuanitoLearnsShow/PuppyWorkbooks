@@ -7,8 +7,8 @@ public class FileLinesTableValue : TableValue
     private readonly string _path;
     private IEnumerable<DValue<RecordValue>> _rows;
 
-    public FileLinesTableValue(string path)
-        : base(TableType.Empty())
+    public FileLinesTableValue(string path, TableType tableType)
+        : base(tableType) // potentially pass the column defnition from the function
     {
         _path = path;
     }
@@ -30,7 +30,7 @@ public class FileLinesTableValue : TableValue
             {
                 
                 var recordDecimal = RecordValue.NewRecordFromFields(
-                    new NamedValue("Value", FormulaValue.New(numberValue)));
+                    new NamedValue("Price", FormulaValue.New(numberValue)));
 
                 yield return DValue<RecordValue>.Of(recordDecimal);
             }
