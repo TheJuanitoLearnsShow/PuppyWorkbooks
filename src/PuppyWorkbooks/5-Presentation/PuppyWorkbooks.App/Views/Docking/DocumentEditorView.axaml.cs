@@ -1,4 +1,5 @@
-﻿using ReactiveUI.Avalonia;
+﻿using PuppyWorkbooks.App.ViewModels.Docking;
+using ReactiveUI.Avalonia;
 
 namespace PuppyWorkbooks.App.Views.Docking;
 

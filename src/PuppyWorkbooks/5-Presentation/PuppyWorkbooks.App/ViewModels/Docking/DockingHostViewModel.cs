@@ -1,8 +1,9 @@
 using System.IO;
 using Dock.Model.Core;
 using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 
-namespace PuppyWorkbooks.App.Models.Docking;
+namespace PuppyWorkbooks.App.ViewModels.Docking;
 
 public partial class DockingHostViewModel : ReactiveObject, IRoutableViewModel
 {

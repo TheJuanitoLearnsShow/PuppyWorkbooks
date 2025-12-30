@@ -7,32 +7,35 @@ using Dock.Model.ReactiveUI;
 using Dock.Model.ReactiveUI.Controls;
 using ReactiveUI;
 
-namespace PuppyWorkbooks.App.Models.Docking;
+namespace PuppyWorkbooks.App.ViewModels.Docking;
 
-public class EditorDockFactory : Factory
+public class DockFactory : Factory
 {
     private readonly IScreen _host;
-    private readonly DocumentEditorViewModel _editor;
+    private DocumentDock _documentDock;
 
-    public EditorDockFactory(IScreen host, DocumentEditorViewModel editor)
+    public DockFactory(IScreen host)
     {
         _host = host;
-        _editor = editor;
+    }
+
+    public void ShowDocument(DocumentViewModel openedDocument)
+    {
+        _documentDock.AddDocument(openedDocument);
+        // _documentDock.VisibleDockables?.Add(openedDocument);
+        // _documentDock.ActiveDockable = openedDocument;
+        // _root.VisibleDockables?.Add(openedDocument);
+        // _root.ActiveDockable = openedDocument;
     }
     public override IRootDock CreateLayout()
     {
-        var document1 = new DocumentViewModel(_host, _editor) { Id = "Edit1", Title = "Editor" };
-        var documentInput = new DocumentViewModel(_host, _editor) { Id = "Edit1", Title = "Editor" };
-        var document3 = new DocumentViewModel(_host, _editor) { Id = "Edit1", Title = "Editor" };
-       
-        
-        var _documentDock = new DocumentDock
+        var document1 = new DocumentViewModel(_host, new DocumentEditorViewModel(_host, "test")) { Id = "Doca1", Title = "Document 1" };
+        _documentDock = new DocumentDock
         {
             Id = "Documents",
-            VisibleDockables = CreateList<IDockable>(),
+            VisibleDockables = CreateList<IDockable>(document1),
             ActiveDockable = null,
             CanCreateDocument = false,
-            CanClose = false
             
         };
         

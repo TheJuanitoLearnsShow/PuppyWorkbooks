@@ -1,7 +1,7 @@
 using Dock.Model.ReactiveUI.Navigation.Controls;
 using ReactiveUI;
 
-namespace PuppyWorkbooks.App.Models.Docking;
+namespace PuppyWorkbooks.App.ViewModels.Docking;
 
 public class DocumentViewModel : RoutableDocument
 {

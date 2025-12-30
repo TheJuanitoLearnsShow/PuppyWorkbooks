@@ -1,17 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:docking="clr-namespace:PuppyMapper.AvaloniaApp.ViewModels.Docking"
              xmlns:docking1="clr-namespace:PuppyWorkbooks.App.Views.Docking"
+             xmlns:docking2="clr-namespace:PuppyWorkbooks.App.ViewModels.Docking"
              x:Class="PuppyWorkbooks.App.Views.Docking.DockingHostView"
-             x:DataType="docking:DockingHostViewModel">
+             x:DataType="docking2:DockingHostViewModel">
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="250" />
       <ColumnDefinition Width="*" />
     </Grid.ColumnDefinitions>
-    <docking1:DocumentDefinitionsView x:Name="DocumentLst" 
-                                      DataContext="{Binding RegisteredMappings}">
-    </docking1:DocumentDefinitionsView>
     <!-- Right side: DockHost from Dock.Model -->
     <Border Grid.Column="1" BorderBrush="DarkBlue" BorderThickness="8">
       <DockControl x:Name="DockCtrl"  />

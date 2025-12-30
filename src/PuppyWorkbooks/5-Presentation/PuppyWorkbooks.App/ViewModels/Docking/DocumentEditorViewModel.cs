@@ -2,7 +2,7 @@ using System;
 using System.Reactive;
 using ReactiveUI;
 
-namespace PuppyWorkbooks.App.Models.Docking;
+namespace PuppyWorkbooks.App.ViewModels.Docking;
 
 public class InputDocumentViewModel : ReactiveObject, IRoutableViewModel
 {

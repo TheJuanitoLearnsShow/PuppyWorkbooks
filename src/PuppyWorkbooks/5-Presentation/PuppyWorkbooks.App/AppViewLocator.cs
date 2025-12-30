@@ -1,17 +1,5 @@
 using System;
-using PuppyMapper.AvaloniaApp.ViewModels.Docking;
-using PuppyMapper.AvaloniaApp.Views;
-using PuppyMapper.AvaloniaApp.Views.Docking;
-using PuppyMapper.AvaloniaApp.Views.Inputs;
-using PuppyMapper.AvaloniaApp.Views.Outputs;
-using PuppyMapper.Viewmodels;
-using PuppyMapper.ViewModels.Inputs;
-using PuppyMapper.ViewModels.Outputs;
 using ReactiveUI;
-using CsvInputEditorView = PuppyMapper.AvaloniaApp.Views.Inputs.CsvInputEditorView;
-using CsvInputEditorViewModel = PuppyMapper.ViewModels.Inputs.CsvInputEditorViewModel;
-using InputEditorView = PuppyMapper.AvaloniaApp.Views.Inputs.InputEditorView;
-using InputEditorViewModel = PuppyMapper.ViewModels.Inputs.InputEditorViewModel;
 using DockModel = Dock.Model.ReactiveUI.Controls;
 using DockControls = Dock.Model.Avalonia.Controls;
 

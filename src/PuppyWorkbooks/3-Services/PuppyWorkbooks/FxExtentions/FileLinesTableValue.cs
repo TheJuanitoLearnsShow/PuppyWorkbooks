@@ -44,5 +44,10 @@ public class FileLinesTableValue : TableValue
         }
     }
 
+    public override object ToObject()
+    {
+        return base.ToObject();
+    }
+
     public override IEnumerable<DValue<RecordValue>> Rows => GetRows();
 }

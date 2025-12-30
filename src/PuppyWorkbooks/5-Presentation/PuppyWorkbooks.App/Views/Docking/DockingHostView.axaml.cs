@@ -1,4 +1,5 @@
 using System.Reactive.Disposables.Fluent;
+using PuppyWorkbooks.App.ViewModels.Docking;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
 
