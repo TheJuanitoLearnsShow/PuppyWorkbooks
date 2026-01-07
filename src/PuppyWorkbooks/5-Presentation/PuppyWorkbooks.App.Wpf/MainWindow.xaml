@@ -1,0 +1,29 @@
+﻿<Window x:Class="PuppyWorkbooks.App.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PuppyWorkbooks.App.Wpf"
+        xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+        xmlns:docking="clr-namespace:PuppyWorkbooks.App.Wpf.ViewModels.Docking"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800" d:DataContext="{d:DesignInstance Type=docking:DockingShellViewModel}">
+    <DockPanel>
+         <!-- Menu --> 
+         <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="New Document" Click="NewDocument_Click" />
+                <MenuItem Header="Save Document" Click="SaveDocument_Click" />
+            </MenuItem>
+        </Menu> 
+         <!-- Docking Layout -->
+        <syncfusion:DockingManager x:Name="DockManager" UseDocumentContainer="True" 
+                                   ItemsSource="{Binding DockCollections}">
+
+            <ContentControl x:Name="SolutionExplorer" 
+                            syncfusion:DockingManager.Header="Solution Explorer"
+                            syncfusion:DockingManager.State="Dock"
+            />
+        </syncfusion:DockingManager>
+    </DockPanel>
+</Window>

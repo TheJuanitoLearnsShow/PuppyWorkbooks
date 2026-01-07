@@ -4,6 +4,7 @@
   </Folder>
   <Folder Name="/5-Presentation/">
     <Project Path="5-Presentation/MinimalInterpreterExamples/MinimalInterpreterExamples.csproj" />
+    <Project Path="5-Presentation/PuppyWorkbooks.App.Wpf/PuppyWorkbooks.App.Wpf.csproj" />
     <Project Path="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
     <Project Path="5-Presentation/PuppyWorkbooks.ViewModels/PuppyWorkbooks.ViewModels.csproj" />
   </Folder>
