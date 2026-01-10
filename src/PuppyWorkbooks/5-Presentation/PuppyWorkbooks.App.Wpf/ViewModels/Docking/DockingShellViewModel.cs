@@ -11,7 +11,7 @@ public class DockingShellViewModel
 
     public void NewDocument_Click()
     {
-        var doc = new DocumentView();
+        var doc = new WorkSheetView();
         
         DockCollections.Add(new DockItem() { Header = "Doc", Content = doc, State = DockState.Document});
     }

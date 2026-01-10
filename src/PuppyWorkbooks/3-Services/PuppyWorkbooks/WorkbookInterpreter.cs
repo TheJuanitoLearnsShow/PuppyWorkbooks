@@ -24,11 +24,19 @@ public class WorkbookInterpreter
         foreach (var cell in cellsToExecute)
         {
             if (string.IsNullOrEmpty(cell.Formula)) continue;
-            engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+            if (CanBeUsedAsFormula(cell))
+            {
+                engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+            }
             if (!yieldResultsForEachCell && cell != cellsToExecute.Last()) continue;
             var result = await engine.EvalAsync(cell.Name, cancellationToken);
-            yield return new CellResult(ValueFormatter.ToDisplayOutput(result));
+            yield return new CellResult(ValueFormatter.ToDisplayOutput(result), cell.Id);
         }
+    }
+
+    private static bool CanBeUsedAsFormula(WorkCell cell)
+    {
+        return !string.IsNullOrEmpty(cell.Formula);
     }
 
     private void OnFormulaUpdate(string arg1, FormulaValue arg2)

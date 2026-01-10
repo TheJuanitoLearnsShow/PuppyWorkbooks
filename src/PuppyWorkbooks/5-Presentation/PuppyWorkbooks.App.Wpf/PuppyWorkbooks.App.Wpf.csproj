@@ -9,8 +9,21 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="ReactiveUI.WPF" Version="22.3.1" />
       <PackageReference Include="Syncfusion.Themes.FluentLight.WPF" Version="32.1.22" />
       <PackageReference Include="Syncfusion.Tools.WPF" Version="32.1.22" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Page Update="Views\WorkSheetView.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\PuppyWorkbooks.ViewModels\PuppyWorkbooks.ViewModels.csproj" />
     </ItemGroup>
 
 </Project>

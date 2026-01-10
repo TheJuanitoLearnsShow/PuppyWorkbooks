@@ -1,0 +1,29 @@
+﻿<reactiveUi:ReactiveUserControl x:TypeArguments="viewModels:WorkSheetViewModel" x:Class="PuppyWorkbooks.App.Wpf.Views.WorkSheetView"
+                                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                                xmlns:local="clr-namespace:PuppyWorkbooks.App.Wpf.Views"
+                                xmlns:viewModels="clr-namespace:PuppyWorkbooks.ViewModels;assembly=PuppyWorkbooks.ViewModels"
+                                xmlns:reactiveUi="http://reactiveui.net"
+                                mc:Ignorable="d"
+                                d:DesignHeight="300" d:DesignWidth="300"
+                                Height="Auto" Width="Auto" d:DataContext="{d:DesignInstance viewModels:WorkSheetViewModel}">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /> 
+            <RowDefinition Height="4*" /> 
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="1"  VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Cells}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <local:WorkCellView />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <Button Grid.Row="2" x:Name="AddCellBtn" Content="Add Cell" Width="100" HorizontalAlignment="Left" />
+    </Grid>
+</reactiveUi:ReactiveUserControl>
