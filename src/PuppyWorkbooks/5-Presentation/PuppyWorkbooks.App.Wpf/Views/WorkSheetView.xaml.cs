@@ -10,7 +10,7 @@ public partial class WorkSheetView : ReactiveUserControl<WorkSheetViewModel>
     public WorkSheetView()
     {
         InitializeComponent();
-        
+        ViewModel = new WorkSheetViewModel();
         this.WhenActivated((disposables) =>
         {
             this.BindCommand(ViewModel, vm => vm.AddCellCommand, 
