@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private DockingShellViewModel _vm = new DockingShellViewModel();
     public MainWindow()
     {
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(SyncfusionLicenseConstant.LicenseKey);
         SfSkinManager.ApplyThemeAsDefaultStyle = true;
         SfSkinManager.ApplicationTheme = new Theme("FluentLight");
         InitializeComponent();

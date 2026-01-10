@@ -416,3 +416,4 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+src/PuppyWorkbooks/5-Presentation/PuppyWorkbooks.App.Wpf/SyncfusionLicenseConstant.cs

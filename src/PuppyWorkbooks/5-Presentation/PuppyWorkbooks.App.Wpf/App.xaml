@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:PuppyWorkbooks.App.Wpf"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" />
+        <!-- <ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" /> -->
     </Application.Resources>
 </Application>
