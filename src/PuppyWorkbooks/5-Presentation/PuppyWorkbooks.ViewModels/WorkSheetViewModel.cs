@@ -8,6 +8,8 @@ public partial class WorkSheetViewModel : ReactiveObject
 {
     [Reactive]
     private bool _showResultsForEachCell;
+
+    [Reactive] private WorkCellViewModel _selectedFormula = new ();
     public ObservableCollection<WorkCellViewModel> Cells { get; set; } = [];
     
     public void FromModel(PuppyWorkbooks.WorkSheet model)
