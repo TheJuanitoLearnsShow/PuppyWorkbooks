@@ -97,6 +97,7 @@
             <DoubleAnimation Storyboard.TargetName="PanelTransform" Storyboard.TargetProperty="X" From="0" To="360"
                              Duration="0:0:0.2" AccelerationRatio="0.3" DecelerationRatio="0.7" />
         </Storyboard>
+        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
 
         <!-- Sample data for quick preview -->
         <x:Array x:Key="SampleFormulas" Type="{x:Type sys:Object}" xmlns:sys="clr-namespace:System;assembly=mscorlib"> <!-- Each item is an anonymous-ish object via Tagging with Tuple-like properties if you want to bind later. For now, use explicit type: we’ll fake with simple objects via x:StaticResource approach, but for design-time we can just use composite bindings directly in the template text. --> </x:Array>
@@ -115,7 +116,7 @@
             <TextBlock Text="Formulas" FontSize="26" FontWeight="SemiBold"
                        Foreground="{StaticResource HeaderForegroundBrush}" VerticalAlignment="Center"
                        DockPanel.Dock="Left" />
-            <Button Style="{StaticResource AddButtonStyle}"  x:Name="AddCellBtn"
+            <Button Style="{StaticResource AddButtonStyle}" x:Name="AddCellBtn"
                     DockPanel.Dock="Right" Margin="12,0,0,0" />
         </DockPanel>
         <!-- List of formulas -->
@@ -123,8 +124,7 @@
                       VerticalScrollBarVisibility="Auto">
             <ListView ItemTemplate="{StaticResource FormulaRowTemplate}"
                       ItemsSource="{Binding Cells}"
-                      SelectedItem="{Binding SelectedFormula, Mode=TwoWay}"
-            >
+                      SelectedItem="{Binding SelectedFormula, Mode=TwoWay}">
                 <!-- <ItemsControl.ItemsSource> -->
                 <!--     <x:Array Type="{x:Type viewModels:WorkCellViewModel}" -->
                 <!--              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"> -->
@@ -140,7 +140,10 @@
                 <!-- </ItemsControl.ItemsSource> -->
             </ListView>
         </ScrollViewer>
-        <Grid Grid.Row="0" Grid.Column="0" x:Name="EditPanelHost" Width="360" HorizontalAlignment="Right"
+        <Grid Grid.Row="1" Grid.Column="0" x:Name="EditPanelHost"
+              Width="360"
+              HorizontalAlignment="Right"
+              Visibility="{Binding SelectedFormula, Converter={StaticResource NullToVisibilityConverter}}"
               VerticalAlignment="Stretch"
               RenderTransformOrigin="0.5,0.5">
             <Grid.RenderTransform>
@@ -180,15 +183,17 @@
                              BorderBrush="#CCC" BorderThickness="1" Margin="0,0,0,16"
                              AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                              TextWrapping="Wrap" /> <!-- Result Field -->
-                    <TextBlock Text="Result" FontSize="14" Foreground="#555" Margin="0,0,0,4" 
-                               />
+                    <TextBlock Text="Result" FontSize="14" Foreground="#555" Margin="0,0,0,4" />
                     <TextBox Text="{Binding SelectedFormula.Result}" FontSize="14" Padding="8" Background="White"
-                             BorderBrush="#CCC" BorderThickness="1" Margin="0,0,0,24" 
-                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Height="auto" IsReadOnly="True"/>
+                             BorderBrush="#CCC" BorderThickness="1" Margin="0,0,0,24"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Height="auto"
+                             IsReadOnly="True" />
                     <!-- Save Button -->
-                    <Button Content="Save" FontSize="15" FontWeight="SemiBold" Background="#2563EB" Foreground="White"
-                            Padding="10" BorderBrush="Transparent" HorizontalAlignment="Stretch"
-                            Cursor="Hand" />
+                    <!-- Remove Button -->
+                    <Button Content="Remove" FontSize="15" FontWeight="SemiBold" Background="#D92C2C"
+                            Foreground="White" Padding="10" BorderBrush="Transparent"
+                            HorizontalAlignment="Stretch" Cursor="Hand" Command="{Binding RemoveCellCommand}"
+                            CommandParameter="{Binding SelectedFormula.Id}" />
                 </StackPanel>
             </Border>
         </Grid>

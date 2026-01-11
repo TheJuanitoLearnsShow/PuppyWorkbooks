@@ -1,4 +1,5 @@
-﻿using System.Reactive.Disposables.Fluent;
+﻿using System.ComponentModel;
+using System.Reactive.Disposables.Fluent;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
@@ -13,12 +14,29 @@ public partial class WorkSheetView : ReactiveUserControl<WorkSheetViewModel>
     {
         InitializeComponent();
         ViewModel = new WorkSheetViewModel();
+        DataContext = ViewModel;
         this.WhenActivated((disposables) =>
         {
+            this.WhenAnyValue(x => x.ViewModel.SelectedFormula)
+                .Subscribe(
+                selectedFormula =>
+                {
+                    if (selectedFormula != null)
+                    {
+                        ShowEditPanel();
+                    }
+                    else
+                    {
+                        HideEditPanel();
+                    }
+                })
+                .DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.AddCellCommand, 
                     v => v.AddCellBtn)
                 .DisposeWith(disposables);
+            
         });
+        // ViewModel.PropertyChanged += OnSelectedFormulaChanged;
     }
     private void ShowEditPanel()
     {
@@ -36,5 +54,20 @@ public partial class WorkSheetView : ReactiveUserControl<WorkSheetViewModel>
         };
         storyboard.Begin();
     }
+    private void OnSelectedFormulaChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ViewModel.SelectedFormula))
+        {
+            if (ViewModel?.SelectedFormula != null)
+            {
+                ShowEditPanel();
+            }
+            else
+            {
+                HideEditPanel();
+            }
+        }
+    }
+
 
 }

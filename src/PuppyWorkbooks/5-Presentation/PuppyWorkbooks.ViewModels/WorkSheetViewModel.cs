@@ -1,17 +1,22 @@
 ﻿using System.Collections.ObjectModel;
+using System.Reactive;
 using ReactiveUI;
-using ReactiveUI.SourceGenerators;
 
 namespace PuppyWorkbooks.ViewModels;
 
 public partial class WorkSheetViewModel : ReactiveObject
 {
-    [Reactive]
     private bool _showResultsForEachCell;
 
-    [Reactive] private WorkCellViewModel _selectedFormula = new ();
+    private WorkCellViewModel? _selectedFormula = null;
     public ObservableCollection<WorkCellViewModel> Cells { get; set; } = [];
-    
+
+    public WorkSheetViewModel()
+    {
+        ExecuteCommand = ReactiveCommand.CreateFromTask(() => ExecuteUpToCellAsync(-1));
+        AddCellCommand = ReactiveCommand.Create(AddCell);
+        RemoveCellCommand = ReactiveCommand.Create<int>(RemoveCell);
+    }
     public void FromModel(PuppyWorkbooks.WorkSheet model)
     {
         Cells.Clear();
@@ -32,7 +37,6 @@ public partial class WorkSheetViewModel : ReactiveObject
         return model;
     }
 
-    [ReactiveCommand]
     public Task ExecuteAsync()
     {
         return ExecuteUpToCellAsync(-1);
@@ -48,7 +52,6 @@ public partial class WorkSheetViewModel : ReactiveObject
         }
     }
 
-    [ReactiveCommand]
     private void AddCell()
     {
         var newCell = new WorkCellViewModel
@@ -61,7 +64,6 @@ public partial class WorkSheetViewModel : ReactiveObject
         Cells.Add(newCell);
     }
     
-    [ReactiveCommand]
     public void RemoveCell(int cellIdx)
     {
         Cells.RemoveAt(cellIdx);
@@ -75,4 +77,19 @@ public partial class WorkSheetViewModel : ReactiveObject
             Cells[i].Id = i;
         }
     }
+    
+    public bool ShowResultsForEachCell
+    {
+        get => _showResultsForEachCell;
+        set => this.RaiseAndSetIfChanged(ref _showResultsForEachCell, value);
+    }
+
+    public WorkCellViewModel SelectedFormula
+    {
+        get => _selectedFormula;
+        set => this.RaiseAndSetIfChanged(ref _selectedFormula, value);
+    }
+    public ReactiveCommand<Unit, Unit> ExecuteCommand { get; }
+    public ReactiveCommand<Unit, Unit> AddCellCommand { get; }
+    public ReactiveCommand<int, Unit> RemoveCellCommand { get; }
 }
