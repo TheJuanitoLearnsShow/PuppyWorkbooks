@@ -31,6 +31,12 @@ public partial class MainWindow : Window
         SfSkinManager.ApplicationTheme = new Theme("FluentLight");
         InitializeComponent();
         this.DataContext = _vm;
+        
+        DockManager.IsSelectedDocument += DockManagerOnIsSelectedDocument;
+    }
+
+    private void DockManagerOnIsSelectedDocument(FrameworkElement sender, IsSelectedChangedEventArgs e)
+    {
     }
 
     private void NewDocument_Click(object sender, RoutedEventArgs e)
@@ -40,6 +46,7 @@ public partial class MainWindow : Window
 
     private void SaveDocument_Click(object sender, RoutedEventArgs e)
     {
+        _vm.SaveDocument();
         // if (DocumentHost.SelectedItem is not DocumentTabItem tab) return;
         // if (tab.Content is not DocumentView view) return;
         // var dlg = new SaveFileDialog { Filter = "Text Files|*.txt", FileName = tab.Header.ToString() };
@@ -47,5 +54,10 @@ public partial class MainWindow : Window
         // {
         //     File.WriteAllText(dlg.FileName, $"{view.TextBox1.Text}\n{view.TextBox2.Text}");
         // }
+    }
+
+    private void OpenDocument_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.LoadDocument();
     }
 }

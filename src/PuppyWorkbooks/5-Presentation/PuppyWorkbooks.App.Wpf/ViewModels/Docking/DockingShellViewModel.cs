@@ -12,7 +12,29 @@ public class DockingShellViewModel
     public void NewDocument_Click()
     {
         var doc = new WorkSheetView();
+        var dockItem = new DockItem() { Header = "Doc", 
+            Content = doc, 
+            State = DockState.Document 
+        };
         
-        DockCollections.Add(new DockItem() { Header = "Doc", Content = doc, State = DockState.Document});
+        DockCollections.Add(dockItem);
+    }
+
+    public void SaveDocument()
+    {
+        var selectedDoc = DockCollections
+            .FirstOrDefault(d => d is { IsSelectedTab: true, State: DockState.Document });
+        var view = selectedDoc?.Content as WorkSheetView;
+        // Implement save logic here
+        view?.ViewModel?.SaveToXmlFile("temp.xml");
+    }
+    
+    public void LoadDocument()
+    {
+        var selectedDoc = DockCollections
+            .FirstOrDefault(d => d is { IsSelectedTab: true, State: DockState.Document });
+        var view = selectedDoc?.Content as WorkSheetView;
+        // Implement save logic here
+        view?.ViewModel?.LoadFromXmlFile("temp.xml");
     }
 }

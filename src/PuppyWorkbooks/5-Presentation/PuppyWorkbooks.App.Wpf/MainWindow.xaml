@@ -14,11 +14,13 @@
             <MenuItem Header="_File">
                 <MenuItem Header="New Document" Click="NewDocument_Click" />
                 <MenuItem Header="Save Document" Click="SaveDocument_Click" />
+                <MenuItem Header="Open Document" Click="OpenDocument_Click" />
             </MenuItem>
         </Menu> 
          <!-- Docking Layout -->
         <syncfusion:DockingManager x:Name="DockManager" UseDocumentContainer="True" 
-                                   ItemsSource="{Binding DockCollections}">
+                                   ItemsSource="{Binding DockCollections}"
+                                   >
 
             <ContentControl x:Name="SolutionExplorer" 
                             syncfusion:DockingManager.Header="Solution Explorer"

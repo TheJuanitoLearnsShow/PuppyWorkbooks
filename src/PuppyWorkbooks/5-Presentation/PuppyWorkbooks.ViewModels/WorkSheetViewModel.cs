@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Reactive;
+using PuppyWorkbooks.Serialization;
 using ReactiveUI;
 
 namespace PuppyWorkbooks.ViewModels;
@@ -7,6 +8,7 @@ namespace PuppyWorkbooks.ViewModels;
 public partial class WorkSheetViewModel : ReactiveObject
 {
     private bool _showResultsForEachCell;
+    private readonly WorkSheetSerializer _workSheetSerializer = new ();
 
     private WorkCellViewModel? _selectedFormula = null;
     public ObservableCollection<WorkCellViewModel> Cells { get; set; } = [];
@@ -16,7 +18,22 @@ public partial class WorkSheetViewModel : ReactiveObject
         ExecuteCommand = ReactiveCommand.CreateFromTask(() => ExecuteUpToCellAsync(-1));
         AddCellCommand = ReactiveCommand.Create(AddCell);
         RemoveCellCommand = ReactiveCommand.Create<int>(RemoveCell);
+        SaveWorkSheetCommand = ReactiveCommand.Create<string>(SaveToXmlFile);
+        LoadWorkSheetCommand = ReactiveCommand.Create<string>(LoadFromXmlFile);
     }
+
+    public void LoadFromXmlFile(string filePath)
+    {
+        var model = _workSheetSerializer.DeserializeFromXmlFile(filePath);
+        FromModel(model);
+    }
+
+    public void SaveToXmlFile(string filePath)
+    {
+        var model = ToModel();
+        _workSheetSerializer.SerializeToXmlFile(filePath, model);
+    }
+
     public void FromModel(PuppyWorkbooks.WorkSheet model)
     {
         Cells.Clear();
@@ -92,4 +109,6 @@ public partial class WorkSheetViewModel : ReactiveObject
     public ReactiveCommand<Unit, Unit> ExecuteCommand { get; }
     public ReactiveCommand<Unit, Unit> AddCellCommand { get; }
     public ReactiveCommand<int, Unit> RemoveCellCommand { get; }
+    public ReactiveCommand<string, Unit> SaveWorkSheetCommand { get; }
+    public ReactiveCommand<string, Unit> LoadWorkSheetCommand { get; }
 }
