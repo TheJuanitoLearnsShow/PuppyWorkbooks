@@ -1,7 +1,5 @@
 using System;
 using ReactiveUI;
-using DockModel = Dock.Model.ReactiveUI.Controls;
-using DockControls = Dock.Model.Avalonia.Controls;
 
 namespace PuppyMapper.AvaloniaApp;
 

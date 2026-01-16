@@ -1,25 +1,55 @@
-using Dock.Model.ReactiveUI.Navigation.Controls;
+using System;
+using System.Reactive;
 using ReactiveUI;
 
 namespace PuppyWorkbooks.App.ViewModels.Docking;
 
-public class DocumentViewModel : RoutableDocument
+public class DocumentViewModel : ViewModelBase, IRoutableViewModel
 {
+    public string UrlPathSegment { get; }
+    public IScreen HostScreen { get; }
 
-    public DocumentViewModel(IScreen host, DocumentEditorViewModel documentToOpen) : base(host)
+    public string Title { get; }
+
+    private string? _text;
+    public string? Text
     {
-        Router.Navigate.Execute(documentToOpen);
-        
+        get => _text;
+        set => this.RaiseAndSetIfChanged(ref _text, value);
     }
 
-    public void InitNavigation(
-        IRoutableViewModel? document)
+    private string? _filePath;
+    public string? FilePath
     {
-        // if (document is not null)
-        // {
-        //     GoDocument = ReactiveCommand.Create(() =>
-        //         HostScreen.Router.Navigate.Execute(document).Subscribe(_ => { }));
-        // }
+        get => _filePath;
+        set => this.RaiseAndSetIfChanged(ref _filePath, value);
+    }
 
+    private bool _isDirty;
+    public bool IsDirty
+    {
+        get => _isDirty;
+        set => this.RaiseAndSetIfChanged(ref _isDirty, value);
+    }
+
+    public ReactiveCommand<string?, Unit> OpenCommand { get; }
+    public ReactiveCommand<string?, Unit> SaveCommand { get; }
+
+    public DocumentViewModel(IScreen host, string title)
+    {
+        HostScreen = host ?? throw new ArgumentNullException(nameof(host));
+        UrlPathSegment = Guid.NewGuid().ToString();
+        Title = title;
+
+        OpenCommand = ReactiveCommand.Create<string?>(path =>
+        {
+            // handled by DockHost which reads file and creates a DocumentViewModel
+        });
+
+        SaveCommand = ReactiveCommand.Create<string?>(path =>
+        {
+            // handled by DockHost SaveActiveDocumentAsync
+        });
     }
 }
+
