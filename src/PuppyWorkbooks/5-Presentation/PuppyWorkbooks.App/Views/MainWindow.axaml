@@ -1,49 +1,53 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:PuppyWorkbooks.App.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:avalonia="http://reactiveui.net"
-        xmlns:avaloniaApp="clr-namespace:PuppyMapper.AvaloniaApp"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:views="clr-namespace:PuppyWorkbooks.App.Views"
+        xmlns:vm="clr-namespace:PuppyWorkbooks.ViewModels"
+        xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+        xmlns:docking="clr-namespace:PuppyWorkbooks.App.Views.Docking"
+        xmlns:viewModels="clr-namespace:PuppyWorkbooks.App.ViewModels"
         x:Class="PuppyWorkbooks.App.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="PuppyWorkbooks.App">
+        Width="900" Height="600"
+        Title="Avalonia Editor"
+        x:DataType="viewModels:MainWindowViewModel">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <avalonia:RoutedViewHost Grid.Row="0" Router="{Binding Router}">
-            <avalonia:RoutedViewHost.DefaultContent>
-                <TextBlock Text="Default content"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
-            </avalonia:RoutedViewHost.DefaultContent>
-            <avalonia:RoutedViewHost.ViewLocator>
-                <!-- See AppViewLocator.cs section below -->
-                <avaloniaApp:AppViewLocator />
-            </avalonia:RoutedViewHost.ViewLocator>
-        </avalonia:RoutedViewHost>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="15">
-            <StackPanel.Styles>
-                <Style Selector="StackPanel > :is(Control)">
-                    <Setter Property="Margin" Value="2"/>
-                </Style>
-                <Style Selector="StackPanel > TextBlock">
-                    <Setter Property="VerticalAlignment" Value="Center"/>
-                </Style>
-            </StackPanel.Styles>
-            <!-- <Button Content="Go Mapping Doc" Command="{Binding GoMappingDocument}" /> -->
-            <!-- <Button Content="Go back" Command="{Binding GoBack}" /> -->
-            <TextBlock Text="{Binding Router.NavigationStack.Count}" />
-        </StackPanel>
-    </Grid>
+    <DockPanel>
+
+        <!-- Menu --> <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="New Document" Command="{Binding NewDocumentCommand}" HotKey="Ctrl+N" />
+                <MenuItem Header="Save" Command="{Binding SaveActiveDocumentCommand}" HotKey="Ctrl+S" />
+                <MenuItem Header="Save As..." Command="{Binding SaveAsActiveDocumentCommand}" HotKey="Ctrl+Shift+S" />
+            </MenuItem>
+        </Menu> <!-- Two side-by-side tab controls -->
+        <Grid ColumnDefinitions="*, 5, *"> <!-- Left Tabs -->
+            <TabControl Items="{Binding LeftDocuments}"
+                        SelectedItem="{Binding SelectedLeftDocument}"
+                        views:TabReorderBehavior.EnableReorder="True">
+
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayTitle}" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate>
+                        <docking:DocumentView />
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" /> <!-- Right Tabs -->
+            <TabControl Grid.Column="2" Items="{Binding RightDocuments}" SelectedItem="{Binding SelectedRightDocument}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayTitle}" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate>
+                        <docking:DocumentView />
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+        </Grid>
+    </DockPanel>
 </Window>

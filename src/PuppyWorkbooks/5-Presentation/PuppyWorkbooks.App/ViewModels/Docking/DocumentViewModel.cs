@@ -4,52 +4,42 @@ using ReactiveUI;
 
 namespace PuppyWorkbooks.App.ViewModels.Docking;
 
-public class DocumentViewModel : ViewModelBase, IRoutableViewModel
+public class DocumentViewModel : ReactiveObject
 {
-    public string UrlPathSegment { get; }
-    public IScreen HostScreen { get; }
+    private string _text = "";
+    private bool _isDirty;
 
-    public string Title { get; }
+    public string Title { get; set; } = "Untitled";
 
-    private string? _text;
-    public string? Text
+    public string Text
     {
         get => _text;
-        set => this.RaiseAndSetIfChanged(ref _text, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _text, value);
+            IsDirty = true;
+        }
     }
 
-    private string? _filePath;
-    public string? FilePath
-    {
-        get => _filePath;
-        set => this.RaiseAndSetIfChanged(ref _filePath, value);
-    }
-
-    private bool _isDirty;
     public bool IsDirty
     {
         get => _isDirty;
         set => this.RaiseAndSetIfChanged(ref _isDirty, value);
     }
 
-    public ReactiveCommand<string?, Unit> OpenCommand { get; }
-    public ReactiveCommand<string?, Unit> SaveCommand { get; }
+    public string DisplayTitle => IsDirty ? $"{Title} *" : Title;
 
-    public DocumentViewModel(IScreen host, string title)
+    public ReactiveCommand<Unit, Unit> SaveCommand { get; }
+
+    public DocumentViewModel()
     {
-        HostScreen = host ?? throw new ArgumentNullException(nameof(host));
-        UrlPathSegment = Guid.NewGuid().ToString();
-        Title = title;
+        SaveCommand = ReactiveCommand.Create(Save);
+    }
 
-        OpenCommand = ReactiveCommand.Create<string?>(path =>
-        {
-            // handled by DockHost which reads file and creates a DocumentViewModel
-        });
-
-        SaveCommand = ReactiveCommand.Create<string?>(path =>
-        {
-            // handled by DockHost SaveActiveDocumentAsync
-        });
+    private void Save()
+    {
+        // Real save is handled by MainWindowViewModel using dialogs
+        // This just clears the dirty flag
+        IsDirty = false;
     }
 }
-

@@ -1,4 +1,6 @@
 using System;
+using PuppyWorkbooks.App.ViewModels.Docking;
+using PuppyWorkbooks.App.Views.Docking;
 using ReactiveUI;
 
 namespace PuppyMapper.AvaloniaApp;
@@ -21,8 +23,7 @@ public class AppViewLocator : ReactiveUI.IViewLocator
         // CsvOutputEditorViewModel context => new CsvOutputEditorView { DataContext = context },
         // MemoryOutputEditorViewModel context => new MemoryOutputEditorView { DataContext = context },
         //
-        // DockingHostViewModel context => new DockingHostView { DataContext = context },
-        // DocumentViewModel context => new DocumentView { DataContext = context },
+        DocumentViewModel context => new DocumentView { DataContext = context },
         // DocumentEditorViewModel context => new DocumentEditorView { DataContext = context },
         _ => throw new ArgumentOutOfRangeException(nameof(viewModel))
     };
