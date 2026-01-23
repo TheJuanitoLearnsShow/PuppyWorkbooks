@@ -31,8 +31,6 @@ public partial class MainWindow : Window
         SfSkinManager.ApplicationTheme = new Theme("FluentLight");
         InitializeComponent();
         this.DataContext = _vm;
-        
-        DockManager.IsSelectedDocument += DockManagerOnIsSelectedDocument;
     }
 
     private void DockManagerOnIsSelectedDocument(FrameworkElement sender, IsSelectedChangedEventArgs e)

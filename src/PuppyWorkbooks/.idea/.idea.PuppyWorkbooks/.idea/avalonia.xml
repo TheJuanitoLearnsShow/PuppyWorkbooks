@@ -3,6 +3,7 @@
   <component name="AvaloniaProject">
     <option name="projectPerEditor">
       <map>
+        <entry key="5-Presentation/PuppyWorkbooks.App/App.axaml" value="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
         <entry key="5-Presentation/PuppyWorkbooks.App/Views/Docking/DocumentView.axaml" value="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
         <entry key="5-Presentation/PuppyWorkbooks.App/Views/MainWindow.axaml" value="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
       </map>

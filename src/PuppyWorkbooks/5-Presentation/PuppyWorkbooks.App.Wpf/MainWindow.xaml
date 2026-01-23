@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:PuppyWorkbooks.App.Wpf"
         xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
         xmlns:docking="clr-namespace:PuppyWorkbooks.App.Wpf.ViewModels.Docking"
+        xmlns:docking1="clr-namespace:PuppyWorkbooks.App.Wpf.Views.Docking"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" d:DataContext="{d:DesignInstance Type=docking:DockingShellViewModel}">
     <DockPanel>
@@ -18,14 +19,19 @@
             </MenuItem>
         </Menu> 
          <!-- Docking Layout -->
-        <syncfusion:DockingManager x:Name="DockManager" UseDocumentContainer="True" 
-                                   ItemsSource="{Binding DockCollections}"
-                                   >
+         
+         <docking1:DockingAdapter ItemsSource="{Binding DockCollections}"
+                              ActiveDocument="{Binding ActiveDocument,Mode=TwoWay}">
 
-            <ContentControl x:Name="SolutionExplorer" 
-                            syncfusion:DockingManager.Header="Solution Explorer"
-                            syncfusion:DockingManager.State="Dock"
-            />
-        </syncfusion:DockingManager>
+         </docking1:DockingAdapter>
+        <!-- <syncfusion:DockingAdapter  x:Name="DockManager" UseDocumentContainer="True"  -->
+        <!--                             ItemsSource="{Binding DockCollections}" -->
+        <!-- > -->
+        <!-- -->
+        <!--     <ContentControl x:Name="SolutionExplorer"  -->
+        <!--                     syncfusion:DockingManager.Header="Solution Explorer" -->
+        <!--                     syncfusion:DockingManager.State="Dock" -->
+        <!--     /> -->
+        <!-- </syncfusion:DockingAdapter> -->
     </DockPanel>
 </Window>

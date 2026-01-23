@@ -20,10 +20,14 @@
             </MenuItem>
         </Menu> <!-- Two side-by-side tab controls -->
         <Grid ColumnDefinitions="*, 5, *"> <!-- Left Tabs -->
-            <TabControl Items="{Binding LeftDocuments}"
-                        SelectedItem="{Binding SelectedLeftDocument}"
-                        views:TabReorderBehavior.EnableReorder="True">
-
+            <!-- <TabControl Items="{Binding LeftDocuments}" -->
+            <!--             SelectedItem="{Binding SelectedLeftDocument}" -->
+            <!--             views:TabReorderBehavior.EnableReorder="True" -->
+            <!--             > -->
+                <TabControl Items="{Binding LeftDocuments}"
+                            SelectedItem="{Binding SelectedLeftDocument}"
+                            
+                >
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding DisplayTitle}" />
@@ -36,7 +40,8 @@
                 </TabControl.ContentTemplate>
             </TabControl>
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray" /> <!-- Right Tabs -->
-            <TabControl Grid.Column="2" Items="{Binding RightDocuments}" SelectedItem="{Binding SelectedRightDocument}">
+            <TabControl Grid.Column="2" Items="{Binding RightDocuments}" 
+                        SelectedItem="{Binding SelectedRightDocument}">
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding DisplayTitle}" />
