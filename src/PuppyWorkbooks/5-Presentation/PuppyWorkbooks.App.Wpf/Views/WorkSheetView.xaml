@@ -7,6 +7,7 @@
                                 xmlns:local="clr-namespace:PuppyWorkbooks.App.Wpf.Views"
                                 xmlns:viewModels="clr-namespace:PuppyWorkbooks.ViewModels;assembly=PuppyWorkbooks.ViewModels"
                                 xmlns:reactiveUi="http://reactiveui.net"
+                                xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
                                 mc:Ignorable="d"
                                 d:DesignHeight="500" d:DesignWidth="800"
                                 Height="Auto" Width="Auto"
@@ -173,10 +174,24 @@
                              BorderBrush="#CCC" BorderThickness="1" Margin="0,0,0,16" />
                     <!-- Formula Field -->
                     <TextBlock Text="Formula" FontSize="14" Foreground="#555" Margin="0,0,0,4" />
-                    <TextBox Text="{Binding SelectedFormula.Formula}" FontSize="14" Padding="8" Background="White"
-                             BorderBrush="#CCC" BorderThickness="1" AcceptsReturn="True"
-                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                             Margin="0,0,0,16" />
+                    <!-- XAML -->
+                    <syncfusion:EditControl
+                        Text="{Binding SelectedFormula.Formula}"
+                        BorderThickness="1"
+                        Margin="0,0,0,16"
+                        Padding="8"
+                        Height="Auto"
+                        MinHeight="80"
+                        MaxHeight="200"
+                        VerticalAlignment="Top"
+                        VerticalContentAlignment="Stretch"
+                        AcceptsReturn="True"
+                        VerticalScrollBarVisibility="Auto" />
+
+                    <!-- <TextBox Text="{Binding SelectedFormula.Formula}" FontSize="14" Padding="8" Background="White" -->
+                    <!--          BorderBrush="#CCC" BorderThickness="1" AcceptsReturn="True" -->
+                    <!--          TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" -->
+                    <!--          Margin="0,0,0,16" /> -->
                     <!-- Comments Field -->
                     <TextBlock Text="Comments" FontSize="14" Foreground="#555" Margin="0,0,0,4" />
                     <TextBox Text="{Binding SelectedFormula.Comments}" FontSize="14" Padding="8" Background="White"
