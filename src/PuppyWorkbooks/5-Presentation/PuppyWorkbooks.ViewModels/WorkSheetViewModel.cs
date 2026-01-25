@@ -11,6 +11,7 @@ public partial class WorkSheetViewModel : ReactiveObject
     private readonly WorkSheetSerializer _workSheetSerializer = new ();
 
     private WorkCellViewModel? _selectedFormula = null;
+    private string _name = $"Untitled Worksheet {DateTime.Now:yyyy-MM-dd HHmmss}";
     public ObservableCollection<WorkCellViewModel> Cells { get; set; } = [];
 
     public WorkSheetViewModel()
@@ -24,12 +25,14 @@ public partial class WorkSheetViewModel : ReactiveObject
 
     public void LoadFromXmlFile(string filePath)
     {
+        Name = Path.GetFileNameWithoutExtension(filePath);
         var model = _workSheetSerializer.DeserializeFromXmlFile(filePath);
         FromModel(model);
     }
 
     public void SaveToXmlFile(string filePath)
     {
+        Name = Path.GetFileNameWithoutExtension(filePath);
         var model = ToModel();
         _workSheetSerializer.SerializeToXmlFile(filePath, model);
     }
@@ -101,10 +104,15 @@ public partial class WorkSheetViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _showResultsForEachCell, value);
     }
 
-    public WorkCellViewModel SelectedFormula
+    public WorkCellViewModel? SelectedFormula
     {
         get => _selectedFormula;
         set => this.RaiseAndSetIfChanged(ref _selectedFormula, value);
+    }
+    public string Name
+    {
+        get => _name;
+        set => this.RaiseAndSetIfChanged(ref _name, value);
     }
     public ReactiveCommand<Unit, Unit> ExecuteCommand { get; }
     public ReactiveCommand<Unit, Unit> AddCellCommand { get; }

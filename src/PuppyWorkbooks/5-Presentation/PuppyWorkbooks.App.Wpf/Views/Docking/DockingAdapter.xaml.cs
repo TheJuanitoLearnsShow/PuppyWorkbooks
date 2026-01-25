@@ -34,6 +34,15 @@ namespace PuppyWorkbooks.App.Wpf.Views.Docking
         public static readonly DependencyProperty ActiveDocumentProperty =
             DependencyProperty.Register(nameof(ActiveDocument), typeof(WorkSheetViewModel), typeof(DockingAdapter), new PropertyMetadata(null, new PropertyChangedCallback(OnActiveDocumentChanged)));
 
+        public WorkSheetView ActiveView
+        {
+            get { return (WorkSheetView)GetValue(ActiveViewProperty); }
+            set { SetValue(ActiveViewProperty, value); }
+        }
+
+        public static readonly DependencyProperty ActiveViewProperty =
+            DependencyProperty.Register(nameof(ActiveView), typeof(WorkSheetView), typeof(DockingAdapter), new PropertyMetadata(null, new PropertyChangedCallback(OnActiveViewChanged)));
+
         public IList ItemsSource
         {
             get { return (IList)GetValue(ItemsSourceProperty); }
@@ -62,6 +71,23 @@ namespace PuppyWorkbooks.App.Wpf.Views.Docking
             }
         }
 
+        private static void OnActiveViewChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
+        {
+            if (sender is DockingAdapter adapter)
+            {
+                foreach (FrameworkElement element in adapter.PART_DockingManager.Children)
+                {
+                    if (element is ContentControl)
+                    {
+                        if (element is ContentControl control && control.Content == args.NewValue)
+                        {
+                            adapter.PART_DockingManager.ActiveWindow = control;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             if (e.Property.Name == "ItemsSource")
@@ -168,9 +194,10 @@ namespace PuppyWorkbooks.App.Wpf.Views.Docking
             if (e.NewValue is WorkSheetView content)
             {
                 var dataContext = content.ViewModel;
-                if (dataContext is WorkSheetViewModel workSheetViewModel)
+                if (dataContext is { } workSheetViewModel)
                 {
                     ActiveDocument = workSheetViewModel;
+                    ActiveView = content;
                 }
             }
         }

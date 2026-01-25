@@ -39,23 +39,26 @@ public partial class MainWindow : Window
 
     private void NewDocument_Click(object sender, RoutedEventArgs e)
     {
-        _vm.NewDocument_Click();
+        _vm.NewDocument();
     }
 
     private void SaveDocument_Click(object sender, RoutedEventArgs e)
     {
-        _vm.SaveDocument();
-        // if (DocumentHost.SelectedItem is not DocumentTabItem tab) return;
-        // if (tab.Content is not DocumentView view) return;
-        // var dlg = new SaveFileDialog { Filter = "Text Files|*.txt", FileName = tab.Header.ToString() };
-        // if (dlg.ShowDialog() == true)
-        // {
-        //     File.WriteAllText(dlg.FileName, $"{view.TextBox1.Text}\n{view.TextBox2.Text}");
-        // }
+        if (_vm.ActiveDocument == null) return;
+        
+        var dlg = new SaveFileDialog { Filter = "PuppyWorkbook|*.xml", FileName = _vm.ActiveDocument.Name };
+        if (dlg.ShowDialog() == true)
+        {
+            _vm.SaveDocument(dlg.FileName);
+        }
     }
 
     private void OpenDocument_Click(object sender, RoutedEventArgs e)
     {
-        _vm.LoadDocument();
+        var dlg = new OpenFileDialog() { Filter = "PuppyWorkbook|*.xml" };
+        if (dlg.ShowDialog() == true)
+        {
+            _vm.LoadDocument(dlg.FileName);
+        }
     }
 }

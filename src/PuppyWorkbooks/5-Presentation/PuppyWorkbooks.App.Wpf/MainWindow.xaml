@@ -21,17 +21,10 @@
          <!-- Docking Layout -->
          
          <docking1:DockingAdapter ItemsSource="{Binding DockCollections}"
-                              ActiveDocument="{Binding ActiveDocument,Mode=TwoWay}">
+                              ActiveDocument="{Binding ActiveDocument,Mode=TwoWay}"
+                              ActiveView="{Binding ActiveView,Mode=TwoWay}"
+                              >
 
          </docking1:DockingAdapter>
-        <!-- <syncfusion:DockingAdapter  x:Name="DockManager" UseDocumentContainer="True"  -->
-        <!--                             ItemsSource="{Binding DockCollections}" -->
-        <!-- > -->
-        <!-- -->
-        <!--     <ContentControl x:Name="SolutionExplorer"  -->
-        <!--                     syncfusion:DockingManager.Header="Solution Explorer" -->
-        <!--                     syncfusion:DockingManager.State="Dock" -->
-        <!--     /> -->
-        <!-- </syncfusion:DockingAdapter> -->
     </DockPanel>
 </Window>
