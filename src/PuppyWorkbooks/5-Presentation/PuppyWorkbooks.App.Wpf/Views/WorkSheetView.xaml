@@ -119,6 +119,19 @@
                        DockPanel.Dock="Left" />
             <Button Style="{StaticResource AddButtonStyle}" x:Name="AddCellBtn"
                     DockPanel.Dock="Right" Margin="12,0,0,0" />
+            
+            <Button Content="Run All"
+                    x:Name="RunAllBtn"
+                    FontWeight="SemiBold"
+                    Background="#2563EB"
+                    Foreground="White"
+                    Padding="10"
+                    BorderBrush="Transparent"
+                    HorizontalAlignment="Stretch"
+                    Cursor="Hand" 
+                    Margin="16,0,4,0"
+                    Command="{Binding ExecuteCommand}"
+            />
         </DockPanel>
         <!-- List of formulas -->
             <ListView Grid.Row="1" Grid.Column="0"  ItemTemplate="{StaticResource FormulaRowTemplate}"
@@ -176,7 +189,7 @@
                     <TextBlock Text="Formula" FontSize="14" Foreground="#555" Margin="0,0,0,4" />
                     <!-- XAML -->
                     <syncfusion:EditControl
-                        Text="{Binding SelectedFormula.Formula}"
+                        Text="{Binding SelectedFormula.Formula, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         BorderThickness="1"
                         Margin="0,0,0,16"
                         Padding="8"
@@ -207,8 +220,22 @@
                     <!-- Remove Button -->
                     <Button Content="Remove" FontSize="15" FontWeight="SemiBold" Background="#D92C2C"
                             Foreground="White" Padding="10" BorderBrush="Transparent"
-                            HorizontalAlignment="Stretch" Cursor="Hand" Command="{Binding RemoveCellCommand}"
+                            HorizontalAlignment="Stretch" Cursor="Hand" 
+                            Command="{Binding RemoveCellCommand}"
                             CommandParameter="{Binding SelectedFormula.Id}" />
+                    <Button Content="Run"
+                            
+                            x:Name="RunSelectedBtn"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Background="#2563EB"
+                            Foreground="White"
+                            Padding="10"
+                            BorderBrush="Transparent"
+                            HorizontalAlignment="Stretch"
+                            Cursor="Hand" 
+                            />
+
                 </StackPanel>
             </Border>
         </ScrollViewer>

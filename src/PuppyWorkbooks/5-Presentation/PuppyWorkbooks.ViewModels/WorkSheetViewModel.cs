@@ -17,6 +17,7 @@ public partial class WorkSheetViewModel : ReactiveObject
     public WorkSheetViewModel()
     {
         ExecuteCommand = ReactiveCommand.CreateFromTask(() => ExecuteUpToCellAsync(-1));
+        ExecuteUpToCommand = ReactiveCommand.CreateFromTask(() => ExecuteUpToCellAsync(CurrSelectedRow));
         AddCellCommand = ReactiveCommand.Create(AddCell);
         RemoveCellCommand = ReactiveCommand.Create<int>(RemoveCell);
         SaveWorkSheetCommand = ReactiveCommand.Create<string>(SaveToXmlFile);
@@ -62,6 +63,7 @@ public partial class WorkSheetViewModel : ReactiveObject
         return ExecuteUpToCellAsync(-1);
     }
 
+    public int CurrSelectedRow { get; set; }
     public async Task ExecuteUpToCellAsync(int cellIdx)
     {
         var workbook = ToModel();
@@ -107,14 +109,21 @@ public partial class WorkSheetViewModel : ReactiveObject
     public WorkCellViewModel? SelectedFormula
     {
         get => _selectedFormula;
-        set => this.RaiseAndSetIfChanged(ref _selectedFormula, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _selectedFormula, value);
+            CurrSelectedRow = _selectedFormula.Id + 1;
+        }
     }
+
     public string Name
     {
         get => _name;
         set => this.RaiseAndSetIfChanged(ref _name, value);
     }
     public ReactiveCommand<Unit, Unit> ExecuteCommand { get; }
+    public ReactiveCommand<Unit, Unit> ExecuteUpToCommand { get; }
+    
     public ReactiveCommand<Unit, Unit> AddCellCommand { get; }
     public ReactiveCommand<int, Unit> RemoveCellCommand { get; }
     public ReactiveCommand<string, Unit> SaveWorkSheetCommand { get; }
