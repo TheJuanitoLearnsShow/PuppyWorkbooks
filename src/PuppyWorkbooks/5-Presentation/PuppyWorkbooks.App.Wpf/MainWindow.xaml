@@ -24,7 +24,14 @@
                               ActiveDocument="{Binding ActiveDocument,Mode=TwoWay}"
                               ActiveView="{Binding ActiveView,Mode=TwoWay}"
                               >
-
+         
          </docking1:DockingAdapter>
+         
+         <!-- <syncfusion:DockingManager x:Name="DockManager" UseDocumentContainer="True"  -->
+         <!--                            ItemsSource="{Binding DockCollections}" -->
+         <!-- > -->
+         <!--     <syncfusion:DockingManager.></syncfusion:DockingManager.> -->
+         <!--      -->
+         <!-- </syncfusion:DockingManager> -->
     </DockPanel>
 </Window>

@@ -41,10 +41,16 @@ public class DockingShellViewModel : ReactiveObject
 
     private void NewTab(WorkSheetView doc)
     {
-        var dockItem = new DockItem() { Header = doc.Name, 
+        var vmName = doc.ViewModel.Name; // how to subscribe to name changes?
+        var dockItem = new DockItem() { Header = vmName, 
             Content = doc, 
             State = DockState.Document ,
         };
+        doc.ViewModel.WhenAny(x => x.Name, (newName) =>
+        {
+            dockItem.Header = newName.Value;
+            return newName;
+        }).Subscribe();
 
         DockCollections.Add(dockItem);
     }
