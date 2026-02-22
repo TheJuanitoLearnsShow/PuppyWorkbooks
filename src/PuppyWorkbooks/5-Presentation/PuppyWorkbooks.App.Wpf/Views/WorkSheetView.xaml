@@ -130,7 +130,6 @@
                     HorizontalAlignment="Stretch"
                     Cursor="Hand" 
                     Margin="16,0,4,0"
-                    Command="{Binding ExecuteCommand}"
             />
         </DockPanel>
         <!-- List of formulas -->
@@ -218,11 +217,12 @@
                              IsReadOnly="True" />
                     <!-- Save Button -->
                     <!-- Remove Button -->
-                    <Button Content="Remove" FontSize="15" FontWeight="SemiBold" Background="#D92C2C"
+                    <Button x:Name="DeleteSelectedBtn"
+                            Content="Remove" FontSize="15" FontWeight="SemiBold" Background="#D92C2C"
                             Foreground="White" Padding="10" BorderBrush="Transparent"
                             HorizontalAlignment="Stretch" Cursor="Hand" 
-                            Command="{Binding RemoveCellCommand}"
-                            CommandParameter="{Binding SelectedFormula.Id}" />
+                            
+                            />
                     <Button Content="Run"
                             
                             x:Name="RunSelectedBtn"

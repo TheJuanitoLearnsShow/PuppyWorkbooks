@@ -37,6 +37,10 @@ public partial class WorkSheetView : ReactiveUserControl<WorkSheetViewModel>
             this.BindCommand(ViewModel, vm => vm.ExecuteCommand, 
                     v => v.RunAllBtn)
                 .DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.RemoveCellCommand,
+                    v => v.DeleteSelectedBtn,
+                    model => model.SelectedFormula.Id)
+                .DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ExecuteSelectedFormulaCommand,
                     v => v.RunSelectedBtn)
                 .DisposeWith(disposables);
