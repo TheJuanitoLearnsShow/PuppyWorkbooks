@@ -5,5 +5,11 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <!-- <ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" /> -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- If the XAML file is in Themes folder and is a Resource, this Source works -->
+                <ResourceDictionary Source="Themes/WorkbookStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
