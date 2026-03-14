@@ -13,83 +13,8 @@
                                 Height="Auto" Width="Auto"
                                 d:DataContext="{d:DesignInstance viewModels:WorkSheetViewModel}">
     <UserControl.Resources>
-        <!-- Colors / brushes --> <SolidColorBrush x:Key="ShellBackgroundBrush" Color="#E7F0FB" />
-        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFFFF" />
-        <SolidColorBrush x:Key="HeaderForegroundBrush" Color="#222222" />
-        <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6F6F6F" />
-        <SolidColorBrush x:Key="ResultTextBrush" Color="#222222" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" /> <!-- Top-level layout margin -->
-        <Thickness x:Key="PageMargin">32</Thickness> <!-- Card style (row container) -->
-        <Style x:Key="FormulaCardStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="14" />
-            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
-            <Setter Property="Padding" Value="16" /> <Setter Property="Margin" Value="0,0,0,12" />
-            <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="#33000000" BlurRadius="12" ShadowDepth="2" Opacity="0.4" />
-                </Setter.Value>
-            </Setter>
-        </Style> <!-- Text styles --> <Style x:Key="FormulaNameTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="16" /> <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{StaticResource HeaderForegroundBrush}" />
-        </Style>
-        <Style x:Key="FormulaTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-        </Style>
-        <Style x:Key="CommentsTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-        </Style>
-        <Style x:Key="ResultTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="16" /> <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{StaticResource ResultTextBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style> <!-- Add (+) button --> <Style x:Key="AddButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="32" /> <Setter Property="Height" Value="32" />
-            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-            <Setter Property="Foreground" Value="White" /> <Setter Property="FontSize" Value="18" />
-            <Setter Property="FontWeight" Value="Bold" /> <Setter Property="Content" Value="+" />
-            <Setter Property="BorderBrush" Value="Transparent" /> <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="16">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <DropShadowEffect x:Key="PanelShadowEffect"
-                          Color="#33000000"
-                          BlurRadius="16"
-                          ShadowDepth="2"
-                          Opacity="0.3" />
         <!-- DataTemplate for each row -->
-        <DataTemplate x:Key="FormulaRowTemplate" DataType="viewModels:WorkCellViewModel">
-            <Border Style="{StaticResource FormulaCardStyle}">
-                <Grid MinWidth="300">
-                    <Grid.ColumnDefinitions>
-                        <!-- Left: Name + Formula + Comments -->
-                        <ColumnDefinition Width="*" />
-                        <!-- Right: Result -->
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" Orientation="Vertical" Margin="0,0,16,0">
-                        <TextBlock Text="{Binding Name}" Style="{StaticResource FormulaNameTextStyle}" />
-                        <TextBlock Text="{Binding Formula}" Margin="0,4,0,0" Style="{StaticResource FormulaTextStyle}" />
-                        <TextBlock Text="{Binding Comments}" Margin="0,6,0,0"
-                                   Style="{StaticResource CommentsTextStyle}" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding Result}" Style="{StaticResource ResultTextStyle}" />
-                </Grid>
-            </Border>
-        </DataTemplate>
+        
         <Storyboard x:Key="SlideInStoryboard">
             <DoubleAnimation Storyboard.TargetName="PanelTransform" Storyboard.TargetProperty="X" From="360" To="0"
                              Duration="0:0:0.3" AccelerationRatio="0.2" DecelerationRatio="0.8" />
@@ -133,11 +58,16 @@
             />
         </DockPanel>
         <!-- List of formulas -->
-            <ListView Grid.Row="1" Grid.Column="0"  ItemTemplate="{StaticResource FormulaRowTemplate}"
+            <ListView Grid.Row="1" Grid.Column="0" 
                       ItemsSource="{Binding Cells}"
                       SelectedItem="{Binding SelectedFormula, Mode=TwoWay}"
                       Margin="{StaticResource PageMargin}"
                       ScrollViewer.VerticalScrollBarVisibility="Auto" d:ItemsSource="{d:SampleData ItemCount=5}">
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="viewModels:WorkCellViewModel">
+                    <local:WorkCellView></local:WorkCellView>
+                </DataTemplate>
+            </ListView.ItemTemplate>
                 <!-- <ItemsControl.ItemsSource> -->
                 <!--     <x:Array Type="{x:Type viewModels:WorkCellViewModel}" -->
                 <!--              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"> -->

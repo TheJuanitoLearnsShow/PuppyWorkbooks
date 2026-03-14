@@ -9,36 +9,21 @@
                                 xmlns:viewModels="clr-namespace:PuppyWorkbooks.ViewModels;assembly=PuppyWorkbooks.ViewModels"
                                 mc:Ignorable="d"
                                 d:DesignHeight="300" d:DesignWidth="700">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1*"></ColumnDefinition>
-            <ColumnDefinition Width="3*"></ColumnDefinition>
-            <!-- <ColumnDefinition Width="1*"></ColumnDefinition>  -->
-            <ColumnDefinition Width="2*"></ColumnDefinition>
-            <!-- <ColumnDefinition Width="1*"></ColumnDefinition> -->
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
-        </Grid.RowDefinitions>
-        <TextBlock Margin="6" HorizontalAlignment="Right">Formula Name</TextBlock>
-        <TextBox Margin="6" Grid.Row="0" Grid.Column="1" x:Name="Name"></TextBox>
-        <TextBlock Margin="6" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right">Formula</TextBlock>
-        <TextBox Margin="6" Grid.Row="1" Grid.Column="1"  x:Name="Formula" HorizontalAlignment="Stretch"
-                 AcceptsReturn="True" VerticalScrollBarVisibility="Auto"></TextBox>
-        <!-- <Button Margin="6" Grid.Row="0" Grid.Column="4" x:Name="EditFormulaBtn" Content="..." Width="25" /> -->
-        
-        <TextBlock Margin="6" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center">Comments</TextBlock>
-        <TextBox Margin="4" Grid.Row="1" Grid.RowSpan="2" Grid.Column="2" x:Name="Comments"
-                 AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
-        </TextBox>
-        
-        <TextBlock Margin="6" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right">Result</TextBlock>
-        <TextBox IsReadOnly="True" Margin="6" Grid.Row="2" Grid.Column="1" x:Name="Result"
-                 AcceptsReturn="True" VerticalScrollBarVisibility="Auto"></TextBox>
-        <Button Grid.Column="0" Grid.Row="3" Margin="6" x:Name="ExecuteBtn">Execute</Button>
-    </Grid>
+    <Border Style="{StaticResource FormulaCardStyle}">
+        <Grid MinWidth="300">
+            <Grid.ColumnDefinitions>
+                <!-- Left: Name + Formula + Comments -->
+                <ColumnDefinition Width="*" />
+                <!-- Right: Result -->
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Vertical" Margin="0,0,16,0">
+                <TextBlock x:Name="Name" Style="{StaticResource FormulaNameTextStyle}" />
+                <TextBlock x:Name="Formula" Margin="0,4,0,0" Style="{StaticResource FormulaTextStyle}" />
+                <TextBlock x:Name="Comments" Margin="0,6,0,0"
+                       Style="{StaticResource CommentsTextStyle}" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" x:Name="Result" Style="{StaticResource ResultTextStyle}" />
+        </Grid>
+    </Border>
 </reactiveUi:ReactiveUserControl>

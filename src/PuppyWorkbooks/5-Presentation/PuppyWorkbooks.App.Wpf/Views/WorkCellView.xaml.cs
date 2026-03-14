@@ -22,9 +22,9 @@ public partial class WorkCellView : ReactiveUserControl<WorkCellViewModel>
                 .DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.Result, v => v.Result)
                 .DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.ExecuteCommand, 
-                    v => v.ExecuteBtn)
-                .DisposeWith(disposables);
+            //this.BindCommand(ViewModel, vm => vm.ExecuteCommand, 
+            //        v => v.ExecuteBtn)
+            //    .DisposeWith(disposables);
         });
     }
 }
