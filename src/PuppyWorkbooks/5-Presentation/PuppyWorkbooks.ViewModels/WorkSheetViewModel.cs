@@ -43,8 +43,7 @@ public partial class WorkSheetViewModel : ReactiveObject
         Cells.Clear();
         foreach (var cell in model.Cells)
         {
-            var cellViewModel = new WorkCellViewModel();
-            cellViewModel.FromModel(cell);
+            var cellViewModel = new WorkCellViewModel(cell.Id, cell.Name, cell.Formula, cell.Comments, this);
             Cells.Add(cellViewModel);
         }
     }
@@ -76,13 +75,7 @@ public partial class WorkSheetViewModel : ReactiveObject
 
     private void AddCell()
     {
-        var newCell = new WorkCellViewModel
-        {
-            Id = Cells.Count,
-            Name = $"Formula{Cells.Count + 1}",
-            Formula = string.Empty,
-            Result = string.Empty
-        };
+        var newCell = new WorkCellViewModel(Cells.Count, $"Formula{Cells.Count + 1}", string.Empty, string.Empty, this);
         Cells.Add(newCell);
     }
     
