@@ -9,7 +9,7 @@ public partial class FloatingDocumentForm : Form
     public FloatingDocumentForm(FormulaEditorControl editor)
     {
         Editor = editor;
-        Text = editor.txtName.Text;
+        Text = editor.Name;
         Width = 500;
         Height = 600;
 

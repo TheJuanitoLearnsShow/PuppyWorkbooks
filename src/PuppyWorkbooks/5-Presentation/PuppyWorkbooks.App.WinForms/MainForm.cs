@@ -69,7 +69,7 @@ public partial class MainForm : Form
         floatForm.Controls.Remove(editor);
         floatForm.Hide();
 
-        var tab = new TabPage(editor.txtName.Text);
+        var tab = new TabPage(editor.Name);
         tab.Controls.Add(editor);
         editor.Dock = DockStyle.Fill;
 
@@ -107,7 +107,7 @@ public partial class MainForm : Form
         if (dlg.ShowDialog() == DialogResult.OK)
         {
             var json = File.ReadAllText(dlg.FileName);
-            var doc = JsonSerializer.Deserialize<FormulaDocument>(json);
+            var doc = JsonSerializer.Deserialize<FormulaEntry>(json);
 
             var editor = new FormulaEditorControl();
             editor.LoadDocument(doc);

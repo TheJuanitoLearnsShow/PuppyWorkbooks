@@ -10,19 +10,19 @@ public partial class FormulaEditorControl : UserControl
         Font = new Font("Segoe UI", 10);
     }
 
-    public FormulaDocument ToDocument() =>
-        new FormulaDocument
+    public FormulaEntry ToDocument() =>
+        new FormulaEntry
         {
             Name = txtName.Text,
-            Formula = txtFormula.Text,
+            Expression = txtFormula.Text,
             Comments = txtComments.Text,
             Result = txtResult.Text
         };
 
-    public void LoadDocument(FormulaDocument doc)
+    public void LoadDocument(FormulaEntry doc)
     {
         txtName.Text = doc.Name;
-        txtFormula.Text = doc.Formula;
+        txtFormula.Text = doc.Expression;
         txtComments.Text = doc.Comments;
         txtResult.Text = doc.Result;
     }
@@ -32,4 +32,29 @@ public partial class FormulaEditorControl : UserControl
         RequestClose?.Invoke();
     }
 
+    private async void RunAllFormulas()
+    {
+        var workbook = ToModel();
+        var interpreter = new WorkbookInterpreter();
+        await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true))
+        {
+            formulas[result.CellId].Result = result.DisplayOutput;
+        }
+    }
+    public PuppyWorkbooks.WorkSheet ToModel()
+    {
+        var model = new PuppyWorkbooks.WorkSheet();
+        foreach (var cellViewModel in formulas)
+        {
+            model.Cells.Add(cellViewModel.ToModel());
+        }
+        return model;
+    }
+    private void ReIndexCells()
+    {
+        for (var i = 0; i < formulas.Count; i++)
+        {
+            formulas[i].Id = i;
+        }
+    }
 }
