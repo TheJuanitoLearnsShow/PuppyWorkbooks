@@ -4,6 +4,7 @@ namespace PuppyWorkbooks.App.WinForms;
 
 partial class FormulaEditorControl
 {
+    private Panel editorPanel;
     /// <summary> 
     /// Required designer variable.
     /// </summary>
@@ -32,10 +33,13 @@ partial class FormulaEditorControl
     public void InitializeComponent()
     {
         Text = "My Formulas";
-        Font = new Font("Segoe UI", 10);
         Width = 1000;
         Height = 600;
 
+        Font = new Font("Segoe UI", 10);
+        BackColor = Color.FromArgb(245, 245, 248); // Fluent neutral background
+        Dock = DockStyle.Fill;
+        
         InitializeLayout();
         InitializeData();
     }
@@ -46,7 +50,7 @@ partial class FormulaEditorControl
         {
             Dock = DockStyle.Fill,
             SplitterDistance = 600,
-            BackColor = Color.WhiteSmoke
+            BackColor = Color.Transparent
         };
         Controls.Add(splitContainer);
 
@@ -57,17 +61,24 @@ partial class FormulaEditorControl
             Dock = DockStyle.Fill,
             AutoGenerateColumns = false,
             ReadOnly = true,
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            BackgroundColor = Color.White
+            BorderStyle = BorderStyle.None,
+            BackgroundColor = Color.FromArgb(250, 250, 252),
+            GridColor = Color.FromArgb(230, 230, 235),
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect
         };
+        dgvFormulas.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+        dgvFormulas.DefaultCellStyle.BackColor = Color.White;
+        dgvFormulas.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 120, 215);
+        dgvFormulas.DefaultCellStyle.SelectionForeColor = Color.White;
+        
         dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Name", DataPropertyName = "Name", Width = 150 });
         dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Formula", DataPropertyName = "Expression", Width = 200 });
         dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Comments", DataPropertyName = "Comments", Width = 150 });
         dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Result", DataPropertyName = "Result", Width = 100 });
         dgvFormulas.SelectionChanged += DgvFormulas_SelectionChanged;
         
-        var btnAdd = new Button { Text = "Add Formula", Dock = DockStyle.Bottom };
-        var btnRunAll = new Button { Text = "Run All", Dock = DockStyle.Bottom };
+        var btnAdd = CreateFluentButton("Add Formula", Color.FromArgb(0, 120, 215));
+        var btnRunAll = CreateFluentButton("Run All", Color.FromArgb(0, 120, 215));
         btnAdd.Click += (s, e) => formulas.Add(new FormulaEntry() { Id = formulas.Count });
         btnRunAll.Click += (s, e) => RunAllFormulas();
         leftPanel.Controls.Add(btnAdd);
@@ -75,50 +86,95 @@ partial class FormulaEditorControl
         leftPanel.Controls.Add(btnRunAll);
 
         // Right panel: editor
-        var editorPanel = new TableLayoutPanel
+        editorPanel = new Panel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(20),
-            ColumnCount = 2,
-            RowCount = 5,
-            AutoSize = true
+            BackColor = Color.FromArgb(255, 255, 255, 255)
         };
         splitContainer.Panel2.Controls.Add(editorPanel);
+        var lblTitle = new Label
+        {
+            Text = "Edit Formula",
+            Font = new Font("Segoe UI Semibold", 12),
+            Dock = DockStyle.Top,
+            Height = 30
+        };
+        editorPanel.Controls.Add(lblTitle);
 
-        editorPanel.Controls.Add(new Label { Text = "Formula Name:", AutoSize = true }, 0, 0);
-        txtName = new TextBox { Dock = DockStyle.Fill };
-        editorPanel.Controls.Add(txtName, 1, 0);
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            ColumnCount = 2,
+            RowCount = 4,
+            AutoSize = true,
+            Padding = new Padding(0, 10, 0, 10)
+        };
+        editorPanel.Controls.Add(layout);
 
-        editorPanel.Controls.Add(new Label { Text = "Formula:", AutoSize = true }, 0, 1);
-        txtFormula = new TextBox { Dock = DockStyle.Fill };
-        editorPanel.Controls.Add(txtFormula, 1, 1);
+        layout.Controls.Add(new Label { Text = "Name:", AutoSize = true }, 0, 0);
+        txtName = CreateFluentTextBox();
+        layout.Controls.Add(txtName, 1, 0);
 
-        editorPanel.Controls.Add(new Label { Text = "Comments:", AutoSize = true }, 0, 2);
-        txtComments = new TextBox { Dock = DockStyle.Fill, Multiline = true, Height = 80 };
-        editorPanel.Controls.Add(txtComments, 1, 2);
+        layout.Controls.Add(new Label { Text = "Formula:", AutoSize = true }, 0, 1);
+        txtFormula = CreateFluentTextBox();
+        layout.Controls.Add(txtFormula, 1, 1);
 
-        editorPanel.Controls.Add(new Label { Text = "Result:", AutoSize = true }, 0, 3);
-        txtResult = new TextBox { Dock = DockStyle.Fill };
-        editorPanel.Controls.Add(txtResult, 1, 3);
+        layout.Controls.Add(new Label { Text = "Comments:", AutoSize = true }, 0, 2);
+        txtComments = CreateFluentTextBox(multiline: true);
+        layout.Controls.Add(txtComments, 1, 2);
 
-        var buttonPanel = new FlowLayoutPanel { Dock = DockStyle.Bottom, FlowDirection = FlowDirection.RightToLeft };
-        btnSave = new Button { Text = "Save", BackColor = Color.FromArgb(0, 120, 215), ForeColor = Color.White };
-        btnCancel = new Button { Text = "Cancel" };
+        layout.Controls.Add(new Label { Text = "Result:", AutoSize = true }, 0, 3);
+        txtResult = CreateFluentTextBox();
+        layout.Controls.Add(txtResult, 1, 3);
+
+        var buttonPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            FlowDirection = FlowDirection.RightToLeft,
+            Padding = new Padding(0, 10, 0, 0)
+        };
+        btnSave = CreateFluentButton("Save", Color.FromArgb(0, 120, 215));
+        btnCancel = CreateFluentButton("Cancel", Color.FromArgb(200, 200, 200));
+        
         btnSave.Click += BtnSave_Click;
         btnCancel.Click += BtnCancel_Click;
         buttonPanel.Controls.Add(btnSave);
         buttonPanel.Controls.Add(btnCancel);
         splitContainer.Panel2.Controls.Add(buttonPanel);
     }
+    private TextBox CreateFluentTextBox(bool multiline = false)
+    {
+        return new TextBox
+        {
+            Dock = DockStyle.Fill,
+            BorderStyle = BorderStyle.FixedSingle,
+            Multiline = multiline,
+            BackColor = Color.FromArgb(250, 250, 252),
+            ForeColor = Color.Black
+        };
+    }
 
+    private Button CreateFluentButton(string text, Color color)
+    {
+        return new Button
+        {
+            Text = text,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = color,
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10),
+            Width = 100,
+            Height = 32
+        };
+    }
     private void InitializeData()
     {
         formulas = new BindingList<FormulaEntry>
         {
-            new FormulaEntry { Name = "Compound Interest", Expression = "A = P(1 + r/n)^nt", Comments = "Interest calculation", Result = "$15,932.48", Id = 0 },
-            new FormulaEntry { Name = "Quadratic Equation", Expression = "x = (-b ± √(b² - 4ac)) / 2a", Comments = "Finding roots", Result = "x₁ = 2, x₂ = -3", Id = 1 },
-            new FormulaEntry { Name = "BMI Calculation", Expression = "BMI = weight / height²", Comments = "Body mass index", Result = "24.8", Id = 2 },
-            new FormulaEntry { Name = "Velocity Formula", Expression = "v = d / t", Comments = "Speed calculation", Result = "20 m/s", Id = 3 }
+            new FormulaEntry { Name = "Velocity", Expression = "20", Comments = "Initial velocity", Result = "", Id = 0 },
+            new FormulaEntry { Name = "Mass", Expression = "2", Comments = "Mass", Result = "", Id = 1 },
+            new FormulaEntry { Name = "KineticEnergy", Expression = "(1/2) * Mass * Velocity * Velocity", Comments = "", Result = "", Id = 2 }
         };
         dgvFormulas.DataSource = formulas;
     }

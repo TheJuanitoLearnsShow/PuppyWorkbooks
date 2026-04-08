@@ -7,7 +7,7 @@ public partial class FormulaEditorControl : UserControl
     public FormulaEditorControl()
     {
         InitializeComponent();
-        Font = new Font("Segoe UI", 10);
+        
     }
 
     public FormulaEntry ToDocument() =>
@@ -32,7 +32,7 @@ public partial class FormulaEditorControl : UserControl
         RequestClose?.Invoke();
     }
 
-    private async void RunAllFormulas()
+    private async Task RunAllFormulas()
     {
         var workbook = ToModel();
         var interpreter = new WorkbookInterpreter();
@@ -40,6 +40,7 @@ public partial class FormulaEditorControl : UserControl
         {
             formulas[result.CellId].Result = result.DisplayOutput;
         }
+        dgvFormulas.Refresh();
     }
     public PuppyWorkbooks.WorkSheet ToModel()
     {
