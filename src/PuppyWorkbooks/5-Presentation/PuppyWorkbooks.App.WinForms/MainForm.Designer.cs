@@ -25,6 +25,9 @@ partial class MainForm
     private MenuStrip menuStrip1;
     private ToolStripMenuItem fileToolStripMenuItem;
     private ToolStripMenuItem newDocumentToolStripMenuItem;
+    private ToolStripMenuItem saveDocumentToolStripMenuItem;
+    private ToolStripMenuItem openDocumentToolStripMenuItem;
+    
     private TabControl tabControl1;
 
     private void InitializeComponent()
@@ -38,14 +41,24 @@ partial class MainForm
             fileToolStripMenuItem
         });
 
-        fileToolStripMenuItem.Text = "File";
-        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] {
-            newDocumentToolStripMenuItem
-        });
 
         newDocumentToolStripMenuItem.Text = "New Document";
         newDocumentToolStripMenuItem.Click += new EventHandler(newDocumentToolStripMenuItem_Click);
 
+        saveDocumentToolStripMenuItem = new ToolStripMenuItem();
+        saveDocumentToolStripMenuItem.Text = "Save Document";
+        saveDocumentToolStripMenuItem.Click += new EventHandler(saveDocumentToolStripMenuItem_Click);
+        
+        openDocumentToolStripMenuItem = new ToolStripMenuItem();
+        openDocumentToolStripMenuItem.Text = "Open Document";
+        openDocumentToolStripMenuItem.Click += new EventHandler(openToolStripMenuItem_Click);
+        
+        fileToolStripMenuItem.Text = "File";
+        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] {
+            newDocumentToolStripMenuItem,
+            openDocumentToolStripMenuItem,
+            saveDocumentToolStripMenuItem
+        });
         tabControl1.Dock = DockStyle.Fill;
 
         Controls.Add(tabControl1);

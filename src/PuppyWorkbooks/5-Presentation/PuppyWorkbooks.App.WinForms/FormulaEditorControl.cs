@@ -1,4 +1,6 @@
-﻿namespace PuppyWorkbooks.App.WinForms;
+﻿using DynamicData;
+
+namespace PuppyWorkbooks.App.WinForms;
 
 public partial class FormulaEditorControl : UserControl
 {
@@ -8,23 +10,6 @@ public partial class FormulaEditorControl : UserControl
     {
         InitializeComponent();
         
-    }
-
-    public FormulaEntry ToDocument() =>
-        new FormulaEntry
-        {
-            Name = txtName.Text,
-            Expression = txtFormula.Text,
-            Comments = txtComments.Text,
-            Result = txtResult.Text
-        };
-
-    public void LoadDocument(FormulaEntry doc)
-    {
-        txtName.Text = doc.Name;
-        txtFormula.Text = doc.Expression;
-        txtComments.Text = doc.Comments;
-        txtResult.Text = doc.Result;
     }
 
     private void btnRemove_Click(object sender, EventArgs e)
@@ -51,11 +36,29 @@ public partial class FormulaEditorControl : UserControl
         }
         return model;
     }
+    public void FromModel(WorkSheet model)
+    {
+        formulas.Clear();
+        foreach (var cell in model.Cells)
+        {
+            AddFormula(cell);
+        }
+    }
     private void ReIndexCells()
     {
         for (var i = 0; i < formulas.Count; i++)
         {
             formulas[i].Id = i;
         }
+    }
+
+    private void AddBlankFormula()
+    {
+        formulas.Add(new FormulaEntry() { Id = formulas.Count });
+    }
+
+    private void AddFormula(WorkCell cell)
+    {
+        formulas.Add(new FormulaEntry() { Id = cell.Id, Comments = cell.Comments, Expression = cell.Formula, Name = cell.Name});
     }
 }

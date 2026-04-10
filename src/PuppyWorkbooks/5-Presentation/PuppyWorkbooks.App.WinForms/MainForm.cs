@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using PuppyWorkbooks.Serialization;
 
 namespace PuppyWorkbooks.App.WinForms;
 
@@ -6,6 +7,8 @@ public partial class MainForm : Form
 {
     private Dictionary<TabPage, FormulaEditorControl> editors = new();
     private Dictionary<FormulaEditorControl, FloatingDocumentForm> floating = new();
+    private readonly WorkSheetSerializer _workSheetSerializer = new ();
+    private const string FileFilter = "Formula Files (*.xml)|*.xml";
 
     public MainForm()
     {
@@ -18,20 +21,6 @@ public partial class MainForm : Form
         CreateNewDocument();
     }
 
-    private void NewDocument()
-    {
-        var editor = new FormulaEditorControl();
-        editor.RequestClose += () => CloseDocument(editor);
-
-        var tab = new TabPage("New Formula");
-        tab.Controls.Add(editor);
-        editor.Dock = DockStyle.Fill;
-
-        editors[tab] = editor;
-
-        tabControl1.TabPages.Add(tab);
-        tabControl1.SelectedTab = tab;
-    }
     private void tabControl1_MouseUp(object sender, MouseEventArgs e)
     {
         if (e.Button == MouseButtons.Right)
@@ -80,7 +69,7 @@ public partial class MainForm : Form
         tabControl1.SelectedTab = tab;
     }
 
-    private void CreateNewDocument()
+    private void CreateNewDocumentOld()
     {
         var editor = new FormulaEditorControl();
         editor.Dock = DockStyle.Fill;
@@ -98,19 +87,33 @@ public partial class MainForm : Form
         tabControl1.TabPages.Add(tab);
         tabControl1.SelectedTab = tab;
     }
-    
+
+    private void CreateNewDocument()
+    {
+        var editor = new FormulaEditorControl();
+        editor.RequestClose += () => CloseDocument(editor);
+
+        var tab = new TabPage("New Formula");
+        tab.Controls.Add(editor);
+        editor.Dock = DockStyle.Fill;
+
+        editors[tab] = editor;
+
+        tabControl1.TabPages.Add(tab);
+        tabControl1.SelectedTab = tab;
+    }
+
     private void openToolStripMenuItem_Click(object sender, EventArgs e)
     {
         using var dlg = new OpenFileDialog();
-        dlg.Filter = "Formula Files (*.json)|*.json";
+        dlg.Filter = FileFilter;
 
         if (dlg.ShowDialog() == DialogResult.OK)
         {
-            var json = File.ReadAllText(dlg.FileName);
-            var doc = JsonSerializer.Deserialize<FormulaEntry>(json);
+            var doc = _workSheetSerializer.DeserializeFromXmlFile(dlg.FileName);
 
             var editor = new FormulaEditorControl();
-            editor.LoadDocument(doc);
+            editor.FromModel(doc);
 
             var tab = new TabPage(doc.Name);
             tab.Controls.Add(editor);
@@ -121,21 +124,20 @@ public partial class MainForm : Form
             tabControl1.SelectedTab = tab;
         }
     }
-    private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+    private void saveDocumentToolStripMenuItem_Click(object sender, EventArgs e)
     {
         if (tabControl1.SelectedTab == null) return;
 
         var editor = editors[tabControl1.SelectedTab];
-        var doc = editor.ToDocument();
+        var doc = editor.ToModel();
 
         using var dlg = new SaveFileDialog();
-        dlg.Filter = "Formula Files (*.json)|*.json";
-        dlg.FileName = doc.Name + ".json";
+        dlg.Filter = FileFilter;
+        dlg.FileName = doc.Name + ".xml";
 
         if (dlg.ShowDialog() == DialogResult.OK)
         {
-            var json = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(dlg.FileName, json);
+            _workSheetSerializer.SerializeToXmlFile(dlg.FileName, doc);
         }
     }
     private void CloseDocument(FormulaEditorControl editor)
