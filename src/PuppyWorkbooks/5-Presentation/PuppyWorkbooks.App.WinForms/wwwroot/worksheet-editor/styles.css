@@ -4,9 +4,38 @@ body {
     background: var(--neutral-layer-1);
 }
 
+.top-bar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 24px;
+    background: white;
+    border-bottom: 1px solid var(--neutral-stroke-layer-rest);
+}
+
+.worksheet-name {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 240px;
+}
+
+.worksheet-name label {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.top-bar-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .app-container {
     display: flex;
-    height: 100vh;
+    height: calc(100vh - 72px);
 }
 
 /* LIST */

@@ -36,6 +36,9 @@ const formulaEditorDiv = document.getElementById("formulaEditor");
 const commentsField = document.getElementById("commentsField");
 const resultField = document.getElementById("resultField");
 const removeBtn = document.getElementById("removeBtn");
+const worksheetNameField = document.getElementById("worksheetNameField");
+const runSelectedBtn = document.getElementById("runSelectedBtn");
+const runAllBtn = document.getElementById("runAllBtn");
 
 let monacoEditor = null;
 
@@ -259,7 +262,102 @@ removeBtn.onclick = () => {
     }
 };
 
+function sendToHost(message) {
+    if (window.chrome && chrome.webview && chrome.webview.postMessage) {
+        chrome.webview.postMessage(message);
+    } else {
+        console.warn('Host postMessage unavailable:', message);
+    }
+}
+
+runSelectedBtn.onclick = () => {
+    if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= formulas.length) {
+        console.warn('No selected formula to run up to.');
+        return;
+    }
+
+    sendToHost({
+        type: 'runUpToSelected',
+        worksheetName: worksheetNameField.value || '',
+        selectedIndex,
+        cells: formulas.map(({ id, name, formula, comments }) => ({
+            Id: id,
+            Name: name,
+            Formula: formula,
+            Comments: comments
+        }))
+    });
+};
+
+runAllBtn.onclick = () => {
+    sendToHost({
+        type: 'runAll',
+        worksheetName: worksheetNameField.value || '',
+        cells: formulas.map(({ id, name, formula, comments }) => ({
+            Id: id,
+            Name: name,
+            Formula: formula,
+            Comments: comments
+        }))
+    });
+};
+
 renderList();
+
+function loadWorksheetFromHost(data) {
+    const worksheetName = data.Name || data.name || '';
+    worksheetNameField.value = worksheetName;
+
+    const cells = data.Cells || data.cells || data.formulas || [];
+    if (!Array.isArray(cells)) {
+        console.warn('Received worksheet payload with no cells array:', data);
+        return;
+    }
+
+    formulas.length = 0;
+    cells.forEach((cell, index) => {
+        formulas.push({
+            id: cell.Id ?? cell.id ?? index,
+            name: cell.Name || cell.name || '',
+            formula: cell.Formula || cell.formula || '',
+            comments: cell.Comments || cell.comments || '',
+            result: cell.Result || cell.result || ''
+        });
+    });
+
+    selectedIndex = null;
+    editPanel.classList.remove("visible");
+    renderList();
+}
+
+function applyHostResult(msg) {
+    const resultValue = msg.result ?? msg.Result;
+    const cellId = msg.cellId ?? msg.CellId ?? msg.Id ?? msg.id;
+    const cellIndex = msg.index ?? msg.Index;
+
+    if (resultValue === undefined) {
+        console.warn('Host result message missing result value:', msg);
+        return;
+    }
+
+    let targetIndex = -1;
+    if (cellId !== undefined) {
+        targetIndex = formulas.findIndex(f => f.id == cellId);
+    }
+    if (targetIndex === -1 && cellIndex !== undefined && formulas[cellIndex]) {
+        targetIndex = cellIndex;
+    }
+    if (targetIndex === -1) {
+        console.warn('Could not map host result to a formula cell:', msg);
+        return;
+    }
+
+    formulas[targetIndex].result = resultValue;
+    if (selectedIndex === targetIndex) {
+        resultField.value = resultValue;
+    }
+    renderList();
+}
 
 function sendToDotNet() {
     const payload = JSON.stringify({
@@ -270,6 +368,32 @@ function sendToDotNet() {
 }
 
 chrome.webview.addEventListener("message", event => {
-    const msg = event.data;
-    document.getElementById("log").textContent += "\nFrom .NET: " + msg;
+    let msg = event.data;
+    if (typeof msg === 'string') {
+        try {
+            msg = JSON.parse(msg);
+        } catch (err) {
+            console.warn('Received non-JSON string from host:', msg);
+        }
+    }
+
+    if (msg && (msg.Name || msg.name) && (Array.isArray(msg.Cells) || Array.isArray(msg.cells) || Array.isArray(msg.formulas))) {
+        loadWorksheetFromHost(msg);
+        return;
+    }
+
+    if (msg && msg.type === 'worksheet' && msg.payload) {
+        loadWorksheetFromHost(msg.payload);
+        return;
+    }
+
+    if (msg && (msg.type === 'cellResult' || msg.type === 'formulaResult' || msg.type === 'result')) {
+        applyHostResult(msg);
+        return;
+    }
+
+    const logElement = document.getElementById("log");
+    if (logElement) {
+        logElement.textContent += "\nFrom .NET: " + JSON.stringify(msg);
+    }
 });
