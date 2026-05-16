@@ -140,32 +140,48 @@ partial class FormulaEditorControl
             Padding = new Padding(0, 10, 0, 0),
             BackColor = Color.FromArgb(255, 255, 255, 255)
         };
-        dgvFormulas = new DataGridView
+        BuildFormulasGrid();
+// -------------------------------
+        // NEW: Worksheet name header panel
+        // -------------------------------
+        var worksheetHeader = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
-            AutoGenerateColumns = false,
-            ReadOnly = true,
-            BorderStyle = BorderStyle.None,
-            BackgroundColor = Color.FromArgb(250, 250, 252),
-            GridColor = Color.FromArgb(230, 230, 235),
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            Dock = DockStyle.Top,
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true,
+            Padding = new Padding(10, 0, 10, 0),
+            WrapContents = false
         };
-        dgvFormulas.DefaultCellStyle.Font = new Font("Segoe UI", 10);
-        dgvFormulas.DefaultCellStyle.BackColor = Color.White;
-        dgvFormulas.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 120, 215);
-        dgvFormulas.DefaultCellStyle.SelectionForeColor = Color.White;
-        
-        dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Name", DataPropertyName = "Name", Width = 150 });
-        dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Formula", DataPropertyName = "Expression", Width = 200 });
-        dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Comments", DataPropertyName = "Comments", Width = 150 });
-        dgvFormulas.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Result", DataPropertyName = "Result", Width = 100 });
-        dgvFormulas.SelectionChanged += DgvFormulas_SelectionChanged;
-        
+
+        lblWorksheetName = new Label
+        {
+            Text = "Worksheet Name:",
+            AutoSize = true,
+            Font = new Font("Segoe UI", 10),
+            Margin = new Padding(0, 6, 5, 0)
+        };
+
+        txtWorksheetName = new TextBox
+        {
+            Width = 200,
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Color.FromArgb(250, 250, 252),
+            ForeColor = Color.Black,
+            Font = new Font("Segoe UI", 10)
+        };
+
+        worksheetHeader.Controls.Add(lblWorksheetName);
+        worksheetHeader.Controls.Add(txtWorksheetName);
+
+        // -------------------------------
+        // Existing button panel (right aligned)
+        // -------------------------------
         var buttonPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             FlowDirection = FlowDirection.RightToLeft,
-            Padding = new Padding(0, 10, 0, 0)
+            Padding = new Padding(0, 10, 0, 0),
+            AutoSize = true
         };
         var btnAdd = CreateFluentButton("Add Formula", Color.FromArgb(0, 120, 215));
         var btnRunAll = CreateFluentButton("Run All", Color.FromArgb(0, 120, 215));
@@ -174,11 +190,20 @@ partial class FormulaEditorControl
         buttonPanel.Controls.Add(btnAdd);
         buttonPanel.Controls.Add(btnRunAll);
         
+        // -------------------------------
+        // Add controls to left panel
+        // -------------------------------
+        leftPanel.Controls.Add(worksheetHeader);
+        leftPanel.Controls.Add(buttonPanel);
         leftPanel.Controls.Add(dgvFormulas);
+        
+        leftPanel.Controls.Add(dgvFormulas);
+        
+        splitContainer.Panel1.Controls.Add(leftPanel);
         //leftPanel.Controls.Add(buttonPanel);
         //splitContainer.Panel1.Controls.Add(leftPanel)
-        splitContainer.Panel1.Controls.Add(dgvFormulas);
-        splitContainer.Panel1.Controls.Add(buttonPanel);
+        // splitContainer.Panel1.Controls.Add(dgvFormulas);
+        // splitContainer.Panel1.Controls.Add(buttonPanel);
     }
 
     private void BuildEditorPanel()
