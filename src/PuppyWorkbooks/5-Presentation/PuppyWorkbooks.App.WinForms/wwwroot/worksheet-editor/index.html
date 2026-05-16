@@ -32,7 +32,7 @@
         <fluent-text-field id="nameField"></fluent-text-field>
 
         <label>Formula</label>
-        <fluent-text-field id="formulaField"></fluent-text-field>
+        <div id="formulaEditor" class="code-editor" aria-label="Formula editor"></div>
 
         <label>Comments</label>
         <fluent-text-area id="commentsField"></fluent-text-area>
@@ -47,6 +47,12 @@
 
 </div>
 
+<!-- Monaco loader (for the in-browser code editor) -->
+<script src="https://unpkg.com/monaco-editor@0.41.0/min/vs/loader.js"></script>
 <script src="app.js"></script>
+
+
+    <button onclick="sendToDotNet()">Send to .NET</button>
+    <pre id="log"></pre>
 </body>
 </html>

@@ -41,7 +41,9 @@ fluent-card:hover {
 
 /* EDIT PANEL */
 .edit-panel {
-    width: 360px;
+    width: 50%;
+    max-width: 50vw;
+    min-width: 320px;
     background: var(--neutral-layer-1);
     border-left: 1px solid var(--neutral-stroke-layer-rest);
     padding: 24px;
@@ -66,6 +68,40 @@ label {
     margin-top: 12px;
     margin-bottom: 4px;
     display: block;
+}
+
+.code-editor {
+    height: 160px;
+    border: 1px solid var(--neutral-stroke-layer-rest);
+    border-radius: 4px;
+    overflow: hidden;
+    background: white;
+}
+
+/* Monaco suggestion widget: ensure visible and limit width so suggestions fit */
+.monaco-editor .suggest-widget,
+.suggest-widget {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 10000 !important;
+    max-width: 280px !important;
+    width: auto !important;
+    box-sizing: border-box;
+}
+
+/* Truncate long suggestion labels/details */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .contents,
+.monaco-editor .suggest-widget .details {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Reduce details pane width so overall widget is narrower */
+.monaco-editor .suggest-widget .details {
+    max-width: 140px;
 }
 
 .remove-btn {

@@ -32,10 +32,146 @@ const editPanel = document.getElementById("editPanel");
 const addBtn = document.getElementById("addBtn");
 
 const nameField = document.getElementById("nameField");
-const formulaField = document.getElementById("formulaField");
+const formulaEditorDiv = document.getElementById("formulaEditor");
 const commentsField = document.getElementById("commentsField");
 const resultField = document.getElementById("resultField");
 const removeBtn = document.getElementById("removeBtn");
+
+let monacoEditor = null;
+
+function initMonaco() {
+    if (typeof require === 'undefined') return;
+    // Configure Monaco loader path if not already configured by the page
+    if (require && require.config) {
+        try {
+            require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.41.0/min/vs' } });
+        } catch (e) {
+            // ignore if already configured
+        }
+    }
+
+    require(['vs/editor/editor.main'], function () {
+        try {
+            // Register a minimal Power Fx language using Monarch tokenizer
+            monaco.languages.register({ id: 'powerfx' });
+
+            monaco.languages.setMonarchTokensProvider('powerfx', {
+                tokenizer: {
+                    root: [
+                        [/\/\/.*$/, 'comment'],
+                        [/\b(true|false)\b/, 'keyword'],
+                        [/\b(If|Then|Else|And|Or|Not|IsBlank|IsError|Sum|Round|Count|Average)\b/, 'keyword'],
+                        [/\b([0-9]+(\.[0-9]+)?)\b/, 'number'],
+                        [/"([^"\\]|\\.)*"/, 'string'],
+                        [/\'([^'\\]|\\.)*\'/, 'string'],
+                        [/[,;:\.\(\)\[\]\{\}]/, 'delimiter'],
+                        [/[-+/*=<>!]+/, 'operator'],
+                        [/[a-zA-Z_][\w\.]*/, 'identifier']
+                    ]
+                }
+            });
+
+            monaco.editor.defineTheme('powerfxTheme', {
+                base: 'vs',
+                inherit: true,
+                rules: [
+                    { token: 'comment', foreground: '6A6A6A' },
+                    { token: 'keyword', foreground: '0000FF', fontStyle: 'bold' },
+                    { token: 'number', foreground: '09885A' },
+                    { token: 'string', foreground: 'A31515' },
+                    { token: 'identifier', foreground: '001080' }
+                ]
+            });
+
+            // Register a simple completion provider for Power Fx keywords and functions
+            (function registerPowerFxCompletions() {
+                const functionsList = [
+                    'If', 'Switch', 'Filter', 'Lookup', 'Patch', 'Collect', 'Remove', 'Update', 'ForAll',
+                    'Sum', 'Average', 'Count', 'Round'
+                ];
+
+                const keywordsList = ['And', 'Or', 'Not', 'IsBlank', 'IsError', 'Then', 'Else', 'true', 'false'];
+
+                const suggestions = [];
+
+                functionsList.forEach(fn => {
+                    suggestions.push({
+                        label: fn,
+                        kind: monaco.languages.CompletionItemKind.Function,
+                        insertText: `${fn}($0)`,
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: `${fn} function`
+                    });
+                });
+
+                keywordsList.forEach(kw => {
+                    suggestions.push({
+                        label: kw,
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: kw,
+                        documentation: `${kw} keyword`
+                    });
+                });
+
+                monaco.languages.registerCompletionItemProvider('powerfx', {
+                    triggerCharacters: ['.', '(', ' '],
+                    provideCompletionItems: function (model, position) {
+                        // Basic prefix filtering
+                        const word = model.getWordUntilPosition(position);
+                        const range = {
+                            startLineNumber: position.lineNumber,
+                            endLineNumber: position.lineNumber,
+                            startColumn: word.startColumn,
+                            endColumn: word.endColumn
+                        };
+
+                        const filtered = suggestions.filter(s => s.label.toLowerCase().startsWith(word.word.toLowerCase()));
+                        // attach range for replacement
+                        filtered.forEach(s => s.range = range);
+
+                        return { suggestions: filtered };
+                    }
+                });
+            })();
+
+            monacoEditor = monaco.editor.create(formulaEditorDiv, {
+                value: '',
+                language: 'powerfx',
+                theme: 'powerfxTheme',
+                minimap: { enabled: false },
+                automaticLayout: true,
+                fontSize: 13
+            });
+        } catch (err) {
+            // Fallback: if theme/theme-colors fail on some environments, create editor with default theme
+            console.error('Monaco initialization failed, falling back to default theme:', err);
+            monacoEditor = monaco.editor.create(formulaEditorDiv, {
+                value: '',
+                language: 'powerfx',
+                theme: 'vs',
+                minimap: { enabled: false },
+                automaticLayout: true,
+                fontSize: 13
+            });
+        }
+
+        // Wire change to update the formulas list
+        monacoEditor.getModel().onDidChangeContent(() => {
+            if (selectedIndex !== null && monacoEditor) {
+                formulas[selectedIndex].formula = monacoEditor.getValue();
+                renderList();
+            }
+        });
+    });
+}
+
+// Initialize Monaco when loader is present
+if (typeof require !== 'undefined') {
+    initMonaco();
+} else {
+    // If require isn't available yet, retry shortly
+    window.addEventListener('load', () => setTimeout(initMonaco, 100));
+}
 
 function renderList() {
     listContainer.innerHTML = "";
@@ -62,9 +198,17 @@ function openEditor(index) {
     const f = formulas[index];
 
     nameField.value = f.name;
-    formulaField.value = f.formula;
     commentsField.value = f.comments;
     resultField.value = f.result;
+
+    // If Monaco editor is ready, set its value; otherwise set placeholder text
+    if (monacoEditor) {
+        monacoEditor.setValue(f.formula || '');
+        monacoEditor.focus();
+    } else {
+        // fallback: show plain text in the container
+        formulaEditorDiv.textContent = f.formula || '';
+    }
 
     editPanel.classList.add("visible");
 }
@@ -84,17 +228,10 @@ addBtn.onclick = () => {
     openEditor(newIndex);
 };
 
-// Auto-sync editor changes back to the list
+// Auto-sync editor changes back to the list for name
 nameField.addEventListener('input', () => {
     if (selectedIndex !== null) {
         formulas[selectedIndex].name = nameField.value;
-        renderList();
-    }
-});
-
-formulaField.addEventListener('input', () => {
-    if (selectedIndex !== null) {
-        formulas[selectedIndex].formula = formulaField.value;
         renderList();
     }
 });
@@ -123,3 +260,16 @@ removeBtn.onclick = () => {
 };
 
 renderList();
+
+function sendToDotNet() {
+    const payload = JSON.stringify({
+        type: "ping",
+        time: new Date().toISOString()
+    });
+    chrome.webview.postMessage(payload);
+}
+
+chrome.webview.addEventListener("message", event => {
+    const msg = event.data;
+    document.getElementById("log").textContent += "\nFrom .NET: " + msg;
+});
