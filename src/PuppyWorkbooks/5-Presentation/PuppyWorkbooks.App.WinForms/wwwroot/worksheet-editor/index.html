@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fluent Formula Editor</title>
+
+<script type="module"
+        src="https://unpkg.com/@fluentui/web-components"></script>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- LEFT: LIST -->
+    <div class="list-container">
+        <div class="list-header">
+            <fluent-button appearance="outline" id="addBtn">Add Formula</fluent-button>
+        </div>
+        <div id="formulaList"></div>
+    </div>
+
+    <!-- RIGHT: EDIT PANEL -->
+    <div class="edit-panel" id="editPanel">
+
+        <h2>Edit Formula</h2>
+
+        <label>Name</label>
+        <fluent-text-field id="nameField"></fluent-text-field>
+
+        <label>Formula</label>
+        <fluent-text-field id="formulaField"></fluent-text-field>
+
+        <label>Comments</label>
+        <fluent-text-area id="commentsField"></fluent-text-area>
+
+        <label>Result</label>
+        <fluent-text-field id="resultField"></fluent-text-field>
+
+        <fluent-button appearance="accent" id="removeBtn" class="remove-btn">
+            Remove
+        </fluent-button>
+    </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
