@@ -61,5 +61,8 @@
         <PackageReference Include="Microsoft.UI.Reactor.Devtools" Version="0.1.0-preview.4" />
         <RuntimeHostConfigurationOption Include="Reactor.DevtoolsSupport" Value="true" Trim="true" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\3-Services\PuppyWorkbooks\PuppyWorkbooks.csproj" />
+    </ItemGroup>
 
 </Project>
