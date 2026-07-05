@@ -2,11 +2,11 @@
 
 public partial class FloatingDocumentForm : Form
 {
-    public FormulaEditorControl Editor { get; }
+    public TabView Editor { get; }
 
     public event Action<FloatingDocumentForm>? RequestReattach;
 
-    public FloatingDocumentForm(FormulaEditorControl editor)
+    public FloatingDocumentForm(TabView editor)
     {
         Editor = editor;
         Text = editor.SheetName;

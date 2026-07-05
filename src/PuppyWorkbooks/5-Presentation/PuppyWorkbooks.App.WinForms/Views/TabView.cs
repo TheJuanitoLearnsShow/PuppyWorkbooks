@@ -1,9 +1,13 @@
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
+using PuppyWorkbooks;
 
 public partial class TabView : UserControl
 {
     private readonly TabViewModel _vm;
+    private WebView2 webView21;
 
+    public string SheetName => _vm.Title;
     public TabView(TabViewModel vm)
     {
         InitializeComponent();

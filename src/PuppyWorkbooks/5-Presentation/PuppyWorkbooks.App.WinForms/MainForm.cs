@@ -5,8 +5,8 @@ namespace PuppyWorkbooks.App.WinForms;
 
 public partial class MainForm : Form
 {
-    private Dictionary<TabPage, FormulaEditorControl> editors = new();
-    private Dictionary<FormulaEditorControl, FloatingDocumentForm> floating = new();
+    private Dictionary<TabPage, TabView> editors = new();
+    private Dictionary<TabView, FloatingDocumentForm> floating = new();
     private readonly WorkSheetSerializer _workSheetSerializer = new ();
     private const string FileFilter = "Formula Files (*.xml)|*.xml";
 
@@ -69,29 +69,10 @@ public partial class MainForm : Form
         tabControl1.SelectedTab = tab;
     }
 
-    private void CreateNewDocumentOld()
-    {
-        var editor = new FormulaEditorControl();
-        editor.Dock = DockStyle.Fill;
-
-        var tab = new TabPage("New Formula");
-        tab.Controls.Add(editor);
-
-        // Allow the editor to remove its own tab
-        editor.RequestClose += () =>
-        {
-            tabControl1.TabPages.Remove(tab);
-            tab.Dispose();
-        };
-
-        tabControl1.TabPages.Add(tab);
-        tabControl1.SelectedTab = tab;
-    }
-
     private void CreateNewDocument()
     {
-        var editor = new FormulaEditorControl();
-        editor.RequestClose += () => CloseDocument(editor);
+        var editor = new TabView(new TabViewModel("New", "wwwroot/worksheet-editor/index.html"));
+        // editor.RequestClose += () => CloseDocument(editor);
 
         var tab = new TabPage("New Formula");
         tab.Controls.Add(editor);
@@ -102,6 +83,20 @@ public partial class MainForm : Form
         tabControl1.TabPages.Add(tab);
         tabControl1.SelectedTab = tab;
     }
+    // private void CreateNewDocumentOld()
+    // {
+    //     var editor = new FormulaEditorControl();
+    //     editor.RequestClose += () => CloseDocument(editor);
+    //
+    //     var tab = new TabPage("New Formula");
+    //     tab.Controls.Add(editor);
+    //     editor.Dock = DockStyle.Fill;
+    //
+    //     editors[tab] = editor;
+    //
+    //     tabControl1.TabPages.Add(tab);
+    //     tabControl1.SelectedTab = tab;
+    // }
 
     private void openToolStripMenuItem_Click(object sender, EventArgs e)
     {
@@ -140,7 +135,7 @@ public partial class MainForm : Form
             _workSheetSerializer.SerializeToXmlFile(dlg.FileName, doc);
         }
     }
-    private void CloseDocument(FormulaEditorControl editor)
+    private void CloseDocument(TabView editor)
     {
         // If floating
         if (floating.ContainsKey(editor))
