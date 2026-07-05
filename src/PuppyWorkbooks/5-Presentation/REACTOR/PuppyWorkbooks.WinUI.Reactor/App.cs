@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.UI.ViewManagement;
 using static Microsoft.UI.Reactor.Factories;
 
 var cmdLineArgs = Environment.GetCommandLineArgs();
@@ -35,6 +36,7 @@ class App : Component
         var (selectedIndex, setSelectedIndex) = UseState(0);
         var (currentFilePath, setCurrentFilePath) = UseState<string?>(null);
         var (statusMessage, setStatusMessage) = UseState<string?>(null);
+        var (isDarkTheme, setIsDarkTheme) = UseState(IsSystemDarkTheme());
 
         UseEffect(() =>
         {
@@ -43,7 +45,33 @@ class App : Component
             {
                 _ = LoadWorkbookFromPathAsync(initialPath, setWorksheet, setSelectedIndex, setCurrentFilePath, setStatusMessage);
             }
+
+            var uiSettings = new UISettings();
+
+            void ApplyTheme()
+            {
+                var darkTheme = IsSystemDarkTheme();
+                setIsDarkTheme(darkTheme);
+                Application.Current.RequestedTheme = darkTheme ? ApplicationTheme.Dark : ApplicationTheme.Light;
+            }
+
+            ApplyTheme();
+            uiSettings.ColorValuesChanged += HandleColorValuesChanged;
+
+            return () => uiSettings.ColorValuesChanged -= HandleColorValuesChanged;
+
+            void HandleColorValuesChanged(UISettings sender, object args)
+            {
+                ApplyTheme();
+            }
         }, Array.Empty<object>());
+
+        var backgroundColor = isDarkTheme ? "#121212" : "#F3F4F6";
+        var surfaceColor = isDarkTheme ? "#1E1E1E" : "#FFFFFF";
+        var sidebarColor = isDarkTheme ? "#232323" : "#F5F7FA";
+        var dividerColor = isDarkTheme ? "#3D3D3D" : "#E5E7EB";
+        var primaryTextColor = isDarkTheme ? "#F5F5F5" : "#111827";
+        var secondaryTextColor = isDarkTheme ? "#D1D5DB" : "#6B7280";
 
         void InitializePicker(object picker)
         {
@@ -160,10 +188,11 @@ class App : Component
                 cell => cell.Name,
                 (cell, index) => VStack(
                     TextBlock(cell.Name)
-                        .FontSize(14),
+                        .FontSize(14)
+                        .Foreground(primaryTextColor),
                     TextBlock(cell.Formula)
                         .FontSize(12)
-                        .Foreground("#666666")
+                        .Foreground(secondaryTextColor)
                 ).Padding(8)
             )
             .Padding(8)
@@ -172,7 +201,7 @@ class App : Component
         var leftList = Border(
             listVw
         )
-        .Background("#F5F7FA")
+        .Background(sidebarColor)
         .CornerRadius(12)
         .Width(320)
         .Padding(4);
@@ -181,23 +210,24 @@ class App : Component
             VStack(
                 Heading("Formula details")
                     .FontSize(20)
+                    .Foreground(primaryTextColor)
                     .Margin(0, 0, 0, 12),
 
                 TextBlock("Worksheet name")
                     .FontSize(12)
-                    .Foreground("#6B7280"),
+                    .Foreground(secondaryTextColor),
                 TextBox(worksheet.Name, text => UpdateWorksheetName(text), "Worksheet name")
                     .Margin(0, 0, 0, 12),
 
                 TextBlock("Name")
                     .FontSize(12)
-                    .Foreground("#6B7280"),
+                    .Foreground(secondaryTextColor),
                 TextBox(selectedCell?.Name ?? string.Empty, text => UpdateSelectedCell(cell => cell.Name = text), "Name")
                     .Margin(0, 0, 0, 12),
 
                 TextBlock("Formula")
                     .FontSize(12)
-                    .Foreground("#6B7280"),
+                    .Foreground(secondaryTextColor),
                 TextBox(selectedCell?.Formula ?? string.Empty, text => UpdateSelectedCell(cell => cell.Formula = text), "Formula")
                     .AcceptsReturn(true)
                     .TextWrapping(TextWrapping.Wrap)
@@ -206,7 +236,7 @@ class App : Component
 
                 TextBlock("Comments")
                     .FontSize(12)
-                    .Foreground("#6B7280"),
+                    .Foreground(secondaryTextColor),
                 TextBox(selectedCell?.Comments ?? string.Empty, text => UpdateSelectedCell(cell => cell.Comments = text), "Comments")
                     .AcceptsReturn(true)
                     .TextWrapping(TextWrapping.Wrap)
@@ -220,35 +250,43 @@ class App : Component
             )
             .Padding(20)
         )
-        .Background("#FFFFFF")
+        .Background(surfaceColor)
         .CornerRadius(12)
         .Padding(4)
         .Flex(1);
 
-        var mainContent = FlexRow(leftList, Border(TextBlock(string.Empty)).Width(8).Background("#E5E7EB").Margin(12, 0, 12, 0), detailForm)
+        var mainContent = FlexRow(leftList, Border(TextBlock(string.Empty)).Width(8).Background(dividerColor).Margin(12, 0, 12, 0), detailForm)
             .Padding(0, 0, 0, 8);
 
         return FlexColumn(toolbar, mainContent)
-            .Background("#F3F4F6")
+            .Background(backgroundColor)
             .Padding(12)
             .OnKeyDown((_,e) =>
             {
-                if (e is KeyRoutedEventArgs args && IsCtrlSPressed(args))
-                {
-                    _ = SaveAsync();
-                    args.Handled = true;
-                }
-                else if (e is KeyRoutedEventArgs args2 && IsCtrlOPressed(args2))
-                {
-                    _ = OpenAsync();
-                    args2.Handled = true;
-                }
-                else if (e is KeyRoutedEventArgs args3 && IsCtrlNPressed(args3))
-                {
-                    AddCell();
-                    args3.Handled = true;
-                }
+                //if (e is KeyRoutedEventArgs args && IsCtrlSPressed(args))
+                //{
+                //    _ = SaveAsync();
+                //    args.Handled = true;
+                //}
+                //else if (e is KeyRoutedEventArgs args2 && IsCtrlOPressed(args2))
+                //{
+                //    _ = OpenAsync();
+                //    args2.Handled = true;
+                //}
+                //else if (e is KeyRoutedEventArgs args3 && IsCtrlNPressed(args3))
+                //{
+                //    AddCell();
+                //    args3.Handled = true;
+                //}
             });
+    }
+
+    private static bool IsSystemDarkTheme()
+    {
+        var uiSettings = new UISettings();
+        var backgroundColor = uiSettings.GetColorValue(UIColorType.Background);
+        var luminance = (0.2126 * backgroundColor.R) + (0.7152 * backgroundColor.G) + (0.0722 * backgroundColor.B);
+        return luminance < 128;
     }
 
     private static string? GetInitialWorkbookPath()
