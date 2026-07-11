@@ -26,10 +26,14 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\3-Services\PuppyWorkbooks\PuppyWorkbooks.csproj" />
+      <ProjectReference Include="..\..\5-Presentation\CLI\PuppyWorkbooks.CLI\PuppyWorkbooks.CLI.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <None Update="SampleFiles\Input1.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="SampleFiles\TestWorkbook.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

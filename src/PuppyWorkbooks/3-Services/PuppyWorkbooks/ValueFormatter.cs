@@ -8,6 +8,7 @@ public class ValueFormatter
     {
         return result.Type switch
         {
+            
             TableType tableType => DisplayTable(result as TableValue),
             // Runtime tableType => DisplayTable(result as TableValue),
             RecordType recordType => DisplayRecord(result as RecordValue),

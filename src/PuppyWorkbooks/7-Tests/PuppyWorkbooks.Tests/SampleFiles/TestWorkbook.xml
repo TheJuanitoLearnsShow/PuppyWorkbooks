@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkSheet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Name>My Test Workbook</Name>
+  <Cells>
+    <WorkCell>
+      <Id>1</Id>
+      <Name>TestAgeInput</Name>
+      <Formula>45</Formula>
+      <Comments>To be passed in params</Comments>
+    </WorkCell>
+    <WorkCell>
+      <Id>2</Id>
+      <Name>Ages</Name>
+      <Formula>[1,TestAgeInput,3]</Formula>
+      <Comments>None</Comments>
+    </WorkCell>
+    <WorkCell>
+      <Id>3</Id>
+      <Name>SquaredAge</Name>
+      <Formula>Sum(Ages, Value * Value)</Formula>
+      <Comments>None</Comments>
+    </WorkCell>
+  </Cells>
+</WorkSheet>

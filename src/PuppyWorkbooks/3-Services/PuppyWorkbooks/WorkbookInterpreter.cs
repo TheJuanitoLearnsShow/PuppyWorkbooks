@@ -30,7 +30,7 @@ public class WorkbookInterpreter
             }
             if (!yieldResultsForEachCell && cell != cellsToExecute.Last()) continue;
             var result = await engine.EvalAsync(cell.Name, cancellationToken);
-            yield return new CellResult(ValueFormatter.ToDisplayOutput(result), cell.Id);
+            yield return new CellResult(ValueFormatter.ToDisplayOutput(result), cell.Id, cell.Name);
         }
     }
 

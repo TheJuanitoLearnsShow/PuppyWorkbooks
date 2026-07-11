@@ -1,3 +1,3 @@
 namespace PuppyWorkbooks;
 
-public record CellResult(string DisplayOutput, int CellId);
+public record CellResult(string DisplayOutput, int CellId, string CellName = "");

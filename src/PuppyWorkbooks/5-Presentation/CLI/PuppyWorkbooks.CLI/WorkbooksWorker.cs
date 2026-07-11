@@ -2,33 +2,14 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PuppyWorkbooks.CLI.Output;
 using PuppyWorkbooks.Serialization;
 
 namespace PuppyWorkbooks.CLI;
 
-public class ExecutionSettings
-{
-    /// <summary>
-    /// Input path to JSON object containing a dictionary of formula values to inject
-    /// into the workbooks. The value will be injected in each workbook that contains a
-    /// formula with the name in key of the value.
-    /// </summary>
-    public string? InputDataPath { get; set; }
-    
-    public Dictionary<string, string> InputData { get; set; } = new();
-
-    /// <summary>
-    /// List of workbooks to execute. All the outputs of each workbook will be included in the
-    /// results collection in the output.
-    /// </summary>
-    public string[] WorkbookPaths { get; set; } = [];
-
-    public string? OutputPath { get; set; }
-}
-
 public sealed class WorkbooksWorker : IHostedService
 {
-    private readonly ILogger _logger;
+    private readonly ILogger? _logger;
     private readonly ExecutionSettings _settings;
     private readonly WorkSheetSerializer _workSheetSerializer = new ();
 
@@ -40,15 +21,51 @@ public sealed class WorkbooksWorker : IHostedService
         _logger = logger;
         _settings = options.Value;
     }
-
-
-    async Task IHostedService.StartAsync(CancellationToken cancellationToken)
+    public WorkbooksWorker(ExecutionSettings settings)
     {
-        var workbookPaths = _settings.WorkbookPaths;    
-        var inputValues = LoadInputValues();
+        _logger = null;
+        _settings = settings;
+    }
+
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using IOutputWriter outputWriter = new ConsoleOutputWriter();
+        try
+        {
+            var workbookPaths = _settings.WorkbookPaths;
+            var inputValues = LoadInputValues();
+            outputWriter.OpenWriter();
+            await ExecuteWorkbooks(workbookPaths, inputValues, outputWriter, cancellationToken);
+        }
+        catch (Exception fatalError)
+        {
+            _logger?.LogError(fatalError.Message);
+        }
+        finally{
+            outputWriter.CloseWriter();
+        }
+        return;
+    }
+
+    private async Task ExecuteWorkbooks( 
+        string[] workbookPaths, 
+        Dictionary<string, string> inputValues,
+        IOutputWriter outputWriter,
+        CancellationToken cancellationToken)
+    {
         foreach (var path in workbookPaths)
         {
+            await ExecuteWorkbook(inputValues, outputWriter, path, cancellationToken);
+        }
+    }
+
+    private async Task ExecuteWorkbook(Dictionary<string, string> inputValues, IOutputWriter outputWriter, string path, CancellationToken cancellationToken)
+    {
+        try
+        {
             var workbook = _workSheetSerializer.DeserializeFromXmlFile(path);
+            outputWriter.StartWorkbookResult(workbook.Name);
             foreach (var inputValue in inputValues)
             {   
                 workbook.SetFormulaValue(inputValue.Key, inputValue.Value);
@@ -56,9 +73,14 @@ public sealed class WorkbooksWorker : IHostedService
             var interpreter = new WorkbookInterpreter();
             await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true, cancellationToken: cancellationToken))
             {
+                outputWriter.WriteCellResult(result);
             }
+            outputWriter.EndWorkbookResult();
         }
-        return;
+        catch (Exception e)
+        {
+            _logger?.LogError(e.Message, "Error executing workbook at path: {Path}", path);
+        }
     }
 
     private Dictionary<string, string> LoadInputValues()
