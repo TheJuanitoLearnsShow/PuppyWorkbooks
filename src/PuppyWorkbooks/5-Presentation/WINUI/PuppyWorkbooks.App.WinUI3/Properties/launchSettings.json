@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PuppyWorkbooks.App.WinUI3 (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PuppyWorkbooks.App.WinUI3 (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

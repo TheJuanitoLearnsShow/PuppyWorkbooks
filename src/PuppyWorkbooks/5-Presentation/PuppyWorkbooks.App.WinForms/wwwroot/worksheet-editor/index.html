@@ -1,67 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fluent Formula Editor</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fluent Formula Editor</title>
 
-<script type="module"
-        src="https://unpkg.com/@fluentui/web-components"></script>
+    <script type="module" src="js/fluentui-web-components-3.0.1.js"></script>
 
-<link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
 
-<div class="top-bar">
-    <div class="worksheet-name">
-        <label for="worksheetNameField">Worksheet Name</label>
-        <fluent-text-field id="worksheetNameField" placeholder="Enter worksheet name"></fluent-text-field>
-    </div>
-    <div class="top-bar-actions">
-        <fluent-button appearance="outline" id="runSelectedBtn">Run up to Selected</fluent-button>
-        <fluent-button appearance="accent" id="runAllBtn">Run All</fluent-button>
-    </div>
-</div>
-
-<div class="app-container">
-
-    <!-- LEFT: LIST -->
-    <div class="list-container">
-        <div class="list-header">
-            <fluent-button appearance="outline" id="addBtn">Add Formula</fluent-button>
+    <div class="top-bar">
+        <div class="worksheet-name">
+            <label for="worksheetNameField">Worksheet Name</label>
+            <fluent-text-field id="worksheetNameField" placeholder="Enter worksheet name"></fluent-text-field>
         </div>
-        <div id="formulaList"></div>
+        <div class="top-bar-actions">
+            <fluent-button appearance="outline" id="runSelectedBtn">Run up to Selected</fluent-button>
+            <fluent-button appearance="accent" id="runAllBtn">Run All</fluent-button>
+        </div>
     </div>
 
-    <!-- RIGHT: EDIT PANEL -->
-    <div class="edit-panel" id="editPanel">
+    <div class="app-container">
 
-        <h2>Edit Formula</h2>
+        <!-- LEFT: LIST -->
+        <div class="list-container">
+            <div class="list-header">
+                <fluent-button appearance="outline" id="addBtn">Add Formula</fluent-button>
+            </div>
+            <div id="formulaList"></div>
+        </div>
 
-        <label>Name</label>
-        <fluent-text-field id="nameField"></fluent-text-field>
+        <!-- RIGHT: EDIT PANEL -->
+        <div class="edit-panel" id="editPanel">
 
-        <label>Formula</label>
-        <div id="formulaEditor" class="code-editor" aria-label="Formula editor"></div>
+            <h2>Edit Formula</h2>
 
-        <label>Comments</label>
-        <fluent-text-area id="commentsField"></fluent-text-area>
+            <label>Name</label>
+            <fluent-text-field id="nameField"></fluent-text-field>
 
-        <label>Result</label>
-        <fluent-text-field id="resultField"></fluent-text-field>
+            <label>Formula</label>
+            <div id="formulaEditor" class="code-editor" aria-label="Formula editor"></div>
 
-        <fluent-button appearance="accent" id="removeBtn" class="remove-btn">
-            Remove
-        </fluent-button>
+            <label>Comments</label>
+            <fluent-text-area id="commentsField"></fluent-text-area>
+
+            <label>Result</label>
+            <fluent-text-field id="resultField"></fluent-text-field>
+
+            <fluent-button appearance="accent" id="removeBtn" class="remove-btn">
+                Remove
+            </fluent-button>
+        </div>
+
     </div>
 
-</div>
-
-<!-- Monaco loader (for the in-browser code editor) -->
-<script src="https://unpkg.com/monaco-editor@0.41.0/min/vs/loader.js"></script>
-<script type="module" src="app.js"></script>
+    <!-- Monaco loader (for the in-browser code editor) -->
+    <script src="https://unpkg.com/monaco-editor@0.55.1/min/vs/loader.js"></script>
+    <script type="module" src="app.js"></script>
 
     <pre id="log"></pre>
 </body>
+
 </html>

@@ -6,6 +6,11 @@ namespace PuppyWorkbooks.App.WinForms.ViewModels;
 
 public sealed class TabViewModel
 {
+    private static JsonSerializerOptions  _jsonSerializerOptions = new JsonSerializerOptions()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
     private WorkSheet _model = new WorkSheet();
     public string Title { get; private set; }
     public string PagePath { get; }
@@ -24,7 +29,7 @@ public sealed class TabViewModel
     public async Task OnPageMessage(string message)
     {
         
-        var messageBase = JsonSerializer.Deserialize<ViewMessageBase>(message);
+        var messageBase = JsonSerializer.Deserialize<ViewMessageBase>(message, _jsonSerializerOptions);
         if (messageBase?.Type == "runUpToSelected")
         {
             
@@ -43,7 +48,7 @@ public sealed class TabViewModel
     {
         var msg = new ViewMessage<T>() { Payload  =  payload, Type = type };
             
-        var message = JsonSerializer.Serialize(msg);
+        var message = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
         ViewModelMessageRaised?.Invoke(this, message);
     }
     

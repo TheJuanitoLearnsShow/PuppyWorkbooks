@@ -5,8 +5,9 @@ using PuppyWorkbooks.App.WinForms.ViewModels;
 
 public partial class TabView : UserControl
 {
+    private const string InternalDomain = "appassets.puppy";
     private readonly TabViewModel _vm;
-    private WebView2 webView21;
+    private readonly WebView2 _webView21 = new ();
 
     public string SheetName => _vm.Title;
 
@@ -15,23 +16,33 @@ public partial class TabView : UserControl
     public TabView(TabViewModel vm)
     {
         InitializeComponent();
+        
         _vm = vm;
 
         _vm.ViewModelMessageRaised += OnViewModelMessageRaised;
 
         Load += async (_, __) => await InitializeWebViewAsync();
+        _webView21.NavigationCompleted += OnNavigationCompleted;
+    }
+
+    private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    {
+        _vm.SendModel();
     }
 
     private async Task InitializeWebViewAsync()
     {
-        await webView21.EnsureCoreWebView2Async();
+        await _webView21.EnsureCoreWebView2Async();
 
-        webView21.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+        _webView21.CoreWebView2.SetVirtualHostNameToFolderMapping(
+            InternalDomain,
+            "wwwroot",
+            CoreWebView2HostResourceAccessKind.DenyCors
+        );
+        _webView21.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
 
-        string fullPath = Path.Combine(Application.StartupPath, _vm.PagePath);
-        webView21.Source = new Uri(fullPath);
-        
-        _vm.SendModel();
+        var fullPath = $"https://{InternalDomain}/worksheet-editor/index.html";
+        _webView21.Source = new Uri(fullPath);
     }
 
     private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -42,23 +53,22 @@ public partial class TabView : UserControl
 
     private void OnViewModelMessageRaised(object? sender, string message)
     {
-        webView21.CoreWebView2?.PostWebMessageAsString(message);
+        _webView21.CoreWebView2?.PostWebMessageAsString(message);
     }
     private void InitializeComponent()
     {
-        this.webView21 = new Microsoft.Web.WebView2.WinForms.WebView2();
-        ((System.ComponentModel.ISupportInitialize)(this.webView21)).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)(this._webView21)).BeginInit();
         this.SuspendLayout();
 
-        this.webView21.Dock = DockStyle.Fill;
-        this.webView21.CreationProperties = null;
-        this.webView21.Name = "webView21";
+        this._webView21.Dock = DockStyle.Fill;
+        this._webView21.CreationProperties = null;
+        this._webView21.Name = "_webView21";
 
-        this.Controls.Add(this.webView21);
+        this.Controls.Add(this._webView21);
         this.Name = "TabView";
         this.Size = new Size(800, 600);
 
-        ((System.ComponentModel.ISupportInitialize)(this.webView21)).EndInit();
+        ((System.ComponentModel.ISupportInitialize)(this._webView21)).EndInit();
         this.ResumeLayout(false);
     }
 }
