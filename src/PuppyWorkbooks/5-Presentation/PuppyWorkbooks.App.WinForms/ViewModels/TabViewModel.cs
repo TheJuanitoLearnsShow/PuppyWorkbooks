@@ -7,8 +7,10 @@ namespace PuppyWorkbooks.App.WinForms.ViewModels;
 public sealed class TabViewModel
 {
     private WorkSheet _model = new WorkSheet();
-    public string Title { get; }
+    public string Title { get; private set; }
     public string PagePath { get; }
+
+    public WorkSheet Model => _model;
 
     public event EventHandler<string>? PageMessageReceived;
     public event EventHandler<string>? ViewModelMessageRaised;
@@ -19,9 +21,19 @@ public sealed class TabViewModel
         PagePath = pagePath;
     }
 
-    public void OnPageMessage(string message)
+    public async Task OnPageMessage(string message)
     {
-        PageMessageReceived?.Invoke(this, message);
+        
+        var messageBase = JsonSerializer.Deserialize<ViewMessageBase>(message);
+        if (messageBase?.Type == "runUpToSelected")
+        {
+            
+        }
+        if (messageBase?.Type == "runAll")
+        {
+            await RunAllFormulas();
+        }
+        // PageMessageReceived?.Invoke(this, message);
 
         // Example: echo back
         //RaiseMessageToPage($"VM received: {message}");
@@ -37,33 +49,34 @@ public sealed class TabViewModel
     
     public void SendModel()
     {
-        RaiseMessageToPage(_model);
+        RaiseMessageToPage(_model, "worksheet");
     }
     
     private async Task RunAllFormulas()
     {
-        var workbook = ToModel();
         var interpreter = new WorkbookInterpreter();
-        await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true))
+        await foreach (var result in interpreter.ExecuteAsync(_model, yieldResultsForEachCell: true))
         {
-            formulas[result.CellId].Result = result.DisplayOutput;
+            RaiseMessageToPage(result, "cellResult");
         }
-        dgvFormulas.Refresh();
     }
-    public PuppyWorkbooks.WorkSheet ToModel()
-    {
-        var model = new PuppyWorkbooks.WorkSheet
-        {
-            Name = this.SheetName
-        };
-        foreach (var cellViewModel in formulas)
-        {
-            model.Cells.Add(cellViewModel.ToModel());
-        }
-        return model;
-    }
+    
+    // public PuppyWorkbooks.WorkSheet ToModel()
+    // {
+    //     var model = new PuppyWorkbooks.WorkSheet
+    //     {
+    //         Name = this.SheetName
+    //     };
+    //     foreach (var cellViewModel in formulas)
+    //     {
+    //         model.Cells.Add(cellViewModel.ToModel());
+    //     }
+    //     return model;
+    // }
+    
     public void FromModel(WorkSheet model)
     {
         _model = model;
+        Title = model.Name;
     }
 }

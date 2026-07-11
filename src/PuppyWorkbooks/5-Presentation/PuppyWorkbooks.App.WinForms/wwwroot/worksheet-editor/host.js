@@ -33,7 +33,7 @@ export function initHostListener({ onWorksheet, onResult, onOtherMessage }) {
         }
 
         if (msg && (msg.type === 'cellResult' || msg.type === 'formulaResult' || msg.type === 'result')) {
-            onResult?.(msg);
+            onResult?.(msg.payload);
             return;
         }
 

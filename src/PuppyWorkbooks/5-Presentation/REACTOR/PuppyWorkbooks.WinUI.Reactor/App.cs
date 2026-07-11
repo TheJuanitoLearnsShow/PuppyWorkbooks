@@ -52,7 +52,20 @@ class App : Component
             {
                 var darkTheme = IsSystemDarkTheme();
                 setIsDarkTheme(darkTheme);
-                Application.Current.RequestedTheme = darkTheme ? ApplicationTheme.Dark : ApplicationTheme.Light;
+
+                if (window is null)
+                {
+                    return;
+                }
+
+                window.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (Application.Current is not null)
+                    {
+                        Application.Current.RequestedTheme =
+                            darkTheme ? ApplicationTheme.Dark : ApplicationTheme.Light;
+                    }
+                });
             }
 
             ApplyTheme();

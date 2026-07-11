@@ -223,7 +223,7 @@ function attachDomListeners(sendToHost) {
 export function getRunPayload(type) {
     const payload = {
         type,
-        worksheet: {
+        payload: {
 
             name: refs.worksheetNameField.value || '',
             cells: formulas.map(({ id, name, formula, comments }) => ({
@@ -306,9 +306,8 @@ export function loadWorksheetFromHost(data) {
 }
 
 export function applyHostResult(msg) {
-    const resultValue = msg.result ?? msg.Result;
+    const resultValue = msg.displayOutput ?? msg.DisplayOutput;
     const cellId = msg.cellId ?? msg.CellId ?? msg.Id ?? msg.id;
-    const cellIndex = msg.index ?? msg.Index;
 
     if (resultValue === undefined) {
         console.warn('Host result message missing result value:', msg);
@@ -316,12 +315,8 @@ export function applyHostResult(msg) {
     }
 
     let targetIndex = -1;
-    if (cellId !== undefined) {
-        targetIndex = formulas.findIndex(f => f.id == cellId);
-    }
-    if (targetIndex === -1 && cellIndex !== undefined && formulas[cellIndex]) {
-        targetIndex = cellIndex;
-    }
+    targetIndex = formulas.findIndex(f => f.id == cellId);
+    
     if (targetIndex === -1) {
         console.warn('Could not map host result to a formula cell:', msg);
         return;

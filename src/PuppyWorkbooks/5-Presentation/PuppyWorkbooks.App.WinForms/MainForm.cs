@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using PuppyWorkbooks.App.WinForms.ViewModels;
 using PuppyWorkbooks.Serialization;
 
 namespace PuppyWorkbooks.App.WinForms;
@@ -71,10 +72,35 @@ public partial class MainForm : Form
 
     private void CreateNewDocument()
     {
-        var editor = new TabView(new TabViewModel("New", "wwwroot/worksheet-editor/index.html"));
+        var viewModel = new TabViewModel("New", "wwwroot/worksheet-editor/index.html");
+        viewModel.FromModel(new WorkSheet()
+        {
+            Name = "Test WorkSheet",
+            Cells = 
+                [
+                    new ()
+                    {
+                        Id = 0,
+                        Name = "Name1",
+                        Formula = "\"Juanito\""
+                    },
+                    new ()
+                    {
+                        Id = 0,
+                        Name = "Greeting",
+                        Formula = "\"Hello\" & Name1 "
+                    }
+                ]
+        });
+        NewEditorTab(viewModel);
+    }
+
+    private void NewEditorTab(TabViewModel viewModel)
+    {
+        var editor = new TabView(viewModel);
         // editor.RequestClose += () => CloseDocument(editor);
 
-        var tab = new TabPage("New Formula");
+        var tab = new TabPage(viewModel.Title);
         tab.Controls.Add(editor);
         editor.Dock = DockStyle.Fill;
 
@@ -103,28 +129,18 @@ public partial class MainForm : Form
         using var dlg = new OpenFileDialog();
         dlg.Filter = FileFilter;
 
-        if (dlg.ShowDialog() == DialogResult.OK)
-        {
-            var doc = _workSheetSerializer.DeserializeFromXmlFile(dlg.FileName);
-
-            var editor = new FormulaEditorControl();
-            editor.FromModel(doc);
-
-            var tab = new TabPage(doc.Name);
-            tab.Controls.Add(editor);
-            editor.Dock = DockStyle.Fill;
-
-            editors[tab] = editor;
-            tabControl1.TabPages.Add(tab);
-            tabControl1.SelectedTab = tab;
-        }
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+        var viewModel = new TabViewModel("New", "wwwroot/worksheet-editor/index.html");
+        var model = _workSheetSerializer.DeserializeFromXmlFile(dlg.FileName);
+        viewModel.FromModel(model);
+        NewEditorTab(viewModel);
     }
     private void saveDocumentToolStripMenuItem_Click(object sender, EventArgs e)
     {
         if (tabControl1.SelectedTab == null) return;
 
         var editor = editors[tabControl1.SelectedTab];
-        var doc = editor.ToModel();
+        var doc = editor.Vm.Model;
 
         using var dlg = new SaveFileDialog();
         dlg.Filter = FileFilter;

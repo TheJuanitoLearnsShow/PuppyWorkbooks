@@ -1,6 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using PuppyWorkbooks;
+using PuppyWorkbooks.App.WinForms.ViewModels;
 
 public partial class TabView : UserControl
 {
@@ -8,6 +9,9 @@ public partial class TabView : UserControl
     private WebView2 webView21;
 
     public string SheetName => _vm.Title;
+
+    public TabViewModel Vm => _vm;
+
     public TabView(TabViewModel vm)
     {
         InitializeComponent();
@@ -26,12 +30,14 @@ public partial class TabView : UserControl
 
         string fullPath = Path.Combine(Application.StartupPath, _vm.PagePath);
         webView21.Source = new Uri(fullPath);
+        
+        _vm.SendModel();
     }
 
-    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        string msg = e.TryGetWebMessageAsString();
-        _vm.OnPageMessage(msg);
+        string msg = e.WebMessageAsJson;
+        await _vm.OnPageMessage(msg);
     }
 
     private void OnViewModelMessageRaised(object? sender, string message)
