@@ -1,0 +1,14 @@
+{
+  "name": "worksheet-editor",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@fluentui/web-components": "^2.6.1"
+  }
+}

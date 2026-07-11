@@ -1,42 +1,38 @@
 export const formulas = [
     {
-        name: "Quadratic Formula",
-        formula: "x = (-b ± √(b² - 4ac)) / 2a",
-        comments: "Solutions of ax² + bx + c = 0",
-        result: "-1, -0.5"
+        name: 'Quadratic Formula',
+        formula: 'x = (-b ± √(b² - 4ac)) / 2a',
+        comments: 'Solutions of ax² + bx + c = 0',
+        result: '-1, -0.5'
     },
     {
-        name: "Pythagorean Theorem",
-        formula: "a² + b² = c²",
-        comments: "Right-angled triangles",
-        result: "5"
+        name: 'Pythagorean Theorem',
+        formula: 'a² + b² = c²',
+        comments: 'Right-angled triangles',
+        result: '5'
     },
     {
-        name: "Area of a Circle",
-        formula: "A = πr²",
-        comments: "r = radius",
-        result: "153.9"
+        name: 'Area of a Circle',
+        formula: 'A = πr²',
+        comments: 'r = radius',
+        result: '153.9'
     },
     {
         name: "Euler's Formula",
-        formula: "e^(iπ) + 1 = 0",
-        comments: "Relation to complex exponentials",
-        result: "0"
+        formula: 'e^(iπ) + 1 = 0',
+        comments: 'Relation to complex exponentials',
+        result: '0'
     }
 ];
-
 export let selectedIndex = null;
-
 const refs = {};
 let monacoEditor = null;
-
 export function initRenderer(sendToHost) {
     initRefs();
     initMonaco();
     attachDomListeners(sendToHost);
     renderList();
 }
-
 function initRefs() {
     refs.listContainer = document.getElementById('formulaList');
     refs.editPanel = document.getElementById('editPanel');
@@ -50,18 +46,17 @@ function initRefs() {
     refs.runSelectedBtn = document.getElementById('runSelectedBtn');
     refs.runAllBtn = document.getElementById('runAllBtn');
 }
-
 function initMonaco() {
-    if (typeof require === 'undefined') return;
-
+    if (typeof require === 'undefined')
+        return;
     if (require && require.config) {
         try {
             require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.41.0/min/vs' } });
-        } catch (e) {
+        }
+        catch (e) {
             // ignore if already configured
         }
     }
-
     require(['vs/editor/editor.main'], function () {
         try {
             monaco.languages.register({ id: 'powerfx' });
@@ -80,7 +75,6 @@ function initMonaco() {
                     ]
                 }
             });
-
             monaco.editor.defineTheme('powerfxTheme', {
                 base: 'vs',
                 inherit: true,
@@ -92,9 +86,7 @@ function initMonaco() {
                     { token: 'identifier', foreground: '001080' }
                 ]
             });
-
             registerPowerFxCompletions();
-
             monacoEditor = monaco.editor.create(refs.formulaEditorDiv, {
                 value: '',
                 language: 'powerfx',
@@ -103,7 +95,8 @@ function initMonaco() {
                 automaticLayout: true,
                 fontSize: 13
             });
-        } catch (err) {
+        }
+        catch (err) {
             console.error('Monaco initialization failed, falling back to default theme:', err);
             monacoEditor = monaco.editor.create(refs.formulaEditorDiv, {
                 value: '',
@@ -114,7 +107,6 @@ function initMonaco() {
                 fontSize: 13
             });
         }
-
         monacoEditor.getModel().onDidChangeContent(() => {
             if (selectedIndex !== null && monacoEditor) {
                 formulas[selectedIndex].formula = monacoEditor.getValue();
@@ -123,12 +115,10 @@ function initMonaco() {
         });
     });
 }
-
 function registerPowerFxCompletions() {
     const functionsList = ['If', 'Switch', 'Filter', 'Lookup', 'Patch', 'Collect', 'Remove', 'Update', 'ForAll', 'Sum', 'Average', 'Count', 'Round'];
     const keywordsList = ['And', 'Or', 'Not', 'IsBlank', 'IsError', 'Then', 'Else', 'true', 'false'];
     const suggestions = [];
-
     functionsList.forEach(fn => suggestions.push({
         label: fn,
         kind: monaco.languages.CompletionItemKind.Function,
@@ -136,14 +126,12 @@ function registerPowerFxCompletions() {
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         documentation: `${fn} function`
     }));
-
     keywordsList.forEach(kw => suggestions.push({
         label: kw,
         kind: monaco.languages.CompletionItemKind.Keyword,
         insertText: kw,
         documentation: `${kw} keyword`
     }));
-
     monaco.languages.registerCompletionItemProvider('powerfx', {
         triggerCharacters: ['.', '(', ' '],
         provideCompletionItems(model, position) {
@@ -154,50 +142,43 @@ function registerPowerFxCompletions() {
                 startColumn: word.startColumn,
                 endColumn: word.endColumn
             };
-
             const filtered = suggestions.filter(s => s.label.toLowerCase().startsWith(word.word.toLowerCase()));
             filtered.forEach(s => s.range = range);
             return { suggestions: filtered };
         }
     });
 }
-
 function attachDomListeners(sendToHost) {
     refs.addBtn.onclick = () => {
         const newFormula = {
-            name: "New Formula",
-            formula: "",
-            comments: "",
-            result: ""
+            name: 'New Formula',
+            formula: '',
+            comments: '',
+            result: ''
         };
-
         formulas.push(newFormula);
         const newIndex = formulas.length - 1;
         renderList();
         openEditor(newIndex);
     };
-
     refs.nameField.addEventListener('input', () => {
         if (selectedIndex !== null) {
             formulas[selectedIndex].name = refs.nameField.value;
             renderList();
         }
     });
-
     refs.commentsField.addEventListener('input', () => {
         if (selectedIndex !== null) {
             formulas[selectedIndex].comments = refs.commentsField.value;
             renderList();
         }
     });
-
     refs.resultField.addEventListener('input', () => {
         if (selectedIndex !== null) {
             formulas[selectedIndex].result = refs.resultField.value;
             renderList();
         }
     });
-
     refs.removeBtn.onclick = () => {
         if (selectedIndex !== null) {
             formulas.splice(selectedIndex, 1);
@@ -206,7 +187,6 @@ function attachDomListeners(sendToHost) {
             renderList();
         }
     };
-
     refs.runSelectedBtn.onclick = () => {
         if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= formulas.length) {
             console.warn('No selected formula to run up to.');
@@ -214,17 +194,14 @@ function attachDomListeners(sendToHost) {
         }
         sendToHost(getRunPayload('runUpToSelected'));
     };
-
     refs.runAllBtn.onclick = () => {
         sendToHost(getRunPayload('runAll'));
     };
 }
-
 export function getRunPayload(type) {
     const payload = {
         type,
         payload: {
-
             name: refs.worksheetNameField.value || '',
             cells: formulas.map(({ id, name, formula, comments }) => ({
                 id,
@@ -233,19 +210,14 @@ export function getRunPayload(type) {
                 comments
             }))
         }
-
     };
-
     if (type === 'runUpToSelected') {
         payload.selectedIndex = selectedIndex;
     }
-
     return payload;
 }
-
 export function renderList() {
     refs.listContainer.innerHTML = '';
-
     formulas.forEach((f, index) => {
         const card = document.createElement('fluent-card');
         card.innerHTML = `
@@ -260,35 +232,29 @@ export function renderList() {
         refs.listContainer.appendChild(card);
     });
 }
-
 export function openEditor(index) {
     selectedIndex = index;
     const f = formulas[index];
-
     refs.nameField.value = f.name;
     refs.commentsField.value = f.comments;
     refs.resultField.value = f.result;
-
     if (monacoEditor) {
         monacoEditor.setValue(f.formula || '');
         monacoEditor.focus();
-    } else {
+    }
+    else {
         refs.formulaEditorDiv.textContent = f.formula || '';
     }
-
     refs.editPanel.classList.add('visible');
 }
-
 export function loadWorksheetFromHost(data) {
     const worksheetName = data.Name || data.name || '';
     refs.worksheetNameField.value = worksheetName;
-
     const cells = data.Cells || data.cells || data.formulas || [];
     if (!Array.isArray(cells)) {
         console.warn('Received worksheet payload with no cells array:', data);
         return;
     }
-
     formulas.length = 0;
     cells.forEach((cell, index) => {
         formulas.push({
@@ -299,29 +265,23 @@ export function loadWorksheetFromHost(data) {
             result: cell.Result || cell.result || ''
         });
     });
-
     selectedIndex = null;
     refs.editPanel.classList.remove('visible');
     renderList();
 }
-
 export function applyHostResult(msg) {
     const resultValue = msg.displayOutput ?? msg.DisplayOutput;
     const cellId = msg.cellId ?? msg.CellId ?? msg.Id ?? msg.id;
-
     if (resultValue === undefined) {
         console.warn('Host result message missing result value:', msg);
         return;
     }
-
     let targetIndex = -1;
     targetIndex = formulas.findIndex(f => f.id == cellId);
-    
     if (targetIndex === -1) {
         console.warn('Could not map host result to a formula cell:', msg);
         return;
     }
-
     formulas[targetIndex].result = resultValue;
     if (selectedIndex === targetIndex) {
         refs.resultField.value = resultValue;

@@ -1,18 +1,35 @@
-export function sendToHost(message) {
-    if (window.chrome && chrome.webview && chrome.webview.postMessage) {
-        chrome.webview.postMessage(message);
+declare global {
+    interface Window {
+        chrome?: {
+            webview?: {
+                postMessage?: (message: unknown) => void;
+                addEventListener?: (type: string, listener: (event: MessageEvent) => void) => void;
+            };
+        };
+    }
+}
+
+export function sendToHost(message: unknown) {
+    const webview = window.chrome?.webview;
+    if (webview?.postMessage) {
+        webview.postMessage(message);
     } else {
         console.warn('Host postMessage unavailable:', message);
     }
 }
 
-export function initHostListener({ onWorksheet, onResult, onOtherMessage }) {
-    if (!window.chrome || !chrome.webview || !chrome.webview.addEventListener) {
+export function initHostListener({ onWorksheet, onResult, onOtherMessage }: {
+    onWorksheet?: (msg: any) => void;
+    onResult?: (msg: any) => void;
+    onOtherMessage?: (msg: unknown) => void;
+}) {
+    const webview = window.chrome?.webview;
+    if (!webview?.addEventListener) {
         console.warn('Host listener unavailable.');
         return;
     }
 
-    chrome.webview.addEventListener('message', event => {
+    webview.addEventListener('message', (event: MessageEvent) => {
         let msg = event.data;
         if (typeof msg === 'string') {
             try {
