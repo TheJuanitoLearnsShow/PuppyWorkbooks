@@ -417,3 +417,5 @@ FodyWeavers.xsd
 *.msm
 *.msp
 src/PuppyWorkbooks/5-Presentation/PuppyWorkbooks.App.Wpf/SyncfusionLicenseConstant.cs
+.parcel-cache/
+dist/

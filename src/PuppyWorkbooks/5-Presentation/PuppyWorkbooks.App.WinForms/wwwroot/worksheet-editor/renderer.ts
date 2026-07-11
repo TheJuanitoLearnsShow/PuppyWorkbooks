@@ -1,5 +1,6 @@
 declare const require: any;
-declare const monaco: any;
+import * as monaco from "monaco-editor";
+import CompletionItem = monaco.languages.CompletionItem;
 
 type FormulaItem = {
     id?: number | string;
@@ -65,13 +66,13 @@ function initRefs() {
 function initMonaco() {
     if (typeof require === 'undefined') return;
 
-    if (require && require.config) {
-        try {
-            require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.41.0/min/vs' } });
-        } catch (e) {
-            // ignore if already configured
-        }
-    }
+    // if (require && require.config) {
+    //     try {
+    //         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.41.0/min/vs' } });
+    //     } catch (e) {
+    //         // ignore if already configured
+    //     }
+    // }
 
     require(['vs/editor/editor.main'], function () {
         try {
@@ -92,17 +93,17 @@ function initMonaco() {
                 }
             });
 
-            monaco.editor.defineTheme('powerfxTheme', {
-                base: 'vs',
-                inherit: true,
-                rules: [
-                    { token: 'comment', foreground: '6A6A6A' },
-                    { token: 'keyword', foreground: '0000FF', fontStyle: 'bold' },
-                    { token: 'number', foreground: '09885A' },
-                    { token: 'string', foreground: 'A31515' },
-                    { token: 'identifier', foreground: '001080' }
-                ]
-            });
+            // monaco.editor.defineTheme('powerfxTheme', {
+            //     base: 'vs',
+            //     inherit: true,
+            //     rules: [
+            //         { token: 'comment', foreground: '6A6A6A' },
+            //         { token: 'keyword', foreground: '0000FF', fontStyle: 'bold' },
+            //         { token: 'number', foreground: '09885A' },
+            //         { token: 'string', foreground: 'A31515' },
+            //         { token: 'identifier', foreground: '001080' }
+            //     ]
+            // });
 
             registerPowerFxCompletions();
 
@@ -138,26 +139,29 @@ function initMonaco() {
 function registerPowerFxCompletions() {
     const functionsList = ['If', 'Switch', 'Filter', 'Lookup', 'Patch', 'Collect', 'Remove', 'Update', 'ForAll', 'Sum', 'Average', 'Count', 'Round'];
     const keywordsList = ['And', 'Or', 'Not', 'IsBlank', 'IsError', 'Then', 'Else', 'true', 'false'];
-    const suggestions: Array<{ label: string; kind: number; insertText: string; insertTextRules?: number; documentation: string; range?: any }> = [];
+    const suggestions: CompletionItem[] = [];
 
     functionsList.forEach(fn => suggestions.push({
+
         label: fn,
         kind: monaco.languages.CompletionItemKind.Function,
         insertText: `${fn}($0)`,
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: `${fn} function`
+        documentation: `${fn} function`,
+        range: undefined
     }));
 
     keywordsList.forEach(kw => suggestions.push({
         label: kw,
         kind: monaco.languages.CompletionItemKind.Keyword,
         insertText: kw,
-        documentation: `${kw} keyword`
+        documentation: `${kw} keyword`,
+        range: undefined
     }));
 
     monaco.languages.registerCompletionItemProvider('powerfx', {
         triggerCharacters: ['.', '(', ' '],
-        provideCompletionItems(model: any, position: any) {
+        provideCompletionItems(model, position, context, token) {
             const word = model.getWordUntilPosition(position);
             const range = {
                 startLineNumber: position.lineNumber,
@@ -166,9 +170,9 @@ function registerPowerFxCompletions() {
                 endColumn: word.endColumn
             };
 
-            const filtered = suggestions.filter(s => s.label.toLowerCase().startsWith(word.word.toLowerCase()));
+            const filtered = suggestions.filter(s => s.label.toString().toLowerCase().startsWith(word.word.toLowerCase()));
             filtered.forEach(s => s.range = range);
-            return { suggestions: filtered };
+            return {  suggestions: filtered };
         }
     });
 }
