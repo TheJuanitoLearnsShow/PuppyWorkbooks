@@ -9,7 +9,10 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
     "@fluentui/web-components": "^2.6.1",
-    "monaco-editor": "^0.55.1"
+    "codemirror": "^6.0.2"
   }
 }

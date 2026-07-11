@@ -1,6 +1,6 @@
-declare const require: any;
-import * as monaco from "monaco-editor";
-import CompletionItem = monaco.languages.CompletionItem;
+import { EditorState, RangeSetBuilder } from '@codemirror/state';
+import { Decoration, EditorView } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
 
 type FormulaItem = {
     id?: number | string;
@@ -40,11 +40,48 @@ export const formulas: FormulaItem[] = [
 export let selectedIndex: number | null = null;
 
 const refs: Record<string, any> = {};
-let monacoEditor: any = null;
+let codeMirrorView: EditorView | null = null;
+let isProgrammaticEditorUpdate = false;
+
+const powerFxCommentMark = Decoration.mark({ class: 'cm-powerfx-comment' });
+const powerFxKeywordMark = Decoration.mark({ class: 'cm-powerfx-keyword' });
+const powerFxNumberMark = Decoration.mark({ class: 'cm-powerfx-number' });
+const powerFxStringMark = Decoration.mark({ class: 'cm-powerfx-string' });
+
+function buildPowerFxDecorations(view: EditorView) {
+    const builder = new RangeSetBuilder<Decoration>();
+    const doc = view.state.doc;
+
+    for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
+        const line = doc.line(lineNumber);
+        const text = line.text;
+        const patterns = [
+            { regex: /\/\/.*$/g, mark: powerFxCommentMark },
+            { regex: /\b(true|false)\b/g, mark: powerFxKeywordMark },
+            { regex: /\b(If|Then|Else|And|Or|Not|IsBlank|IsError|Switch|Filter|Lookup|Patch|Collect|Remove|Update|ForAll|Sum|Average|Count|Round)\b/g, mark: powerFxKeywordMark },
+            { regex: /\b([0-9]+(\.[0-9]+)?)\b/g, mark: powerFxNumberMark },
+            { regex: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, mark: powerFxStringMark }
+        ];
+
+        patterns.forEach(({ regex, mark }) => {
+            regex.lastIndex = 0;
+            let match: RegExpExecArray | null;
+            while ((match = regex.exec(text)) !== null) {
+                const from = line.from + match.index;
+                const to = from + match[0].length;
+                builder.add(from, to, mark);
+            }
+        });
+    }
+
+    return builder.finish();
+}
+
+const powerFxSyntaxExtension = EditorView.decorations.of((view: EditorView) => buildPowerFxDecorations(view));
 
 export function initRenderer(sendToHost: (message: unknown) => void) {
     initRefs();
-    initMonaco();
+    initCodeMirror();
     attachDomListeners(sendToHost);
     renderList();
 }
@@ -63,117 +100,35 @@ function initRefs() {
     refs.runAllBtn = document.getElementById('runAllBtn');
 }
 
-function initMonaco() {
-    if (typeof require === 'undefined') return;
+function initCodeMirror() {
+    if (!refs.formulaEditorDiv) {
+        return;
+    }
 
-    // if (require && require.config) {
-    //     try {
-    //         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.41.0/min/vs' } });
-    //     } catch (e) {
-    //         // ignore if already configured
-    //     }
-    // }
-
-    require(['vs/editor/editor.main'], function () {
-        try {
-            monaco.languages.register({ id: 'powerfx' });
-            monaco.languages.setMonarchTokensProvider('powerfx', {
-                tokenizer: {
-                    root: [
-                        [/\/\/.*$/, 'comment'],
-                        [/\b(true|false)\b/, 'keyword'],
-                        [/\b(If|Then|Else|And|Or|Not|IsBlank|IsError|Sum|Round|Count|Average)\b/, 'keyword'],
-                        [/\b([0-9]+(\.[0-9]+)?)\b/, 'number'],
-                        [/"([^"\\]|\\.)*"/, 'string'],
-                        [/\'([^'\\]|\\.)*\'/, 'string'],
-                        [/[,;:\.\(\)\[\]\{\}]/, 'delimiter'],
-                        [/[-+/*=<>!]+/, 'operator'],
-                        [/[a-zA-Z_][\w\.]*?/, 'identifier']
-                    ]
+    const state = EditorState.create({
+        doc: '',
+        extensions: [
+            basicSetup,
+            powerFxSyntaxExtension,
+            EditorView.updateListener.of(update => {
+                if (update.docChanged && selectedIndex !== null && !isProgrammaticEditorUpdate) {
+                    formulas[selectedIndex].formula = update.state.doc.toString();
+                    renderList();
                 }
-            });
-
-            // monaco.editor.defineTheme('powerfxTheme', {
-            //     base: 'vs',
-            //     inherit: true,
-            //     rules: [
-            //         { token: 'comment', foreground: '6A6A6A' },
-            //         { token: 'keyword', foreground: '0000FF', fontStyle: 'bold' },
-            //         { token: 'number', foreground: '09885A' },
-            //         { token: 'string', foreground: 'A31515' },
-            //         { token: 'identifier', foreground: '001080' }
-            //     ]
-            // });
-
-            registerPowerFxCompletions();
-
-            monacoEditor = monaco.editor.create(refs.formulaEditorDiv, {
-                value: '',
-                language: 'powerfx',
-                theme: 'powerfxTheme',
-                minimap: { enabled: false },
-                automaticLayout: true,
-                fontSize: 13
-            });
-        } catch (err) {
-            console.error('Monaco initialization failed, falling back to default theme:', err);
-            monacoEditor = monaco.editor.create(refs.formulaEditorDiv, {
-                value: '',
-                language: 'powerfx',
-                theme: 'vs',
-                minimap: { enabled: false },
-                automaticLayout: true,
-                fontSize: 13
-            });
-        }
-
-        monacoEditor.getModel().onDidChangeContent(() => {
-            if (selectedIndex !== null && monacoEditor) {
-                formulas[selectedIndex].formula = monacoEditor.getValue();
-                renderList();
-            }
-        });
+            }),
+            EditorView.theme({
+                '&': { height: '100%', fontSize: '13px' },
+                '.cm-scroller': { overflow: 'auto' },
+                '.cm-content': { fontFamily: 'Consolas, monospace' },
+                '.cm-gutters': { background: '#f5f5f5', borderRight: '1px solid #ddd' },
+                '.cm-line': { padding: '0 8px' }
+            })
+        ]
     });
-}
 
-function registerPowerFxCompletions() {
-    const functionsList = ['If', 'Switch', 'Filter', 'Lookup', 'Patch', 'Collect', 'Remove', 'Update', 'ForAll', 'Sum', 'Average', 'Count', 'Round'];
-    const keywordsList = ['And', 'Or', 'Not', 'IsBlank', 'IsError', 'Then', 'Else', 'true', 'false'];
-    const suggestions: CompletionItem[] = [];
-
-    functionsList.forEach(fn => suggestions.push({
-
-        label: fn,
-        kind: monaco.languages.CompletionItemKind.Function,
-        insertText: `${fn}($0)`,
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: `${fn} function`,
-        range: undefined
-    }));
-
-    keywordsList.forEach(kw => suggestions.push({
-        label: kw,
-        kind: monaco.languages.CompletionItemKind.Keyword,
-        insertText: kw,
-        documentation: `${kw} keyword`,
-        range: undefined
-    }));
-
-    monaco.languages.registerCompletionItemProvider('powerfx', {
-        triggerCharacters: ['.', '(', ' '],
-        provideCompletionItems(model, position, context, token) {
-            const word = model.getWordUntilPosition(position);
-            const range = {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: word.startColumn,
-                endColumn: word.endColumn
-            };
-
-            const filtered = suggestions.filter(s => s.label.toString().toLowerCase().startsWith(word.word.toLowerCase()));
-            filtered.forEach(s => s.range = range);
-            return {  suggestions: filtered };
-        }
+    codeMirrorView = new EditorView({
+        state,
+        parent: refs.formulaEditorDiv
     });
 }
 
@@ -282,9 +237,14 @@ export function openEditor(index: number) {
     refs.commentsField.value = f.comments;
     refs.resultField.value = f.result;
 
-    if (monacoEditor) {
-        monacoEditor.setValue(f.formula || '');
-        monacoEditor.focus();
+    if (codeMirrorView) {
+        isProgrammaticEditorUpdate = true;
+        const value = f.formula || '';
+        codeMirrorView.dispatch({
+            changes: { from: 0, to: codeMirrorView.state.doc.length, insert: value }
+        });
+        isProgrammaticEditorUpdate = false;
+        codeMirrorView.focus();
     } else {
         refs.formulaEditorDiv.textContent = f.formula || '';
     }

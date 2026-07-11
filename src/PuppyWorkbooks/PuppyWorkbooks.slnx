@@ -9,6 +9,9 @@
     <Project Path="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
     <Project Path="5-Presentation/PuppyWorkbooks.ViewModels/PuppyWorkbooks.ViewModels.csproj" />
   </Folder>
+  <Folder Name="/5-Presentation/CLI/">
+    <Project Path="5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj" />
+  </Folder>
   <Folder Name="/5-Presentation/REACTOR/">
     <Project Path="5-Presentation/REACTOR/PuppyWorkbooks.WinUI.Reactor/PuppyWorkbooks.WinUI.Reactor.csproj">
       <Platform Project="x64" />

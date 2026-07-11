@@ -107,30 +107,28 @@ label {
     background: white;
 }
 
-/* Monaco suggestion widget: ensure visible and limit width so suggestions fit */
-.monaco-editor .suggest-widget,
-.suggest-widget {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    z-index: 10000 !important;
-    max-width: 280px !important;
-    width: auto !important;
-    box-sizing: border-box;
+/* CodeMirror styling */
+.cm-editor {
+    height: 100%;
+    border-radius: 4px;
 }
 
-/* Truncate long suggestion labels/details */
-.monaco-editor .suggest-widget .monaco-list .monaco-list-row .contents,
-.monaco-editor .suggest-widget .details {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.cm-powerfx-comment {
+    color: #6a6a6a;
+    font-style: italic;
 }
 
-/* Reduce details pane width so overall widget is narrower */
-.monaco-editor .suggest-widget .details {
-    max-width: 140px;
+.cm-powerfx-keyword {
+    color: #0000ff;
+    font-weight: 600;
+}
+
+.cm-powerfx-number {
+    color: #09885a;
+}
+
+.cm-powerfx-string {
+    color: #a31515;
 }
 
 .remove-btn {
