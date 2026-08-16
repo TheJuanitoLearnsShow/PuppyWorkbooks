@@ -138,7 +138,9 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         IReadOnlyDictionary<string, object?>? additionalBindings = null)
     {
         if (worksheet is null) throw new InvalidOperationException("A worksheet is required for this step.");
-        var copy = new WorkSheet { Name = worksheet.Name, Cells = worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments)).ToList() };
+        var copy = new WorkSheet { Name = worksheet.Name, Cells =
+            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))]
+        };
         BindRecord(copy, record);
         if (additionalBindings is not null)
             foreach (var binding in additionalBindings) BindValue(copy, binding.Key, binding.Value);
@@ -153,7 +155,9 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
             .Where(c => !string.IsNullOrWhiteSpace(c.Formula))
             .Select(c => c.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var copy = new WorkSheet { Name = worksheet.Name, Cells = worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments)).ToList() };
+        var copy = new WorkSheet { Name = worksheet.Name, Cells =
+            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))]
+        };
         BindRecord(copy, record);
         var values = await _interpreter.EvaluateCellsAsync(copy, token);
         return values

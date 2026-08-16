@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkSheet>
+    <Name>Map</Name>
+    <Cells>
+        <WorkCell>
+            <Id>1</Id>
+            <Name>Name</Name>
+            <Formula>InputRecord.Name</Formula>
+            <Comments/>
+        </WorkCell>
+        <WorkCell>
+            <Id>2</Id>
+            <Name>Amount</Name>
+            <Formula>Value(InputRecord.Amount)</Formula>
+            <Comments/>
+        </WorkCell>
+        <WorkCell>
+            <Id>3</Id>
+            <Name>IsActive</Name>
+            <Formula>InputRecord.Active = &quot;true&quot;</Formula>
+            <Comments/>
+        </WorkCell>
+    </Cells>
+</WorkSheet>

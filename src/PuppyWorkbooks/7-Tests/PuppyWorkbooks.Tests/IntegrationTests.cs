@@ -6,6 +6,19 @@ namespace PuppyWorkbooks.Tests;
 public sealed class IntegrationTests
 {
     [Fact]
+    public void DeserializeFile_LoadsWorksheetReferencedByRelativeFilePath()
+    {
+        var integrationPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration",
+            "TestIntegrationWithFileReferences.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(integrationPath);
+
+        Assert.Equal(3, definition.Steps.Count(step => step.Worksheet is not null));
+        Assert.Equal("Name", definition.Steps[1].Worksheet!.Cells[0].Name);
+        Assert.Equal("Keep", definition.Steps[2].Worksheet!.Cells[0].Name);
+        Assert.Equal("Total", definition.Steps[3].Worksheet!.Cells[0].Name);
+    }
+
+    [Fact]
     public async Task CsvIntegration_MapsFiltersReducesAndWritesOneRecord()
     {
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");

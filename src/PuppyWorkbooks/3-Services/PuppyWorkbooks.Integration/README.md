@@ -32,6 +32,18 @@ var definition = new IntegrationXmlSerializer().DeserializeFile("integration.xml
 var result = await new IntegrationRunner().RunAsync(definition);
 ```
 
+Worksheets may be defined inline, or loaded from a separate worksheet XML file.
+The path is resolved relative to the integration file:
+
+```xml
+<Map Id="normalize">
+  <Worksheet FilePath="worksheets/normalize.xml" />
+</Map>
+```
+
+`Path`, `File`, `Filename`, and `FileName` are also accepted as aliases for
+`FilePath`.
+
 For SQL, provide a vendor-specific ADO.NET connection factory. The library deliberately
 does not reference a database vendor package:
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkSheet>
+    <Name>Reduce</Name>
+    <Cells>
+        <WorkCell>
+            <Id>1</Id>
+            <Name>Total</Name>
+            <Formula>State + InputRecord.Amount</Formula>
+            <Comments/>
+        </WorkCell>
+    </Cells>
+</WorkSheet>

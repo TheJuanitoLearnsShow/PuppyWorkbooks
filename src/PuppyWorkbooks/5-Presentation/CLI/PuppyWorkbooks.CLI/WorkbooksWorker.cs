@@ -3,6 +3,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PuppyWorkbooks.CLI.Output;
+using PuppyWorkbooks.Integration;
+using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Serialization;
 
 namespace PuppyWorkbooks.CLI;
@@ -12,6 +14,7 @@ public sealed class WorkbooksWorker : IHostedService
     private readonly ILogger? _logger;
     private readonly ExecutionSettings _settings;
     private readonly WorkSheetSerializer _workSheetSerializer = new ();
+    private readonly IntegrationXmlSerializer _integrationSerializer = new();
 
     public WorkbooksWorker(
         ILogger<WorkbooksWorker> logger,
@@ -30,6 +33,12 @@ public sealed class WorkbooksWorker : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
+        {
+            await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
+            return;
+        }
+
         using IOutputWriter outputWriter = new ConsoleOutputWriter();
         try
         {
@@ -46,6 +55,23 @@ public sealed class WorkbooksWorker : IHostedService
             outputWriter.CloseWriter();
         }
         return;
+    }
+
+    private async Task ExecuteIntegration(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var definition = _integrationSerializer.DeserializeFile(path);
+            var result = await new IntegrationRunner().RunAsync(definition, cancellationToken);
+            if (_logger is not null)
+                _logger.LogInformation(
+                    "Integration {IntegrationName} completed. Read: {Read}, Written: {Written}, Excluded: {Excluded}",
+                    definition.Name, result.Read, result.Written, result.Excluded);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Error executing integration at path: {Path}", path);
+        }
     }
 
     private async Task ExecuteWorkbooks( 
@@ -108,7 +134,7 @@ public sealed class WorkbooksWorker : IHostedService
 
     Task IHostedService.StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("7. StopAsync has been called.");
+        _logger?.LogInformation("7. StopAsync has been called.");
 
         return Task.CompletedTask;
     }

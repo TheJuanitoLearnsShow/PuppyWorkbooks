@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkSheet>
+    <Name>Filter</Name>
+    <Cells>
+        <WorkCell>
+            <Id>1</Id>
+            <Name>Keep</Name>
+            <Formula>InputRecord.IsActive</Formula>
+            <Comments/>
+        </WorkCell>
+    </Cells>
+</WorkSheet>

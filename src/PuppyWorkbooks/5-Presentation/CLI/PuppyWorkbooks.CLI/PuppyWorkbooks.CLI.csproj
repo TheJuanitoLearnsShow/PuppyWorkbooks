@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\3-Services\PuppyWorkbooks.Integration\PuppyWorkbooks.Integration.csproj" />
       <ProjectReference Include="..\..\..\3-Services\PuppyWorkbooks\PuppyWorkbooks.csproj" />
     </ItemGroup>
 
