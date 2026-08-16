@@ -37,6 +37,9 @@
       <None Update="SampleFiles\TestWorkbook.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="SampleFiles\Integration\TestIntegration.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

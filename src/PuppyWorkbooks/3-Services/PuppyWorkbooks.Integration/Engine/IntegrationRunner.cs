@@ -1,18 +1,10 @@
 using System.Collections;
-using System.Data.Common;
 using System.Globalization;
 using System.Text.Json;
-using PuppyWorkbooks;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Providers;
 
-namespace PuppyWorkbooks.Integration;
-
-public sealed class IntegrationRunnerOptions
-{
-    /// Creates a connection for SQL steps. Keeping this as a factory avoids coupling the
-    /// integration library to one database vendor.
-    public Func<string, DbConnection>? ConnectionFactory { get; init; }
-}
+namespace PuppyWorkbooks.Integration.Engine;
 
 public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
 {
@@ -110,8 +102,29 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
     {
         var next = await Evaluate(step.Worksheet, record, token,
             new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase) { ["State"] = state });
-        record[step.OutputField] = next;
-        return (record, next);
+        return (CreateStateRecord(step.OutputField, next), next);
+    }
+
+    private static IntegrationRecord CreateStateRecord(string outputField, object? state)
+    {
+        if (state is IDictionary dictionary)
+        {
+            var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            foreach (DictionaryEntry item in dictionary)
+                values[Convert.ToString(item.Key, CultureInfo.InvariantCulture)!] = item.Value;
+            return new IntegrationRecord(values);
+        }
+
+        if (state is JsonElement { ValueKind: JsonValueKind.Object } jsonObject)
+        {
+            var values = jsonObject.Deserialize<Dictionary<string, object?>>() ?? [];
+            return new IntegrationRecord(values);
+        }
+
+        return new IntegrationRecord(new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            [outputField] = state
+        });
     }
 
     private static object? ParseInitialState(string json)
