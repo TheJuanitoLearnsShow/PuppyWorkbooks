@@ -34,6 +34,39 @@ public class WorkbookInterpreter
         }
     }
 
+    /// Evaluates the final cell and returns its native Power Fx value. This is useful to
+    /// services which need to use a worksheet as a function rather than display its result.
+    public async Task<object?> EvaluateAsync(WorkSheet worksheet, CancellationToken cancellationToken = default)
+    {
+        var engine = new RecalcEngine(_engineConfig);
+        foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+            engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+        var last = worksheet.Cells.LastOrDefault(c => !string.IsNullOrWhiteSpace(c.Formula));
+        if (last is null) return null;
+        var result = await engine.EvalAsync(last.Name, cancellationToken);
+        return result.ToObject();
+    }
+
+    /// Evaluates every formula cell and returns the native value of each cell keyed by
+    /// its name. This is used by integration map steps, where a worksheet is a record
+    /// projection rather than a single scalar expression.
+    public async Task<Dictionary<string, object?>> EvaluateCellsAsync(WorkSheet worksheet,
+        CancellationToken cancellationToken = default)
+    {
+        var engine = new RecalcEngine(_engineConfig);
+        foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+            engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+
+        var results = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+        {
+            var result = await engine.EvalAsync(cell.Name, cancellationToken);
+            results[cell.Name] = result.ToObject();
+        }
+
+        return results;
+    }
+
     private static bool CanBeUsedAsFormula(WorkCell cell)
     {
         return !string.IsNullOrEmpty(cell.Formula);

@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\PuppyWorkbooks\PuppyWorkbooks.csproj" />
+      <PackageReference Include="CsvHelper" Version="33.1.0" />
+    </ItemGroup>
+
 </Project>
