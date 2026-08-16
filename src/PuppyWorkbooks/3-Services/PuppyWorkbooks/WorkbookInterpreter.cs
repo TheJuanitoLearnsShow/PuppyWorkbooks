@@ -19,7 +19,7 @@ public class WorkbookInterpreter
     public async IAsyncEnumerable<CellResult> ExecuteAsync(WorkSheet worksheet, int uptToRow = -1, bool yieldResultsForEachCell = false,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var cellsToExecute = uptToRow == -1 ?  worksheet.Cells : worksheet.Cells.Take(uptToRow).ToList();
+        var cellsToExecute = GetExecutionCells(worksheet, uptToRow);
         var engine = new RecalcEngine(_engineConfig);
         foreach (var cell in cellsToExecute)
         {
@@ -27,6 +27,11 @@ public class WorkbookInterpreter
             if (CanBeUsedAsFormula(cell))
             {
                 engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+            }
+            if (worksheet.Variables.ContainsKey(cell.Name))
+            {
+                await engine.EvalAsync(cell.Name, cancellationToken);
+                continue;
             }
             if (!yieldResultsForEachCell && cell != cellsToExecute.Last()) continue;
             var result = await engine.EvalAsync(cell.Name, cancellationToken);
@@ -39,8 +44,12 @@ public class WorkbookInterpreter
     public async Task<object?> EvaluateAsync(WorkSheet worksheet, CancellationToken cancellationToken = default)
     {
         var engine = new RecalcEngine(_engineConfig);
-        foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+        foreach (var cell in GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+        {
             engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+            if (worksheet.Variables.ContainsKey(cell.Name))
+                await engine.EvalAsync(cell.Name, cancellationToken);
+        }
         var last = worksheet.Cells.LastOrDefault(c => !string.IsNullOrWhiteSpace(c.Formula));
         if (last is null) return null;
         var result = await engine.EvalAsync(last.Name, cancellationToken);
@@ -54,8 +63,12 @@ public class WorkbookInterpreter
         CancellationToken cancellationToken = default)
     {
         var engine = new RecalcEngine(_engineConfig);
-        foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+        foreach (var cell in GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+        {
             engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+            if (worksheet.Variables.ContainsKey(cell.Name))
+                await engine.EvalAsync(cell.Name, cancellationToken);
+        }
 
         var results = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
@@ -65,6 +78,14 @@ public class WorkbookInterpreter
         }
 
         return results;
+    }
+
+    private static List<WorkCell> GetExecutionCells(WorkSheet worksheet, int uptToRow = -1)
+    {
+        var variables = worksheet.Variables.Select((pair, index) =>
+            new WorkCell(-index - 1, pair.Key, pair.Value, "worksheet variable"));
+        var cells = uptToRow == -1 ? worksheet.Cells : worksheet.Cells.Take(uptToRow);
+        return variables.Concat(cells).ToList();
     }
 
     private static bool CanBeUsedAsFormula(WorkCell cell)

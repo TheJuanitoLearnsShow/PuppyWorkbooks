@@ -139,7 +139,8 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
     {
         if (worksheet is null) throw new InvalidOperationException("A worksheet is required for this step.");
         var copy = new WorkSheet { Name = worksheet.Name, Cells =
-            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))]
+            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))],
+            Variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase)
         };
         BindRecord(copy, record);
         if (additionalBindings is not null)
@@ -156,7 +157,8 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
             .Select(c => c.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var copy = new WorkSheet { Name = worksheet.Name, Cells =
-            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))]
+            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))],
+            Variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase)
         };
         BindRecord(copy, record);
         var values = await _interpreter.EvaluateCellsAsync(copy, token);
@@ -175,6 +177,12 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
 
     private static void BindValue(WorkSheet worksheet, string name, object? value)
     {
+        if (worksheet.Variables.ContainsKey(name))
+        {
+            worksheet.Variables[name] = ToFormulaLiteral(value);
+            return;
+        }
+
         var cell = worksheet.Cells.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
         if (cell is not null) cell.Formula = ToFormulaLiteral(value);
         else worksheet.Cells.Insert(0, new WorkCell(0, name, ToFormulaLiteral(value), "integration input"));

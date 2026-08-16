@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WorkSheet>
     <Name>Filter</Name>
+    <Variables>
+        <Variable><Key>InputRecord</Key><Value>{IsActive:true}</Value></Variable>
+    </Variables>
     <Cells>
         <WorkCell>
             <Id>1</Id>

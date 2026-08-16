@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Xml.Serialization;
+using System.Xml.Linq;
 
 namespace PuppyWorkbooks.Serialization;
 
@@ -17,7 +18,20 @@ public class WorkSheetSerializer
     public WorkSheet DeserializeFromXmlFile(string filePath)
     {
         using var stringReader = new StreamReader(filePath);
-        return (WorkSheet)_serializer.Deserialize(stringReader)!;
+        var worksheet = (WorkSheet)_serializer.Deserialize(stringReader)!;
+        LoadVariables(worksheet, File.ReadAllText(filePath));
+        return worksheet;
+    }
+
+    private static void LoadVariables(WorkSheet worksheet, string xml)
+    {
+        var variables = XDocument.Parse(xml).Root?.Element("Variables")?.Elements("Variable") ?? [];
+        foreach (var variable in variables)
+        {
+            var key = variable.Element("Key")?.Value;
+            if (!string.IsNullOrWhiteSpace(key))
+                worksheet.Variables[key] = variable.Element("Value")?.Value ?? string.Empty;
+        }
     }
     
     public void SerializeToJsonFile(string filePath, WorkSheet worksheet)

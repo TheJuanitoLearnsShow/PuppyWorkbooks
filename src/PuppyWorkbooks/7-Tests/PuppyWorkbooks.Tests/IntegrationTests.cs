@@ -19,6 +19,19 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public async Task ReferencedWorksheet_UsesItsDefaultVariablesWhenRunStandalone()
+    {
+        var integrationPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration",
+            "TestIntegrationWithFileReferences.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(integrationPath);
+
+        Assert.Contains("InputRecord", definition.Steps[2].Worksheet!.Variables.Keys);
+        var result = await new WorkbookInterpreter().EvaluateAsync(definition.Steps[2].Worksheet!);
+
+        Assert.Equal(true, result);
+    }
+
+    [Fact]
     public async Task CsvIntegration_MapsFiltersReducesAndWritesOneRecord()
     {
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
