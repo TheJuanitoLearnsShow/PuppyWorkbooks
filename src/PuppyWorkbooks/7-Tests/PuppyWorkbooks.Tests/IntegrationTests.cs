@@ -80,21 +80,10 @@ public sealed class IntegrationTests
 
         try
         {
-            var definition = new IntegrationXmlSerializer().Deserialize($@"
-<Integration><Steps>
-  <IOInput Id=""input"" Kind=""CSVReader"" FilePath=""{inputPath}"" />
-  <Switch Id=""choose""><Worksheet><Cells>
-    <WorkCell><Id>1</Id><Name>IsActive</Name><Formula>InputRecord.Active = &quot;true&quot;</Formula></WorkCell>
-    <WorkCell><Id>2</Id><Name>IsInactive</Name><Formula>Not IsActive</Formula></WorkCell>
-  </Cells></Worksheet>
-    <Branch WorkCell=""IsActive""><Map Id=""yes""><Worksheet><Cells>
-      <WorkCell><Id>1</Id><Name>Result</Name><Formula>InputRecord.Name &amp; &quot;-yes&quot;</Formula></WorkCell>
-    </Cells></Worksheet></Map></Branch>
-    <Branch WorkCell=""IsInactive""><Map Id=""no""><Worksheet><Cells>
-      <WorkCell><Id>1</Id><Name>Result</Name><Formula>InputRecord.Name &amp; &quot;-no&quot;</Formula></WorkCell>
-    </Cells></Worksheet></Map></Branch>
-  </Switch>
-</Steps></Integration>");
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "Switch.xml");
+            var xml = (await File.ReadAllTextAsync(xmlPath))
+                .Replace("__INPUT_PATH__", inputPath, StringComparison.Ordinal);
+            var definition = new IntegrationXmlSerializer().Deserialize(xml);
 
             var result = await new IntegrationRunner().RunAsync(definition);
 
@@ -103,7 +92,7 @@ public sealed class IntegrationTests
         }
         finally
         {
-            Directory.Delete(directory, recursive: true);
+            //Directory.Delete(directory, recursive: true);
         }
     }
 }

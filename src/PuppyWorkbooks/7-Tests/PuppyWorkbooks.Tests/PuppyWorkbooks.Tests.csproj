@@ -52,6 +52,9 @@
       <None Update="SampleFiles\Integration\Reduce.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="SampleFiles\Integration\Switch.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
