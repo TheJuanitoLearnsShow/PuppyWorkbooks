@@ -10,6 +10,7 @@ public sealed class IntegrationDefinition
     [XmlArrayItem("Map", typeof(MapStep))]
     [XmlArrayItem("Filter", typeof(FilterStep))]
     [XmlArrayItem("Reduce", typeof(ReduceStep))]
+    [XmlArrayItem("Switch", typeof(SwitchStep))]
     [XmlArrayItem("IOInput", typeof(InputStep))]
     [XmlArrayItem("IOOutput", typeof(OutputStep))]
     public List<IntegrationStep> Steps { get; set; } = [];

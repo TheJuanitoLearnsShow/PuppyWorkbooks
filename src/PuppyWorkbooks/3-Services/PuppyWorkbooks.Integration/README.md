@@ -1,6 +1,6 @@
 # PuppyWorkbooks.Integration
 
-Integrations are XML documents containing an input, zero or more map/filter/reduce steps,
+Integrations are XML documents containing an input, zero or more map/filter/reduce/switch steps,
 and one or more outputs. A worksheet's last non-empty cell is its result.
 
 ```xml
@@ -63,3 +63,19 @@ Filters keep records when their final value is `true`. Reduce worksheets receive
 and the current record, and their final value becomes the configured state field.
 Outputs add `<step-id>.Status`, `<step-id>.StatusMessage`, and
 `<step-id>.AffectedRows` to the record yielded to subsequent steps.
+
+Switches evaluate their worksheet once per input record. Each branch names a boolean
+worksheet cell with `WorkCell`; branches whose cell is true run their nested steps in
+declaration order:
+
+```xml
+<Switch Id="choose">
+  <Worksheet FilePath="worksheets/choose.xml" />
+  <Branch WorkCell="IsPreferred">
+    <Map Id="preferred"><Worksheet FilePath="worksheets/preferred.xml" /></Map>
+  </Branch>
+  <Branch WorkCell="IsFallback">
+    <Map Id="fallback"><Worksheet FilePath="worksheets/fallback.xml" /></Map>
+  </Branch>
+</Switch>
+```

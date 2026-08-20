@@ -2,7 +2,7 @@
 
 namespace PuppyWorkbooks.Integration.Models;
 
-[XmlInclude(typeof(MapStep)), XmlInclude(typeof(FilterStep)), XmlInclude(typeof(ReduceStep)),
+[XmlInclude(typeof(MapStep)), XmlInclude(typeof(FilterStep)), XmlInclude(typeof(ReduceStep)), XmlInclude(typeof(SwitchStep)),
  XmlInclude(typeof(InputStep)), XmlInclude(typeof(OutputStep))]
 public abstract class IntegrationStep
 {

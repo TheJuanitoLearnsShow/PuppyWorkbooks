@@ -41,9 +41,14 @@ public sealed class IntegrationXmlSerializer
         var stepElements = document.Root?.Element("Steps")?.Elements().ToList() ?? [];
 
         for (var index = 0; index < steps.Count; index++)
+            LoadWorksheetReferences(steps[index], stepElements.ElementAtOrDefault(index), baseDirectory);
+    }
+
+    private static void LoadWorksheetReferences(IntegrationStep step, XElement? stepElement, string? baseDirectory)
+    {
+        var worksheetElement = stepElement?.Element("Worksheet");
+        if (worksheetElement is not null)
         {
-            var worksheetElement = stepElements.ElementAtOrDefault(index)?.Element("Worksheet");
-            if (worksheetElement is null) continue;
 
             var path = (string?)worksheetElement.Attribute("FilePath")
                        ?? (string?)worksheetElement.Attribute("Path")
@@ -61,7 +66,8 @@ public sealed class IntegrationXmlSerializer
             if (string.IsNullOrWhiteSpace(path) && !worksheetElement.Elements().Any())
                 path = worksheetElement.Value.Trim();
 
-            if (string.IsNullOrWhiteSpace(path)) continue;
+            if (!string.IsNullOrWhiteSpace(path))
+            {
 
             var fullPath = Path.IsPathRooted(path)
                 ? path
@@ -70,8 +76,22 @@ public sealed class IntegrationXmlSerializer
             if (!File.Exists(fullPath))
                 throw new FileNotFoundException($"Worksheet file '{path}' was not found.", fullPath);
 
-            steps[index].WorksheetPath = fullPath;
-            steps[index].Worksheet = new WorkSheetSerializer().DeserializeFromXmlFile(fullPath);
+                step.WorksheetPath = fullPath;
+                step.Worksheet = new WorkSheetSerializer().DeserializeFromXmlFile(fullPath);
+            }
+        }
+
+        if (step is SwitchStep switchStep && stepElement is not null)
+        {
+            var branchElements = stepElement.Elements("Branch").ToList();
+            for (var index = 0; index < switchStep.Branches.Count; index++)
+            {
+                var branch = switchStep.Branches[index];
+                var branchElement = branchElements.ElementAtOrDefault(index);
+                var childElements = branchElement?.Elements().Where(e => e.Name.LocalName != "Worksheet").ToList() ?? [];
+                for (var childIndex = 0; childIndex < branch.Steps.Count; childIndex++)
+                    LoadWorksheetReferences(branch.Steps[childIndex], childElements.ElementAtOrDefault(childIndex), baseDirectory);
+            }
         }
     }
 }

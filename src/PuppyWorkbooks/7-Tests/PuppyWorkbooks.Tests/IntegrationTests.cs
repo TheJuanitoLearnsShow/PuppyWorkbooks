@@ -69,4 +69,41 @@ public sealed class IntegrationTests
             //if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task Switch_RunsOnlyBranchesWhoseWorkCellIsTrue()
+    {
+        var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(directory);
+        var inputPath = Path.Combine(directory, "input.csv");
+        await File.WriteAllTextAsync(inputPath, "Name,Active\nAlice,true\nBob,false\n");
+
+        try
+        {
+            var definition = new IntegrationXmlSerializer().Deserialize($@"
+<Integration><Steps>
+  <IOInput Id=""input"" Kind=""CSVReader"" FilePath=""{inputPath}"" />
+  <Switch Id=""choose""><Worksheet><Cells>
+    <WorkCell><Id>1</Id><Name>IsActive</Name><Formula>InputRecord.Active = &quot;true&quot;</Formula></WorkCell>
+    <WorkCell><Id>2</Id><Name>IsInactive</Name><Formula>Not IsActive</Formula></WorkCell>
+  </Cells></Worksheet>
+    <Branch WorkCell=""IsActive""><Map Id=""yes""><Worksheet><Cells>
+      <WorkCell><Id>1</Id><Name>Result</Name><Formula>InputRecord.Name &amp; &quot;-yes&quot;</Formula></WorkCell>
+    </Cells></Worksheet></Map></Branch>
+    <Branch WorkCell=""IsInactive""><Map Id=""no""><Worksheet><Cells>
+      <WorkCell><Id>1</Id><Name>Result</Name><Formula>InputRecord.Name &amp; &quot;-no&quot;</Formula></WorkCell>
+    </Cells></Worksheet></Map></Branch>
+  </Switch>
+</Steps></Integration>");
+
+            var result = await new IntegrationRunner().RunAsync(definition);
+
+            Assert.Equal(2, result.Read);
+            Assert.Equal("Bob-no", result.FinalState!["Result"]);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
 }
