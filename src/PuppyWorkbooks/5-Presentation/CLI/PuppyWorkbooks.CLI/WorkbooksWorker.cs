@@ -12,8 +12,9 @@ namespace PuppyWorkbooks.CLI;
 public sealed class WorkbooksWorker : IHostedService
 {
     private readonly ILogger? _logger;
+    private readonly IHostApplicationLifetime _appLifetime;
     private readonly ExecutionSettings _settings;
-    private readonly WorkSheetSerializer _workSheetSerializer = new ();
+    private readonly WorkSheetSerializer _workSheetSerializer = new();
     private readonly IntegrationXmlSerializer _integrationSerializer = new();
 
     public WorkbooksWorker(
@@ -22,8 +23,10 @@ public sealed class WorkbooksWorker : IHostedService
         IHostApplicationLifetime appLifetime)
     {
         _logger = logger;
+        _appLifetime = appLifetime;
         _settings = options.Value;
     }
+
     public WorkbooksWorker(ExecutionSettings settings)
     {
         _logger = null;
@@ -43,6 +46,16 @@ public sealed class WorkbooksWorker : IHostedService
         try
         {
             var workbookPaths = _settings.WorkbookPaths;
+            if (workbookPaths == null || workbookPaths.Length == 0)
+            {
+                var firstPositional = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(a =>
+                    !string.IsNullOrWhiteSpace(a) && !a.StartsWith("-"));
+                if (!string.IsNullOrEmpty(firstPositional))
+                {
+                    workbookPaths = new[] { firstPositional };
+                }
+            }
+
             var inputValues = LoadInputValues();
             outputWriter.OpenWriter();
             await ExecuteWorkbooks(workbookPaths, inputValues, outputWriter, cancellationToken);
@@ -51,9 +64,11 @@ public sealed class WorkbooksWorker : IHostedService
         {
             _logger?.LogError(fatalError.Message);
         }
-        finally{
+        finally
+        {
             outputWriter.CloseWriter();
         }
+        _appLifetime.StopApplication();
         return;
     }
 
@@ -74,8 +89,8 @@ public sealed class WorkbooksWorker : IHostedService
         }
     }
 
-    private async Task ExecuteWorkbooks( 
-        string[] workbookPaths, 
+    private async Task ExecuteWorkbooks(
+        string[] workbookPaths,
         Dictionary<string, string> inputValues,
         IOutputWriter outputWriter,
         CancellationToken cancellationToken)
@@ -86,21 +101,25 @@ public sealed class WorkbooksWorker : IHostedService
         }
     }
 
-    private async Task ExecuteWorkbook(Dictionary<string, string> inputValues, IOutputWriter outputWriter, string path, CancellationToken cancellationToken)
+    private async Task ExecuteWorkbook(Dictionary<string, string> inputValues, IOutputWriter outputWriter, string path,
+        CancellationToken cancellationToken)
     {
         try
         {
             var workbook = _workSheetSerializer.DeserializeFromXmlFile(path);
             outputWriter.StartWorkbookResult(workbook.Name);
             foreach (var inputValue in inputValues)
-            {   
+            {
                 workbook.SetFormulaValue(inputValue.Key, inputValue.Value);
             }
+
             var interpreter = new WorkbookInterpreter();
-            await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true, cancellationToken: cancellationToken))
+            await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true,
+                               cancellationToken: cancellationToken))
             {
                 outputWriter.WriteCellResult(result);
             }
+
             outputWriter.EndWorkbookResult();
         }
         catch (Exception e)
@@ -116,6 +135,7 @@ public sealed class WorkbooksWorker : IHostedService
         {
             return inputValues;
         }
+
         var valuesFromInputFile = JsonSerializer.Deserialize<
             Dictionary<string, string>>(_settings.InputDataPath);
         if (valuesFromInputFile is not null)
@@ -128,6 +148,7 @@ public sealed class WorkbooksWorker : IHostedService
                 }
             }
         }
+
         return inputValues;
     }
 
@@ -138,5 +159,4 @@ public sealed class WorkbooksWorker : IHostedService
 
         return Task.CompletedTask;
     }
-
 }
