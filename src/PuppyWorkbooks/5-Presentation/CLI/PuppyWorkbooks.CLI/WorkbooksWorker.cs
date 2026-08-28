@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Xml;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -36,12 +37,57 @@ public sealed class WorkbooksWorker : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        var cmdArgs = Environment.GetCommandLineArgs();
+        
+        var simplePaths = cmdArgs.Skip(1).Where(a =>
+            !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-')).ToArray();
+        if (simplePaths.Length == 1)
+        {
+            var rootName = GetFirstXmlNodeName(simplePaths[0]);
+            switch (rootName)
+            {
+                case "Integration":
+                    await ExecuteIntegration(simplePaths[0], cancellationToken);
+                    return;
+                case "Workbook":
+                    await ExecuteWorksheets(cancellationToken);
+                    return;
+            }
+        }
         if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
         {
             await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
             return;
         }
 
+        await ExecuteWorksheets(cancellationToken);
+        _appLifetime.StopApplication();
+        return;
+    }
+
+    private string GetFirstXmlNodeName(string simplePath)
+    {
+        if (string.IsNullOrWhiteSpace(simplePath) || !File.Exists(simplePath))
+            return string.Empty;
+
+        using var reader = XmlReader.Create(simplePath, new XmlReaderSettings
+        {
+            IgnoreComments = true,
+            IgnoreWhitespace = true,
+            DtdProcessing = DtdProcessing.Prohibit
+        });
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.Element)
+                return reader.LocalName;
+        }
+
+        return string.Empty;
+    }
+
+    private async Task ExecuteWorksheets(CancellationToken cancellationToken)
+    {
         using IOutputWriter outputWriter = new ConsoleOutputWriter();
         try
         {
@@ -68,8 +114,6 @@ public sealed class WorkbooksWorker : IHostedService
         {
             outputWriter.CloseWriter();
         }
-        _appLifetime.StopApplication();
-        return;
     }
 
     private async Task ExecuteIntegration(string path, CancellationToken cancellationToken)
