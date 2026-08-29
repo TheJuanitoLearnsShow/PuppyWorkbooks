@@ -2,18 +2,21 @@
 <Integration Name="Switch branches">
     <Steps>
         <IOInput Id="input" Kind="CSVReader" FilePath="__INPUT_PATH__" />
+        <Map Id="map">
+            <Worksheet FilePath="Map.xml"/>
+        </Map>
         <Switch Id="choose">
             <Worksheet>
                 <Cells>
                     <WorkCell>
                         <Id>1</Id>
                         <Name>IsActive</Name>
-                        <Formula>InputRecord.Active = &quot;true&quot;</Formula>
+                        <Formula>InputRecord.IsActive</Formula>
                     </WorkCell>
                     <WorkCell>
                         <Id>2</Id>
                         <Name>IsInactive</Name>
-                        <Formula>Not IsActive</Formula>
+                        <Formula>Not(IsActive)</Formula>
                     </WorkCell>
                 </Cells>
             </Worksheet>

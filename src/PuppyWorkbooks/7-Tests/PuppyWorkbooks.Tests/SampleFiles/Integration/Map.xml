@@ -2,7 +2,7 @@
 <WorkSheet>
     <Name>Map</Name>
     <Variables>
-        <Variable><Key>InputRecord</Key><Value>{Name:"Sample",Amount:1,Active:"true"}</Value></Variable>
+        <Variable><Key>InputRecord</Key><Value>{Name: "Sample", Amount: Value(9999), Active: "true" }</Value></Variable>
     </Variables>
     <Cells>
         <WorkCell>
@@ -14,7 +14,7 @@
         <WorkCell>
             <Id>2</Id>
             <Name>Amount</Name>
-            <Formula>Value(InputRecord.Amount)</Formula>
+            <Formula>InputRecord.Amount</Formula>
             <Comments/>
         </WorkCell>
         <WorkCell>

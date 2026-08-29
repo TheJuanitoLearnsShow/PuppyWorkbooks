@@ -44,16 +44,33 @@ public class WorkbookInterpreter
     public async Task<object?> EvaluateAsync(WorkSheet worksheet, CancellationToken cancellationToken = default)
     {
         var engine = new RecalcEngine(_engineConfig);
-        foreach (var cell in GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
-        {
-            engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
-            if (worksheet.Variables.ContainsKey(cell.Name))
-                await engine.EvalAsync(cell.Name, cancellationToken);
-        }
+        
+        EvaluateCells(worksheet, engine);
         var last = worksheet.Cells.LastOrDefault(c => !string.IsNullOrWhiteSpace(c.Formula));
         if (last is null) return null;
         var result = await engine.EvalAsync(last.Name, cancellationToken);
         return result.ToObject();
+    }
+
+    private void EvaluateCells(WorkSheet worksheet, RecalcEngine engine)
+    {
+        foreach (var worksheetInputVariable in worksheet.Variables)
+        {
+            var powerFxValue = engine.Eval(worksheetInputVariable.Value);
+            engine.UpdateVariable(worksheetInputVariable.Key, powerFxValue);
+        }
+
+        foreach (var cell in GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
+        {
+            try
+            {
+                engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error setting formula for cell '{cell.Name}' in {worksheet.Name}: {ex.Message}", ex);
+            }
+        }
     }
 
     /// Evaluates every formula cell and returns the native value of each cell keyed by
@@ -63,12 +80,8 @@ public class WorkbookInterpreter
         CancellationToken cancellationToken = default)
     {
         var engine = new RecalcEngine(_engineConfig);
-        foreach (var cell in GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
-        {
-            engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
-            if (worksheet.Variables.ContainsKey(cell.Name))
-                await engine.EvalAsync(cell.Name, cancellationToken);
-        }
+
+        EvaluateCells(worksheet, engine);
 
         var results = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
@@ -82,10 +95,8 @@ public class WorkbookInterpreter
 
     private static List<WorkCell> GetExecutionCells(WorkSheet worksheet, int uptToRow = -1)
     {
-        var variables = worksheet.Variables.Select((pair, index) =>
-            new WorkCell(-index - 1, pair.Key, pair.Value, "worksheet variable"));
         var cells = uptToRow == -1 ? worksheet.Cells : worksheet.Cells.Take(uptToRow);
-        return variables.Concat(cells).ToList();
+        return [.. cells];
     }
 
     private static bool CanBeUsedAsFormula(WorkCell cell)

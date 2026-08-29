@@ -12,7 +12,7 @@ public sealed class IntegrationXmlSerializer
     public IntegrationDefinition Deserialize(string xml)
         => Deserialize(xml, baseDirectory: null);
 
-    private IntegrationDefinition Deserialize(string xml, string? baseDirectory)
+    public IntegrationDefinition Deserialize(string xml, string? baseDirectory)
     {
         using var reader = new StringReader(xml);
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;

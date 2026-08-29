@@ -47,7 +47,7 @@ public sealed class IntegrationTests
             var xml = (await File.ReadAllTextAsync(xmlPath))
                 .Replace("__INPUT_PATH__", inputPath, StringComparison.Ordinal)
                 .Replace("__OUTPUT_PATH__", outputPath, StringComparison.Ordinal);
-            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var definition = new IntegrationXmlSerializer().Deserialize(xml, Path.GetDirectoryName(xmlPath));
 
             var result = await new IntegrationRunner().RunAsync(definition);
 
@@ -76,14 +76,14 @@ public sealed class IntegrationTests
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(directory);
         var inputPath = Path.Combine(directory, "input.csv");
-        await File.WriteAllTextAsync(inputPath, "Name,Active\nAlice,true\nBob,false\n");
+        await File.WriteAllTextAsync(inputPath, "Name,Amount,Active\nAlice,10,true\nBob,100,false\n");
 
         try
         {
             var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "Switch.xml");
             var xml = (await File.ReadAllTextAsync(xmlPath))
                 .Replace("__INPUT_PATH__", inputPath, StringComparison.Ordinal);
-            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var definition = new IntegrationXmlSerializer().Deserialize(xml, Path.GetDirectoryName(xmlPath));
 
             var result = await new IntegrationRunner().RunAsync(definition);
 

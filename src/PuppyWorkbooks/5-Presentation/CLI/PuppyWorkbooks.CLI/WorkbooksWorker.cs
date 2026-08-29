@@ -41,34 +41,40 @@ public sealed class WorkbooksWorker : IHostedService
 
         try
         {
-            var simplePaths = cmdArgs.Skip(1).Where(a =>
-                !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-')).ToArray();
-            if (simplePaths.Length == 1)
-            {
-                var rootName = GetFirstXmlNodeName(simplePaths[0]);
-                switch (rootName)
-                {
-                    case "Integration":
-                        await ExecuteIntegration(simplePaths[0], cancellationToken);
-                        return;
-                    case "Workbook":
-                        await ExecuteWorksheets(cancellationToken);
-                        return;
-                }
-            }
-            if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
-            {
-                await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
-                return;
-            }
-
-            await ExecuteWorksheets(cancellationToken);
+            await Start(cancellationToken, cmdArgs);
         }
         catch (Exception e)
         {
             _logger?.LogError(e, "Fatal error executing workbooks or integration.");
         }
         _appLifetime.StopApplication();
+        return;
+    }
+
+    private async Task Start(CancellationToken cancellationToken, string[] cmdArgs)
+    {
+        var simplePaths = cmdArgs.Skip(1).Where(a =>
+            !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-')).ToArray();
+        if (simplePaths.Length == 1)
+        {
+            var rootName = GetFirstXmlNodeName(simplePaths[0]);
+            switch (rootName)
+            {
+                case "Integration":
+                    await ExecuteIntegration(simplePaths[0], cancellationToken);
+                    return;
+                case "Workbook":
+                    await ExecuteWorksheets(cancellationToken);
+                    return;
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
+        {
+            await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
+            return;
+        }
+
+        await ExecuteWorksheets(cancellationToken);
         return;
     }
 
