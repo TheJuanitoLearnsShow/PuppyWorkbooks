@@ -38,29 +38,36 @@ public sealed class WorkbooksWorker : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var cmdArgs = Environment.GetCommandLineArgs();
-        
-        var simplePaths = cmdArgs.Skip(1).Where(a =>
-            !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-')).ToArray();
-        if (simplePaths.Length == 1)
-        {
-            var rootName = GetFirstXmlNodeName(simplePaths[0]);
-            switch (rootName)
-            {
-                case "Integration":
-                    await ExecuteIntegration(simplePaths[0], cancellationToken);
-                    return;
-                case "Workbook":
-                    await ExecuteWorksheets(cancellationToken);
-                    return;
-            }
-        }
-        if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
-        {
-            await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
-            return;
-        }
 
-        await ExecuteWorksheets(cancellationToken);
+        try
+        {
+            var simplePaths = cmdArgs.Skip(1).Where(a =>
+                !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-')).ToArray();
+            if (simplePaths.Length == 1)
+            {
+                var rootName = GetFirstXmlNodeName(simplePaths[0]);
+                switch (rootName)
+                {
+                    case "Integration":
+                        await ExecuteIntegration(simplePaths[0], cancellationToken);
+                        return;
+                    case "Workbook":
+                        await ExecuteWorksheets(cancellationToken);
+                        return;
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
+            {
+                await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
+                return;
+            }
+
+            await ExecuteWorksheets(cancellationToken);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Fatal error executing workbooks or integration.");
+        }
         _appLifetime.StopApplication();
         return;
     }
