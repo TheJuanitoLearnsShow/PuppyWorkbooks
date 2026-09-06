@@ -5,7 +5,8 @@
 <!--        <Map Id="map">-->
 <!--            <Worksheet FilePath="Map.xml"/>-->
 <!--        </Map>-->
-        <!-- issue, switch is not working well, it is not executing per input row and not yielding final results -->
+        <!-- issue, switch is not working well, it is not executing per input row and not yielding final results. Actually NO
+          the integration is not supposed to yield results unless sent to IO writer -->
         <Switch Id="choose">
             <Worksheet>
                 <Name>Chooser Sheet</Name>
