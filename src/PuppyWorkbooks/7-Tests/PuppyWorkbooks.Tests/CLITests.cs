@@ -27,4 +27,15 @@ public class CLITests
         });
         await worker.StartAsync(CancellationToken.None);
     }
+    
+    
+    [Fact]
+    public async Task Test_ReduceWorkSheet()
+    {
+        var worker = new WorkbooksWorker(new ExecutionSettings
+        {
+            WorkbookPaths = [ "SampleFiles/Integration/Reduce.xml" ]
+        });
+        await worker.StartAsync(CancellationToken.None);
+    }
 }

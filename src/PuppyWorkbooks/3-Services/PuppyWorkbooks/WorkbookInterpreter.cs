@@ -19,19 +19,16 @@ public class WorkbookInterpreter
     public async IAsyncEnumerable<CellResult> ExecuteAsync(WorkSheet worksheet, int uptToRow = -1, bool yieldResultsForEachCell = false,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var cellsToExecute = GetExecutionCells(worksheet, uptToRow);
         var engine = new RecalcEngine(_engineConfig);
+        EvaluateAndUpdateVariables(worksheet, engine);
+        var cellsToExecute = GetExecutionCells(worksheet, uptToRow);
         foreach (var cell in cellsToExecute)
         {
             if (string.IsNullOrEmpty(cell.Formula)) continue;
             if (CanBeUsedAsFormula(cell))
             {
-                engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
-            }
-            if (worksheet.Variables.ContainsKey(cell.Name))
-            {
-                await engine.EvalAsync(cell.Name, cancellationToken);
-                continue;
+                EvaluateFormula(worksheet, engine, cell);
+                // For future decision, should the cells be allowed to contain variables? Having immutability helps with cognitive load.
             }
             if (!yieldResultsForEachCell && cell != cellsToExecute.Last()) continue;
             var result = await engine.EvalAsync(cell.Name, cancellationToken);
@@ -54,22 +51,32 @@ public class WorkbookInterpreter
 
     private void EvaluateCells(WorkSheet worksheet, RecalcEngine engine)
     {
+        EvaluateAndUpdateVariables(worksheet, engine);
+        var cellsToExecute = GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula));
+        foreach (var cell in cellsToExecute)
+        {
+            EvaluateFormula(worksheet, engine, cell);
+        }
+    }
+
+    private void EvaluateFormula(WorkSheet worksheet, RecalcEngine engine, WorkCell cell)
+    {
+        try
+        {
+            engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error setting formula for cell '{cell.Name}' in {worksheet.Name}: {ex.Message}", ex);
+        }
+    }
+
+    private static void EvaluateAndUpdateVariables(WorkSheet worksheet, RecalcEngine engine)
+    {
         foreach (var worksheetInputVariable in worksheet.Variables)
         {
             var powerFxValue = engine.Eval(worksheetInputVariable.Value);
             engine.UpdateVariable(worksheetInputVariable.Key, powerFxValue);
-        }
-
-        foreach (var cell in GetExecutionCells(worksheet).Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
-        {
-            try
-            {
-                engine.SetFormula(cell.Name, cell.Formula, OnFormulaUpdate);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error setting formula for cell '{cell.Name}' in {worksheet.Name}: {ex.Message}", ex);
-            }
         }
     }
 
