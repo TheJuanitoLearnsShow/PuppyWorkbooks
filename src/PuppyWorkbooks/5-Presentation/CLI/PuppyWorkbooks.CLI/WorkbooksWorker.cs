@@ -47,7 +47,7 @@ public sealed class WorkbooksWorker : IHostedService
         {
             _logger?.LogError(e, "Fatal error executing workbooks or integration.");
         }
-        _appLifetime.StopApplication();
+        _appLifetime?.StopApplication();
         return;
     }
 
