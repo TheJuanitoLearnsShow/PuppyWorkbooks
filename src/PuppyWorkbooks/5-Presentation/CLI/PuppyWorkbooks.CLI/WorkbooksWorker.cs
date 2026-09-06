@@ -167,7 +167,7 @@ public sealed class WorkbooksWorker : IHostedService
             outputWriter.StartWorkbookResult(workbook.Name);
             foreach (var inputValue in inputValues)
             {
-                workbook.SetFormulaValue(inputValue.Key, inputValue.Value);
+                workbook.SetInputValue(inputValue.Key, inputValue.Value);
             }
 
             var interpreter = new WorkbookInterpreter();

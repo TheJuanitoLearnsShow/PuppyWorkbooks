@@ -19,8 +19,14 @@ public class WorkSheet
     }
     public List<WorkCell> Cells { get; set; } = new List<WorkCell>();
 
-    public void SetFormulaValue(string inputValueKey, string inputValueValue)
+    public void SetInputValue(string inputValueKey, string inputValueValue)
     {
+        var worksheetVariable = Variables.FirstOrDefault(v => string.Equals(v.Key, inputValueKey, StringComparison.CurrentCulture));
+        if (worksheetVariable.Key is not null)
+        {
+            Variables[worksheetVariable.Key] = inputValueValue;
+            return;
+        }
         var cell = Cells.FirstOrDefault(c => string.Equals(c.Name, inputValueKey, StringComparison.CurrentCulture));
         cell?.Formula = inputValueValue;
     }
