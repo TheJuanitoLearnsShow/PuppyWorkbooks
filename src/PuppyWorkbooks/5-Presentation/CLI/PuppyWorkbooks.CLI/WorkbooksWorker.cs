@@ -53,15 +53,16 @@ public sealed class WorkbooksWorker : IHostedService
 
     private async Task Start(CancellationToken cancellationToken, string[] cmdArgs)
     {
+        var isDebug = _settings.Debug || cmdArgs.Any(IsDebugArgument);
         var simplePaths = cmdArgs.Skip(1).Where(a =>
-            !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-')).ToArray();
+            !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-') && !a.StartsWith('/')).ToArray();
         if (simplePaths.Length == 1)
         {
             var rootName = GetFirstXmlNodeName(simplePaths[0]);
             switch (rootName)
             {
                 case "Integration":
-                    await ExecuteIntegration(simplePaths[0], cancellationToken);
+                    await ExecuteIntegration(simplePaths[0], isDebug, cancellationToken);
                     return;
                 case "Workbook":
                     await ExecuteWorksheets(cancellationToken);
@@ -70,7 +71,7 @@ public sealed class WorkbooksWorker : IHostedService
         }
         if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
         {
-            await ExecuteIntegration(_settings.IntegrationPath, cancellationToken);
+            await ExecuteIntegration(_settings.IntegrationPath, isDebug, cancellationToken);
             return;
         }
 
@@ -108,7 +109,7 @@ public sealed class WorkbooksWorker : IHostedService
             if (workbookPaths == null || workbookPaths.Length == 0)
             {
                 var firstPositional = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(a =>
-                    !string.IsNullOrWhiteSpace(a) && !a.StartsWith("-"));
+                    !string.IsNullOrWhiteSpace(a) && !a.StartsWith("-") && !a.StartsWith("/"));
                 if (!string.IsNullOrEmpty(firstPositional))
                 {
                     workbookPaths = new[] { firstPositional };
@@ -129,12 +130,21 @@ public sealed class WorkbooksWorker : IHostedService
         }
     }
 
-    private async Task ExecuteIntegration(string path, CancellationToken cancellationToken)
+    private async Task ExecuteIntegration(string path, bool isDebug, CancellationToken cancellationToken)
     {
         try
         {
             var definition = _integrationSerializer.DeserializeFile(path);
-            var result = await new IntegrationRunner().RunAsync(definition, cancellationToken);
+            var runner = new IntegrationRunner(new IntegrationRunnerOptions { Debug = isDebug });
+            var result = await runner.RunAsync(definition, cancellationToken);
+            if (isDebug && result.DebugData is not null)
+            {
+                var json = JsonSerializer.Serialize(result.DebugData, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+                Console.WriteLine(json);
+            }
             if (_logger is not null)
                 _logger.LogInformation(
                     "Integration {IntegrationName} completed. Read: {Read}, Written: {Written}, Excluded: {Excluded}",
@@ -145,6 +155,14 @@ public sealed class WorkbooksWorker : IHostedService
             _logger?.LogError(e, "Error executing integration at path: {Path}", path);
         }
     }
+
+    private static bool IsDebugArgument(string arg) =>
+        string.Equals(arg, "--debug", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "-debug", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "/debug", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "-d", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--Debug", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "debug", StringComparison.OrdinalIgnoreCase);
 
     private async Task ExecuteWorkbooks(
         string[] workbookPaths,

@@ -24,4 +24,10 @@ public class ExecutionSettings
     public string[] WorkbookPaths { get; set; } = [];
 
     public string? OutputPath { get; set; }
+
+    /// <summary>
+    /// When true, enables debug mode during integration execution to capture input rows
+    /// and all cell results across steps, outputting JSON to console.
+    /// </summary>
+    public bool Debug { get; set; }
 }
