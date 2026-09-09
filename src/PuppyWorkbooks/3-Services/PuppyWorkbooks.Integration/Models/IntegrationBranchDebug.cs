@@ -5,4 +5,9 @@ public sealed class IntegrationBranchDebug
     public string WorkCell { get; set; } = string.Empty;
     public bool Executed { get; set; }
     public List<IntegrationStepDebug> Steps { get; set; } = [];
+    
+    public void AddStep(IntegrationStepDebug? step)
+    {
+        if (step is not null) Steps.Add(step);
+    }
 }

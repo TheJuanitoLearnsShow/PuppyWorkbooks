@@ -10,4 +10,5 @@ public sealed class IntegrationStepDebug
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<IntegrationBranchDebug>? Branches { get; set; }
+
 }

@@ -21,7 +21,7 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         {
             foreach (var output in definition.Steps.OfType<OutputStep>()) outputs.Add(CreateOutput(output));
             var reduceSteps = GetReduceSteps(definition.Steps).ToList();
-            var reduceStates = reduceSteps.ToDictionary(step => step, step => ParseInitialState(step.InitialStateJson));
+            var reduceStates = reduceSteps.ToDictionary(step => step, step => ValueBinder.ParseInitialState(step.InitialStateJson));
             var outputSteps = definition.Steps.OfType<OutputStep>().ToList();
             var deferOutput = reduceSteps.Count > 0;
             long read = 0, written = 0, excluded = 0;
@@ -33,15 +33,7 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
             {
                 read++;
                 var record = sourceRecord;
-                IntegrationDebugRow? rowDebug = null;
-                if (isDebug)
-                {
-                    rowDebug = new IntegrationDebugRow
-                    {
-                        InputRow = new Dictionary<string, object?>(sourceRecord.Values, StringComparer.OrdinalIgnoreCase)
-                    };
-                    debugRows!.Add(rowDebug);
-                }
+                var rowDebug = IntegrationDebugger.InitializeDebugRow(isDebug, sourceRecord, debugRows);
 
                 foreach (var step in definition.Steps)
                 {
@@ -49,26 +41,18 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                     switch (step)
                     {
                         case InputStep inputStep:
-                            if (rowDebug is not null)
-                            {
-                                rowDebug.Steps.Add(new IntegrationStepDebug
-                                {
-                                    Id = inputStep.Id,
-                                    StepType = "IOInput",
-                                    Cells = new Dictionary<string, object?>(sourceRecord.Values, StringComparer.OrdinalIgnoreCase)
-                                });
-                            }
+                            IntegrationDebugger.DebugInputStep(rowDebug, inputStep, record);
                             break;
 
                         case MapStep map:
                             var (mapRecord, mapDebug) = await ExecuteMapStep(map, record, isDebug, cancellationToken);
                             record = mapRecord;
-                            if (mapDebug is not null) rowDebug?.Steps.Add(mapDebug);
+                            IntegrationDebugger.DebugWorksheetStep(mapDebug, rowDebug);
                             break;
 
                         case FilterStep filter:
                             var (keepFilter, filterDebug) = await ExecuteFilterStep(filter, record, isDebug, cancellationToken);
-                            if (filterDebug is not null) rowDebug?.Steps.Add(filterDebug);
+                            IntegrationDebugger.DebugWorksheetStep(filterDebug, rowDebug);
                             if (!keepFilter)
                             {
                                 excluded++;
@@ -80,13 +64,13 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                             var (reduceRecord, nextState, reduceDebug) = await ExecuteReduceStep(reduce, record, reduceStates[reduce], isDebug, cancellationToken);
                             reduceStates[reduce] = nextState;
                             record = reduceRecord;
-                            if (reduceDebug is not null) rowDebug?.Steps.Add(reduceDebug);
+                            IntegrationDebugger.DebugWorksheetStep(reduceDebug, rowDebug);
                             break;
 
                         case SwitchStep @switch:
                             var (switchRecord, switchExcluded, switchDebug) = await ExecuteSwitchStep(@switch, record, reduceStates, isDebug, cancellationToken);
                             record = switchRecord;
-                            if (switchDebug is not null) rowDebug?.Steps.Add(switchDebug);
+                            IntegrationDebugger.DebugWorksheetStep(switchDebug, rowDebug);
                             if (switchExcluded)
                             {
                                 excluded++;
@@ -95,15 +79,7 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                             break;
 
                         case OutputStep output when !deferOutput:
-                            if (rowDebug is not null)
-                            {
-                                rowDebug.Steps.Add(new IntegrationStepDebug
-                                {
-                                    Id = output.Id,
-                                    StepType = "IOOutput",
-                                    Cells = new Dictionary<string, object?>(record.Values, StringComparer.OrdinalIgnoreCase)
-                                });
-                            }
+                            IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
                             var status = await outputs[outputSteps.IndexOf(output)].WriteAsync(record, cancellationToken);
                             record[output.Id + ".Status"] = status.Succeeded;
                             record[output.Id + ".StatusMessage"] = status.Message;
@@ -112,15 +88,7 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                             break;
 
                         case OutputStep output when deferOutput:
-                            if (rowDebug is not null)
-                            {
-                                rowDebug.Steps.Add(new IntegrationStepDebug
-                                {
-                                    Id = output.Id,
-                                    StepType = "IOOutput",
-                                    Cells = new Dictionary<string, object?>(record.Values, StringComparer.OrdinalIgnoreCase)
-                                });
-                            }
+                            IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
                             break;
                     }
                 }
@@ -184,23 +152,16 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         return (new IntegrationRecord(values), stepDebug);
     }
 
-    private async Task<(bool ShouldKeep, IntegrationStepDebug? Debug)> ExecuteFilterStep(
+    private async Task<(bool ShouldKeepRecord, IntegrationStepDebug? Debug)> ExecuteFilterStep(
         FilterStep step,
         IntegrationRecord record,
         bool isDebug,
         CancellationToken token)
     {
         var values = await EvaluateCells(step.Worksheet, record, token);
-        var stepDebug = isDebug
-            ? new IntegrationStepDebug
-            {
-                Id = step.Id,
-                StepType = "Filter",
-                Cells = values
-            }
-            : null;
+        var stepDebug = IntegrationDebugger.InitializeFilterDebug(step, isDebug, values);
         var last = values.Values.LastOrDefault();
-        var keep = ToBoolean(last);
+        var keep = ValueBinder.ToBoolean(last);
         var shouldKeep = step.KeepWhenTrue ? keep : !keep;
         return (shouldKeep, stepDebug);
     }
@@ -214,18 +175,11 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
     {
         var values = await EvaluateCells(step.Worksheet, record, token,
             new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase) { ["State"] = state });
-        var stepDebug = isDebug
-            ? new IntegrationStepDebug
-            {
-                Id = step.Id,
-                StepType = "Reduce",
-                Cells = values
-            }
-            : null;
+        var stepDebug = IntegrationDebugger.InitializeReduceDebugStep(step, isDebug, values);
         var next = values.TryGetValue(step.OutputField, out var fieldVal)
             ? fieldVal
             : values.Values.LastOrDefault();
-        return (CreateStateRecord(step.OutputField, next), next, stepDebug);
+        return (ValueBinder.CreateStateRecord(step.OutputField, next), next, stepDebug);
     }
 
     private async Task<(IntegrationRecord Record, bool Excluded, IntegrationStepDebug? Debug)> ExecuteSwitchStep(
@@ -236,15 +190,7 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         CancellationToken token)
     {
         var values = await EvaluateCells(step.Worksheet, record, token);
-        var switchDebug = isDebug
-            ? new IntegrationStepDebug
-            {
-                Id = step.Id,
-                StepType = "Switch",
-                Cells = values,
-                Branches = []
-            }
-            : null;
+        var switchDebug = IntegrationDebugger.InitializeSwitchStepDebug(step, isDebug, values);
 
         foreach (var branch in step.Branches)
         {
@@ -253,20 +199,8 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
             if (!values.TryGetValue(branch.WorkCell, out var value))
                 throw new InvalidOperationException($"Switch '{step.Id}' does not contain a worksheet cell named '{branch.WorkCell}'.");
 
-            var conditionMet = ToBoolean(value);
-            var branchDebug = isDebug
-                ? new IntegrationBranchDebug
-                {
-                    WorkCell = branch.WorkCell,
-                    Executed = conditionMet,
-                    Steps = []
-                }
-                : null;
-
-            if (branchDebug is not null)
-            {
-                switchDebug!.Branches!.Add(branchDebug);
-            }
+            var conditionMet = ValueBinder.ToBoolean(value);
+            var branchDebug = IntegrationDebugger.IntegrationBranchDebug(isDebug, branch, conditionMet, switchDebug);
 
             if (!conditionMet) continue;
 
@@ -278,12 +212,12 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                     case MapStep map:
                         var (mapRecord, mapDebug) = await ExecuteMapStep(map, record, isDebug, token);
                         record = mapRecord;
-                        if (mapDebug is not null) branchDebug?.Steps.Add(mapDebug);
+                        branchDebug?.AddStep(mapDebug);
                         break;
 
                     case FilterStep filter:
                         var (keepFilter, filterDebug) = await ExecuteFilterStep(filter, record, isDebug, token);
-                        if (filterDebug is not null) branchDebug?.Steps.Add(filterDebug);
+                        branchDebug?.AddStep(filterDebug);
                         if (!keepFilter) return (record, true, switchDebug);
                         break;
 
@@ -291,13 +225,13 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                         var (reduceRecord, newState, reduceDebug) = await ExecuteReduceStep(reduce, record, reduceStates[reduce], isDebug, token);
                         reduceStates[reduce] = newState;
                         record = reduceRecord;
-                        if (reduceDebug is not null) branchDebug?.Steps.Add(reduceDebug);
+                        branchDebug?.AddStep(reduceDebug);
                         break;
 
                     case SwitchStep nested:
                         var (nestedRecord, nestedExcluded, nestedDebug) = await ExecuteSwitchStep(nested, record, reduceStates, isDebug, token);
                         record = nestedRecord;
-                        if (nestedDebug is not null) branchDebug?.Steps.Add(nestedDebug);
+                        branchDebug?.AddStep(nestedDebug);
                         if (nestedExcluded) return (record, true, switchDebug);
                         break;
 
@@ -309,10 +243,6 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         return (record, false, switchDebug);
     }
 
-    private static bool ToBoolean(object? value) => value is bool b
-        ? b
-        : bool.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), out var parsed) && parsed;
-
     private static IEnumerable<ReduceStep> GetReduceSteps(IEnumerable<IntegrationStep> steps)
     {
         foreach (var step in steps)
@@ -322,49 +252,6 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
                 foreach (var branch in @switch.Branches)
                     foreach (var nested in GetReduceSteps(branch.Steps)) yield return nested;
         }
-    }
-
-    private static IntegrationRecord CreateStateRecord(string outputField, object? state)
-    {
-        if (state is IDictionary dictionary)
-        {
-            var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-            foreach (DictionaryEntry item in dictionary)
-                values[Convert.ToString(item.Key, CultureInfo.InvariantCulture)!] = item.Value;
-            return new IntegrationRecord(values);
-        }
-
-        if (state is JsonElement { ValueKind: JsonValueKind.Object } jsonObject)
-        {
-            var values = jsonObject.Deserialize<Dictionary<string, object?>>() ?? [];
-            return new IntegrationRecord(values);
-        }
-
-        return new IntegrationRecord(new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
-        {
-            [outputField] = state
-        });
-    }
-
-    private static object? ParseInitialState(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        using var document = JsonDocument.Parse(json);
-        return document.RootElement.Clone();
-    }
-
-    private async Task<object?> Evaluate(WorkSheet? worksheet, IntegrationRecord record, CancellationToken token,
-        IReadOnlyDictionary<string, object?>? additionalBindings = null)
-    {
-        if (worksheet is null) throw new InvalidOperationException("A worksheet is required for this step.");
-        var copy = new WorkSheet { Name = worksheet.Name, Cells =
-            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))],
-            Variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase)
-        };
-        BindRecord(copy, record);
-        if (additionalBindings is not null)
-            foreach (var binding in additionalBindings) BindValue(copy, binding.Key, binding.Value);
-        return await _interpreter.EvaluateAsync(copy, token);
     }
 
     private async Task<Dictionary<string, object?>> EvaluateCells(WorkSheet? worksheet,
@@ -379,9 +266,10 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
             [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))],
             Variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase)
         };
-        BindRecord(copy, record);
+        ValueBinder.BindRecord(copy, record);
         if (additionalBindings is not null)
-            foreach (var binding in additionalBindings) BindValue(copy, binding.Key, binding.Value);
+            foreach (var binding in additionalBindings)
+                ValueBinder.BindValue(copy, binding.Key, binding.Value);
         var values = await _interpreter.EvaluateCellsAsync(copy, token);
         var ordered = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         foreach (var cell in outputCells)
@@ -392,50 +280,5 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
             }
         }
         return ordered;
-    }
-
-    private static void BindRecord(WorkSheet worksheet, IntegrationRecord record)
-    {
-        // InputRecord is the stable worksheet contract. Direct field bindings remain
-        // available for compatibility with existing worksheets.
-        BindValue(worksheet, "InputRecord", record.Values);
-        foreach (var pair in record.Values) BindValue(worksheet, pair.Key, pair.Value);
-    }
-
-    private static void BindValue(WorkSheet worksheet, string name, object? value)
-    {
-        if (worksheet.Variables.ContainsKey(name))
-        {
-            worksheet.Variables[name] = ToFormulaLiteral(value);
-            return;
-        }
-
-        var cell = worksheet.Cells.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (cell is not null) cell.Formula = ToFormulaLiteral(value);
-        else worksheet.Cells.Insert(0, new WorkCell(0, name, ToFormulaLiteral(value), "integration input"));
-    }
-
-    private static string ToFormulaLiteral(object? value)
-    {
-        if (value is null) return "Blank()";
-        if (value is JsonElement json)
-        {
-            return json.ValueKind switch
-            {
-                JsonValueKind.String => JsonSerializer.Serialize(json.GetString()),
-                JsonValueKind.True => "true",
-                JsonValueKind.False => "false",
-                JsonValueKind.Null => "Blank()",
-                JsonValueKind.Object => ToFormulaLiteral(json.Deserialize<Dictionary<string, object?>>() ?? []),
-                JsonValueKind.Array => "[" + string.Join(",", json.EnumerateArray().Select(item => ToFormulaLiteral(item))) + "]",
-                _ => json.ToString()
-            };
-        }
-        if (value is bool b) return b ? "true" : "false";
-        if (value is string s) return JsonSerializer.Serialize(s);
-        if (value is IDictionary dictionary) return "{" + string.Join(",", dictionary.Keys.Cast<object>().Select(k => $"{k}: {ToFormulaLiteral(dictionary[k])}")) + "}";
-        if (value is IEnumerable enumerable and not byte[])
-            return "[" + string.Join(",", enumerable.Cast<object?>().Select(ToFormulaLiteral)) + "]";
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "Blank()";
     }
 }
