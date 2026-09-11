@@ -16,8 +16,31 @@ public sealed class IntegrationXmlSerializer
     {
         using var reader = new StringReader(xml);
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
+        ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
         return definition;
+    }
+
+    private static void ResolveHttpConfigurations(IntegrationDefinition definition)
+    {
+        var configurations = definition.HttpConfigurations
+            .Where(configuration => !string.IsNullOrWhiteSpace(configuration.Name))
+            .ToDictionary(configuration => configuration.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var step in definition.Steps)
+        {
+            var configurationName = step switch
+            {
+                InputStep source => source.HttpConfiguration,
+                OutputStep sink => sink.HttpConfiguration,
+                _ => null
+            };
+            if (string.IsNullOrWhiteSpace(configurationName)) continue;
+            if (!configurations.TryGetValue(configurationName, out var configuration))
+                throw new InvalidOperationException($"HTTP configuration '{configurationName}' was not found.");
+            if (step is InputStep inputStep) inputStep.ResolvedHttpConfiguration = configuration;
+            if (step is OutputStep outputStep) outputStep.ResolvedHttpConfiguration = configuration;
+        }
     }
 
     public IntegrationDefinition DeserializeFile(string path)

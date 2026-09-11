@@ -54,6 +54,31 @@ var runner = new IntegrationRunner(new IntegrationRunnerOptions
 });
 ```
 
+HTTP inputs and outputs can share a named configuration. Register its named clients in
+the host's dependency-injection container and provide `HttpClientFactory` to the runner.
+`HttpReader` selects object rows using `JsonPath`; `HttpWriter` sends each row as JSON,
+XML, or CSV.
+
+```xml
+<Integration Name="Customers">
+  <HttpConfigurations>
+    <HttpConfiguration Name="customerApi" BaseUrl="https://api.example.com/" HttpClientName="customer-api"
+                       OAuthClientId="client-id" OAuthClientSecret="secret" OAuthScope="api.read"
+                       OAuthTokenUrl="https://identity.example.com/connect/token" OAuthHttpClientName="identity-api">
+      <Headers><Header Name="X-Source" Value="PuppyWorkbooks" /></Headers>
+    </HttpConfiguration>
+  </HttpConfigurations>
+  <Steps>
+    <IOInput Id="read" Kind="HttpReader" HttpConfiguration="customerApi" Endpoint="customers" JsonPath="$.items" />
+    <IOOutput Id="write" Kind="HttpWriter" HttpConfiguration="customerApi" Endpoint="archive" PayloadFormat="Xml" />
+  </Steps>
+</Integration>
+```
+
+Set `ClientCertificateThumbprint` on `HttpConfiguration` to load a client certificate
+from the Windows CurrentUser or LocalMachine personal certificate store. JSON paths support
+property traversal plus array indexes and wildcards, such as `$.data.items[*]`.
+
 Map, filter, and reduce worksheets receive the current record as the Power Fx record
 variable `InputRecord`, so fields can be referenced as `InputRecord.CustomerId`.
 Direct input-column variables are also supplied for compatibility. Every formula cell in a map

@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using System.Net.Http;
 
 namespace PuppyWorkbooks.Integration.Engine;
 
@@ -8,6 +9,9 @@ public sealed class IntegrationRunnerOptions
     /// Creates a connection for SQL steps. Keeping this as a factory avoids coupling the
     /// integration library to one database vendor.
     public Func<string, DbConnection>? ConnectionFactory { get; init; } = DefaultSqlConnectionFactory;
+
+    /// <summary>Creates named HTTP clients configured by the host dependency-injection container.</summary>
+    public IHttpClientFactory? HttpClientFactory { get; init; }
 
     private static DbConnection DefaultSqlConnectionFactory(string connectionString)
     {

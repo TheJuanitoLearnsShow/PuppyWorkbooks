@@ -6,6 +6,9 @@ namespace PuppyWorkbooks.Integration.Models;
 public sealed class IntegrationDefinition
 {
     [XmlAttribute] public string Name { get; set; } = string.Empty;
+    [XmlArray("HttpConfigurations")]
+    [XmlArrayItem("HttpConfiguration")]
+    public List<HttpProviderSettings> HttpConfigurations { get; set; } = [];
     [XmlArray("Steps")]
     [XmlArrayItem("Map", typeof(MapStep))]
     [XmlArrayItem("Filter", typeof(FilterStep))]

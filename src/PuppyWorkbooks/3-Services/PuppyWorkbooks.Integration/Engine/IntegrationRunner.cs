@@ -134,7 +134,10 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         {
             InputKind.CSVReader when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvInputProvider(step.FilePath),
             InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
-            _ => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration.")
+            InputKind.HttpReader when step.ResolvedHttpConfiguration is not null => new HttpInputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.JsonPath, _options.HttpClientFactory),
+            InputKind.SqlReader => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
+            InputKind.HttpReader => throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."),
+            _ => throw new InvalidOperationException("Input provider configuration is missing or unsupported.")
         };
     }
 
@@ -178,7 +181,10 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         {
             OutputKind.CSVWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvOutputProvider(step.FilePath),
             OutputKind.SqlWriter when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(step.ConnectionString), step.TableName, step.Query),
-            _ => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration.")
+            OutputKind.HttpWriter when step.ResolvedHttpConfiguration is not null => new HttpOutputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.PayloadFormat, _options.HttpClientFactory),
+            OutputKind.SqlWriter => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration."),
+            OutputKind.HttpWriter => throw new InvalidOperationException("HTTP output requires a resolved HTTP configuration."),
+            _ => throw new InvalidOperationException("Output provider configuration is missing or unsupported.")
         };
     }
 

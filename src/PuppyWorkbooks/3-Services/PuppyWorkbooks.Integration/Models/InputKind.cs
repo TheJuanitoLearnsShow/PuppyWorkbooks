@@ -1,3 +1,3 @@
 ﻿namespace PuppyWorkbooks.Integration.Models;
 
-public enum InputKind { CSVReader, SqlReader }
+public enum InputKind { CSVReader, SqlReader, HttpReader }

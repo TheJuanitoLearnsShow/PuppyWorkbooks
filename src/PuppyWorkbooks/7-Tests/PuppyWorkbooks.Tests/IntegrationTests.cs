@@ -1,10 +1,44 @@
 using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace PuppyWorkbooks.Tests;
 
 public sealed class IntegrationTests
 {
+    [Fact]
+    public async Task HttpProviders_ReadConfiguredJsonCollectionAndWriteJsonRows()
+    {
+        var handler = new RecordingHttpMessageHandler();
+        var xml = """
+            <Integration Name="HTTP test">
+              <HttpConfigurations>
+                <HttpConfiguration Name="api" BaseUrl="https://example.test/api/" HttpClientName="integration-api">
+                  <Headers><Header Name="X-Integration" Value="Puppy" /></Headers>
+                </HttpConfiguration>
+              </HttpConfigurations>
+              <Steps>
+                <IOInput Id="source" Kind="HttpReader" HttpConfiguration="api" Endpoint="customers" JsonPath="$.data.items" />
+                <IOOutput Id="sink" Kind="HttpWriter" HttpConfiguration="api" Endpoint="archive" PayloadFormat="Json" />
+              </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var result = await new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            HttpClientFactory = new TestHttpClientFactory(handler, "integration-api")
+        }).RunAsync(definition);
+
+        Assert.Equal(2, result.Read);
+        Assert.Equal(2, result.Written);
+        Assert.Equal(3, handler.Requests.Count);
+        Assert.Equal("Puppy", handler.Requests[0].Headers.GetValueOrDefault("X-Integration"));
+        Assert.Equal("{\"Id\":1,\"Name\":\"Ada\"}", handler.Requests[1].Body);
+        Assert.Equal("application/json", handler.Requests[1].ContentType);
+    }
+
     [Fact]
     public void DeserializeFile_LoadsWorksheetReferencedByRelativeFilePath()
     {
@@ -559,4 +593,33 @@ public sealed class IntegrationTests
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
+
+    private sealed class TestHttpClientFactory(HttpMessageHandler handler, string expectedName) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name)
+        {
+            Assert.Equal(expectedName, name);
+            return new HttpClient(handler, disposeHandler: false);
+        }
+    }
+
+    private sealed class RecordingHttpMessageHandler : HttpMessageHandler
+    {
+        public List<RecordedRequest> Requests { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
+            Requests.Add(new RecordedRequest(
+                request.RequestUri!.AbsolutePath,
+                request.Headers.ToDictionary(header => header.Key, header => string.Join(",", header.Value), StringComparer.OrdinalIgnoreCase),
+                body,
+                request.Content?.Headers.ContentType?.MediaType));
+            return request.RequestUri.AbsolutePath.EndsWith("/customers", StringComparison.Ordinal)
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"data\":{\"items\":[{\"Id\":1,\"Name\":\"Ada\"},{\"Id\":2,\"Name\":\"Lin\"}]}}") }
+                : new HttpResponseMessage(HttpStatusCode.Accepted);
+        }
+    }
+
+    private sealed record RecordedRequest(string Path, Dictionary<string, string> Headers, string? Body, string? ContentType);
 }
