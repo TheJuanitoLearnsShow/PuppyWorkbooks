@@ -8,4 +8,7 @@ public sealed class InputStep : IntegrationStep
     [XmlAttribute] public string FilePath { get; set; } = string.Empty;
     [XmlAttribute] public string ConnectionString { get; set; } = string.Empty;
     [XmlElement] public string Query { get; set; } = string.Empty;
+    [XmlAttribute] public string MockCsvFilePath { get; set; } = string.Empty;
+    [XmlElement] public string MockCsv { get; set; } = string.Empty;
+    [XmlElement] public string MockData { get; set; } = string.Empty;
 }

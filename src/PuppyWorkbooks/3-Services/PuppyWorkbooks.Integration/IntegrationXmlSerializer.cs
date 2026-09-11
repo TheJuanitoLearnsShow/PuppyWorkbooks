@@ -41,7 +41,10 @@ public sealed class IntegrationXmlSerializer
         var stepElements = document.Root?.Element("Steps")?.Elements().ToList() ?? [];
 
         for (var index = 0; index < steps.Count; index++)
+        {
             LoadWorksheetReferences(steps[index], stepElements.ElementAtOrDefault(index), baseDirectory);
+            LoadMockReferences(steps[index], stepElements.ElementAtOrDefault(index), baseDirectory);
+        }
     }
 
     private static void LoadWorksheetReferences(IntegrationStep step, XElement? stepElement, string? baseDirectory)
@@ -92,6 +95,62 @@ public sealed class IntegrationXmlSerializer
                 for (var childIndex = 0; childIndex < branch.Steps.Count; childIndex++)
                     LoadWorksheetReferences(branch.Steps[childIndex], childElements.ElementAtOrDefault(childIndex), baseDirectory);
             }
+        }
+    }
+
+    private static void LoadMockReferences(IntegrationStep step, XElement? stepElement, string? baseDirectory)
+    {
+        if (step is not InputStep inputStep) return;
+
+        var mockElement = stepElement?.Element("MockCsv")
+                          ?? stepElement?.Element("MockData")
+                          ?? stepElement?.Element("Mock");
+
+        var path = (string?)stepElement?.Attribute("MockCsvFilePath")
+                   ?? (string?)stepElement?.Attribute("MockFilePath")
+                   ?? (string?)stepElement?.Attribute("MockDataFilePath")
+                   ?? (string?)stepElement?.Attribute("MockDataPath")
+                   ?? (string?)stepElement?.Attribute("MockPath")
+                   ?? (string?)stepElement?.Attribute("MockCsv")
+                   ?? (string?)mockElement?.Attribute("FilePath")
+                   ?? (string?)mockElement?.Attribute("Path")
+                   ?? (string?)mockElement?.Attribute("File")
+                   ?? (string?)mockElement?.Attribute("Filename")
+                   ?? (string?)mockElement?.Attribute("FileName")
+                   ?? (string?)stepElement?.Element("MockCsvFilePath")
+                   ?? (string?)stepElement?.Element("MockFilePath")
+                   ?? (string?)stepElement?.Element("MockDataFilePath")
+                   ?? (!string.IsNullOrWhiteSpace(inputStep.MockCsvFilePath) ? inputStep.MockCsvFilePath : null);
+
+        if (string.IsNullOrWhiteSpace(path) && mockElement is not null && !mockElement.Elements().Any())
+        {
+            var content = mockElement.Value.Trim();
+            if (!content.Contains('\n') && !content.Contains('\r') && (content.EndsWith(".csv", StringComparison.OrdinalIgnoreCase) || !content.Contains(',')))
+            {
+                var candidate = Path.IsPathRooted(content)
+                    ? content
+                    : Path.Combine(baseDirectory ?? Directory.GetCurrentDirectory(), content);
+                if (File.Exists(candidate))
+                {
+                    path = content;
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            var fullPath = Path.IsPathRooted(path)
+                ? path
+                : Path.Combine(baseDirectory ?? Directory.GetCurrentDirectory(), path);
+            fullPath = Path.GetFullPath(fullPath);
+            if (!File.Exists(fullPath))
+                throw new FileNotFoundException($"Mock CSV file '{path}' was not found.", fullPath);
+
+            inputStep.MockCsvFilePath = fullPath;
+        }
+        else if (mockElement is not null && !mockElement.Elements().Any() && string.IsNullOrWhiteSpace(inputStep.MockCsv) && string.IsNullOrWhiteSpace(inputStep.MockData))
+        {
+            inputStep.MockCsv = mockElement.Value;
         }
     }
 }

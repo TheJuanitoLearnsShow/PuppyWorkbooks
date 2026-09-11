@@ -239,4 +239,189 @@ public sealed class IntegrationTests
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task IntegrationRunner_WithInlineMockCsv_UsesMockDataWhenAllSpecified()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Mock Data Inline Test">
+                <Steps>
+                    <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;Database=none;">
+                        <MockCsv>
+            Name,Active,Amount
+            Alice,true,10
+            Bob,false,100
+            Cara,true,5
+                        </MockCsv>
+                    </IOInput>
+                    <Map Id="map">
+                        <Worksheet>
+                            <Name>Map</Name>
+                            <Cells>
+                                <WorkCell>
+                                    <Id>1</Id>
+                                    <Name>Total</Name>
+                                    <Formula>Value(InputRecord.Amount) * 2</Formula>
+                                    <Comments/>
+                                </WorkCell>
+                            </Cells>
+                        </Worksheet>
+                    </Map>
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var runner = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            UseMockDataForSteps = "ALL"
+        });
+
+        var result = await runner.RunAsync(definition);
+
+        Assert.Equal(3, result.Read);
+        Assert.Equal(10d, Convert.ToDouble(result.FinalState!["Total"]));
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WithMockCsvFilePath_UsesMockDataWhenStepIdMatches()
+    {
+        var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(directory);
+        var mockCsvPath = Path.Combine(directory, "mock.csv");
+        await File.WriteAllTextAsync(mockCsvPath, "Name,Active,Amount\nAlice,true,10\nBob,false,100\n");
+
+        try
+        {
+            var xml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Integration Name="Mock Data File Test">
+                    <Steps>
+                        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;" MockCsvFilePath="{mockCsvPath.Replace("\\", "/")}" />
+                        <Map Id="map">
+                            <Worksheet>
+                                <Name>Map</Name>
+                                <Cells>
+                                    <WorkCell>
+                                        <Id>1</Id>
+                                        <Name>Greeting</Name>
+                                        <Formula>"Hello " &amp; InputRecord.Name</Formula>
+                                        <Comments/>
+                                    </WorkCell>
+                                </Cells>
+                            </Worksheet>
+                        </Map>
+                    </Steps>
+                </Integration>
+                """;
+
+            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var runner = new IntegrationRunner(new IntegrationRunnerOptions
+            {
+                UseMockDataForSteps = "stepA, sqlInput, stepB"
+            });
+
+            var result = await runner.RunAsync(definition);
+
+            Assert.Equal(2, result.Read);
+            Assert.Equal("Hello Bob", result.FinalState!["Greeting"]);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WhenMockDataRequestedForStepWithoutMock_ThrowsInvalidOperationException()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Mock Data Missing Test">
+                <Steps>
+                    <IOInput Id="input1" Kind="CSVReader" FilePath="input.csv" />
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var runner = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            UseMockDataForSteps = "input1"
+        });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(definition));
+        Assert.Contains("input1", ex.Message);
+        Assert.Contains("Mock data was requested", ex.Message);
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WhenStepIdNotMatched_UsesActualProvider()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Mock Not Matched Test">
+                <Steps>
+                    <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
+                        <MockCsv>Name,Amount&#10;Alice,10</MockCsv>
+                    </IOInput>
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var runner = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            ConnectionFactory = null,
+            UseMockDataForSteps = "otherInputStep"
+        });
+
+        // Since step ID doesn't match and ConnectionFactory is not configured, it should throw the standard SQL input exception
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(definition));
+        Assert.Contains("SQL input requires ConnectionFactory", ex.Message);
+    }
+
+    [Fact]
+    public void IntegrationXmlSerializer_LoadsMockDataFromVariousXmlFormats()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Mock Formats">
+                <Steps>
+                    <IOInput Id="step1" Kind="SqlReader" ConnectionString="conn1">
+                        <MockCsv>
+            Name,Amount
+            Alice,10
+                        </MockCsv>
+                    </IOInput>
+                    <IOInput Id="step2" Kind="SqlReader" ConnectionString="conn2">
+                        <MockData>
+            Name,Amount
+            Bob,20
+                        </MockData>
+                    </IOInput>
+                    <IOInput Id="step3" Kind="SqlReader" ConnectionString="conn3" MockCsvFilePath="SampleFiles/Input1.csv" />
+                    <IOInput Id="step4" Kind="SqlReader" ConnectionString="conn4">
+                        <MockCsv FilePath="SampleFiles/Input1.csv" />
+                    </IOInput>
+                </Steps>
+            </Integration>
+            """;
+
+        var serializer = new IntegrationXmlSerializer();
+        var definition = serializer.Deserialize(xml, AppContext.BaseDirectory);
+
+        var step1 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[0];
+        Assert.Contains("Alice,10", step1.MockCsv);
+
+        var step2 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[1];
+        Assert.Contains("Bob,20", step2.MockData);
+
+        var step3 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[2];
+        Assert.True(File.Exists(step3.MockCsvFilePath));
+
+        var step4 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[3];
+        Assert.True(File.Exists(step4.MockCsvFilePath));
+    }
 }

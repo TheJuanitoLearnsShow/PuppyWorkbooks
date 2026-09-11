@@ -30,4 +30,10 @@ public class ExecutionSettings
     /// and all cell results across steps, outputting JSON to console.
     /// </summary>
     public bool Debug { get; set; }
+
+    /// <summary>
+    /// When specified, configures the integration runner to use mock CSV data for steps.
+    /// Can be "ALL" to use mock data for all input steps, or a comma-separated list of step IDs.
+    /// </summary>
+    public string? UseMockDataForSteps { get; set; }
 }

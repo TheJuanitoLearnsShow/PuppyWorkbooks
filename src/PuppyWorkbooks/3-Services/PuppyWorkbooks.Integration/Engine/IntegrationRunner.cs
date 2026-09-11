@@ -123,12 +123,49 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         }
     }
 
-    private IInputProvider CreateInput(InputStep step) => step.Kind switch
+    private IInputProvider CreateInput(InputStep step)
     {
-        InputKind.CSVReader when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvInputProvider(step.FilePath),
-        InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
-        _ => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration.")
-    };
+        if (ShouldUseMock(step))
+        {
+            return CreateMockInput(step);
+        }
+
+        return step.Kind switch
+        {
+            InputKind.CSVReader when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvInputProvider(step.FilePath),
+            InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
+            _ => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration.")
+        };
+    }
+
+    private bool ShouldUseMock(InputStep step)
+    {
+        if (string.IsNullOrWhiteSpace(_options.UseMockDataForSteps))
+            return false;
+
+        var setting = _options.UseMockDataForSteps.Trim();
+        if (string.Equals(setting, "ALL", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var stepIds = setting.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return stepIds.Any(id => string.Equals(id, step.Id, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IInputProvider CreateMockInput(InputStep step)
+    {
+        if (!string.IsNullOrWhiteSpace(step.MockCsvFilePath))
+        {
+            return new CsvInputProvider(step.MockCsvFilePath);
+        }
+
+        var inlineCsv = !string.IsNullOrWhiteSpace(step.MockCsv) ? step.MockCsv : step.MockData;
+        if (!string.IsNullOrWhiteSpace(inlineCsv))
+        {
+            return CsvInputProvider.FromText(inlineCsv.Trim());
+        }
+
+        throw new InvalidOperationException($"Mock data was requested for input step '{step.Id}', but no mock CSV data or file path was defined in the step.");
+    }
 
     private IOutputProvider CreateOutput(OutputStep step) => step.Kind switch
     {

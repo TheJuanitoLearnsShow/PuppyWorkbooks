@@ -54,15 +54,17 @@ public sealed class WorkbooksWorker : IHostedService
     private async Task Start(CancellationToken cancellationToken, string[] cmdArgs)
     {
         var isDebug = _settings.Debug || cmdArgs.Any(IsDebugArgument);
-        var simplePaths = cmdArgs.Skip(1).Where(a =>
-            !string.IsNullOrWhiteSpace(a) && !a.StartsWith('-') && !a.StartsWith('/')).ToArray();
-        if (simplePaths.Length == 1)
+        var mockSteps = !string.IsNullOrWhiteSpace(_settings.UseMockDataForSteps)
+            ? _settings.UseMockDataForSteps
+            : GetMockArgument(cmdArgs);
+        var simplePaths = GetPositionalArguments(cmdArgs);
+        if (simplePaths.Count == 1)
         {
             var rootName = GetFirstXmlNodeName(simplePaths[0]);
             switch (rootName)
             {
                 case "Integration":
-                    await ExecuteIntegration(simplePaths[0], isDebug, cancellationToken);
+                    await ExecuteIntegration(simplePaths[0], isDebug, mockSteps, cancellationToken);
                     return;
                 case "Workbook":
                     await ExecuteWorksheets(cancellationToken);
@@ -71,13 +73,65 @@ public sealed class WorkbooksWorker : IHostedService
         }
         if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
         {
-            await ExecuteIntegration(_settings.IntegrationPath, isDebug, cancellationToken);
+            await ExecuteIntegration(_settings.IntegrationPath, isDebug, mockSteps, cancellationToken);
             return;
         }
 
         await ExecuteWorksheets(cancellationToken);
         return;
     }
+
+    private static List<string> GetPositionalArguments(string[] cmdArgs)
+    {
+        var result = new List<string>();
+        for (var i = 1; i < cmdArgs.Length; i++)
+        {
+            var arg = cmdArgs[i];
+            if (string.IsNullOrWhiteSpace(arg)) continue;
+            if (arg.StartsWith('-') || arg.StartsWith('/'))
+            {
+                if (!IsDebugArgument(arg) && !arg.Contains('=') && i + 1 < cmdArgs.Length && !cmdArgs[i + 1].StartsWith('-') && !cmdArgs[i + 1].StartsWith('/'))
+                {
+                    i++;
+                }
+                continue;
+            }
+            result.Add(arg);
+        }
+        return result;
+    }
+
+    private static string? GetMockArgument(string[] cmdArgs)
+    {
+        for (var i = 1; i < cmdArgs.Length; i++)
+        {
+            var arg = cmdArgs[i];
+            var equalIndex = arg.IndexOf('=');
+            if (equalIndex > 0)
+            {
+                var key = arg[..equalIndex];
+                var val = arg[(equalIndex + 1)..];
+                if (IsMockKey(key)) return val;
+            }
+            else if (IsMockKey(arg) && i + 1 < cmdArgs.Length)
+            {
+                return cmdArgs[i + 1];
+            }
+        }
+        return null;
+    }
+
+    private static bool IsMockKey(string key) =>
+        string.Equals(key, "--use-mock-data-for-steps", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--useMockDataForSteps", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-useMockDataForSteps", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "/useMockDataForSteps", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--useMockData", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-useMockData", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "/useMockData", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--mock-data", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--mock", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-m", StringComparison.OrdinalIgnoreCase);
 
     private string GetFirstXmlNodeName(string simplePath)
     {
@@ -130,12 +184,16 @@ public sealed class WorkbooksWorker : IHostedService
         }
     }
 
-    private async Task ExecuteIntegration(string path, bool isDebug, CancellationToken cancellationToken)
+    private async Task ExecuteIntegration(string path, bool isDebug, string? mockSteps, CancellationToken cancellationToken)
     {
         try
         {
             var definition = _integrationSerializer.DeserializeFile(path);
-            var runner = new IntegrationRunner(new IntegrationRunnerOptions { Debug = isDebug });
+            var runner = new IntegrationRunner(new IntegrationRunnerOptions
+            {
+                Debug = isDebug,
+                UseMockDataForSteps = mockSteps ?? string.Empty
+            });
             var result = await runner.RunAsync(definition, cancellationToken);
             if (isDebug && result.DebugData is not null)
             {

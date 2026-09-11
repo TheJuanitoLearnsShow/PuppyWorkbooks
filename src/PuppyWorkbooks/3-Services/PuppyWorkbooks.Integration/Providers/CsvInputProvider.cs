@@ -4,13 +4,31 @@ using PuppyWorkbooks.Integration.Models;
 
 namespace PuppyWorkbooks.Integration.Providers;
 
-public sealed class CsvInputProvider(string path) : IInputProvider
+public sealed class CsvInputProvider : IInputProvider
 {
+    private readonly Func<TextReader> _readerFactory;
+
+    public CsvInputProvider(string path)
+    {
+        _readerFactory = () => new StreamReader(path);
+    }
+
+    public CsvInputProvider(Func<TextReader> readerFactory)
+    {
+        _readerFactory = readerFactory;
+    }
+
+    public static CsvInputProvider FromText(string csvText)
+    {
+        return new CsvInputProvider(() => new StringReader(csvText));
+    }
+
     public async IAsyncEnumerable<IntegrationRecord> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var reader = new StreamReader(path);
+        using var reader = _readerFactory();
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-        await csv.ReadAsync(); csv.ReadHeader();
+        if (!await csv.ReadAsync()) yield break;
+        csv.ReadHeader();
         while (await csv.ReadAsync())
         {
             cancellationToken.ThrowIfCancellationRequested();
