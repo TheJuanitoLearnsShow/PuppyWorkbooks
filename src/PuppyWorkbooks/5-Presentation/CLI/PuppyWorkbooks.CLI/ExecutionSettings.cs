@@ -32,8 +32,8 @@ public class ExecutionSettings
     public bool Debug { get; set; }
 
     /// <summary>
-    /// When specified, configures the integration runner to use mock CSV data for steps.
-    /// Can be "ALL" to use mock data for all input steps, or a comma-separated list of step IDs.
+    /// When specified, configures the integration runner to use mock data for steps.
+    /// Can be "ALL" to use mock data for all IO steps, or a comma-separated list of step IDs.
     /// </summary>
     public string? UseMockDataForSteps { get; set; }
 }

@@ -424,4 +424,139 @@ public sealed class IntegrationTests
         var step4 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[3];
         Assert.True(File.Exists(step4.MockCsvFilePath));
     }
+
+    [Fact]
+    public async Task IntegrationRunner_WithMockDataForOutputStep_SilentlyIgnoresOutputAndDoesNotWriteCsv()
+    {
+        var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(directory);
+        var outputPath = Path.Combine(directory, "output.csv");
+
+        try
+        {
+            var xml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Integration Name="Mock Output Test">
+                    <Steps>
+                        <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
+                            <MockCsv>
+                Name,Amount
+                Alice,10
+                Bob,20
+                            </MockCsv>
+                        </IOInput>
+                        <IOOutput Id="output1" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
+                    </Steps>
+                </Integration>
+                """;
+
+            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var runner = new IntegrationRunner(new IntegrationRunnerOptions
+            {
+                UseMockDataForSteps = "input1, output1"
+            });
+
+            var result = await runner.RunAsync(definition);
+
+            Assert.Equal(2, result.Read);
+            Assert.Equal(0, result.Written);
+            Assert.False(File.Exists(outputPath));
+            Assert.Equal(true, result.FinalState!["output1.Status"]);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WithMockDataForSqlOutput_DoesNotRequireConnectionFactoryOrConnect()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Mock Sql Output Test">
+                <Steps>
+                    <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
+                        <MockCsv>
+            Name,Amount
+            Alice,10
+                        </MockCsv>
+                    </IOInput>
+                    <IOOutput Id="sqlOut" Kind="SqlWriter" ConnectionString="Server=invalid;" TableName="TargetTable" />
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var runner = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            ConnectionFactory = null,
+            UseMockDataForSteps = "ALL"
+        });
+
+        var result = await runner.RunAsync(definition);
+
+        Assert.Equal(1, result.Read);
+        Assert.Equal(0, result.Written);
+        Assert.Equal(true, result.FinalState!["sqlOut.Status"]);
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WithMockDataForDeferredOutput_SilentlyIgnoresOutput()
+    {
+        var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(directory);
+        var outputPath = Path.Combine(directory, "deferred_output.csv");
+
+        try
+        {
+            var xml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Integration Name="Mock Deferred Output Test">
+                    <Steps>
+                        <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
+                            <MockCsv>
+                Name,Amount
+                Alice,10
+                Bob,20
+                            </MockCsv>
+                        </IOInput>
+                        <Reduce Id="reduce1" OutputField="Sum">
+                            <InitialStateJson>0</InitialStateJson>
+                            <Worksheet>
+                                <Name>Reduce</Name>
+                                <Cells>
+                                    <WorkCell>
+                                        <Id>1</Id>
+                                        <Name>Sum</Name>
+                                        <Formula>State + Value(InputRecord.Amount)</Formula>
+                                        <Comments/>
+                                    </WorkCell>
+                                </Cells>
+                            </Worksheet>
+                        </Reduce>
+                        <IOOutput Id="output1" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
+                    </Steps>
+                </Integration>
+                """;
+
+            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var runner = new IntegrationRunner(new IntegrationRunnerOptions
+            {
+                UseMockDataForSteps = "ALL"
+            });
+
+            var result = await runner.RunAsync(definition);
+
+            Assert.Equal(2, result.Read);
+            Assert.Equal(0, result.Written);
+            Assert.Equal(30d, Convert.ToDouble(result.FinalState!["Sum"]));
+            Assert.False(File.Exists(outputPath));
+            Assert.Equal(true, result.FinalState!["output1.Status"]);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
 }

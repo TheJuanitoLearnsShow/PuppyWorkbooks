@@ -138,7 +138,7 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         };
     }
 
-    private bool ShouldUseMock(InputStep step)
+    private bool ShouldUseMock(IntegrationStep step)
     {
         if (string.IsNullOrWhiteSpace(_options.UseMockDataForSteps))
             return false;
@@ -167,12 +167,20 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         throw new InvalidOperationException($"Mock data was requested for input step '{step.Id}', but no mock CSV data or file path was defined in the step.");
     }
 
-    private IOutputProvider CreateOutput(OutputStep step) => step.Kind switch
+    private IOutputProvider CreateOutput(OutputStep step)
     {
-        OutputKind.CSVWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvOutputProvider(step.FilePath),
-        OutputKind.SqlWriter when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(step.ConnectionString), step.TableName, step.Query),
-        _ => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration.")
-    };
+        if (ShouldUseMock(step))
+        {
+            return new MockOutputProvider();
+        }
+
+        return step.Kind switch
+        {
+            OutputKind.CSVWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvOutputProvider(step.FilePath),
+            OutputKind.SqlWriter when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(step.ConnectionString), step.TableName, step.Query),
+            _ => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration.")
+        };
+    }
 
     private async Task<(IntegrationRecord Record, IntegrationStepDebug? Debug)> ExecuteMapStep(
         MapStep step,
