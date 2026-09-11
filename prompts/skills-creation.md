@@ -121,4 +121,6 @@ Create agent skills file to help models and agents generate this type of xml fil
   </xs:complexType>
 
 </xs:schema>
-``` xml
+```
+
+the skill can call the PuppyWorkbooks.CLI.exe and pass the file path to a worksheet to validate the Worksheet runs. It could also pass the file path to an integration xml file, but that would run the integration 

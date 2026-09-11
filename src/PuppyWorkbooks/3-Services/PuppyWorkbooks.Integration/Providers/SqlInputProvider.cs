@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System.Data;
+using System.Data.Common;
 using PuppyWorkbooks.Integration.Models;
 
 namespace PuppyWorkbooks.Integration.Providers;
@@ -12,10 +13,11 @@ public sealed class SqlInputProvider : IInputProvider
     {
         _connection = connection;
         _query = query;
-        _connection.Open();
     }
     public async IAsyncEnumerable<IntegrationRecord> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (_connection.State != ConnectionState.Open)
+            await _connection.OpenAsync(cancellationToken);
         await using var command = _connection.CreateCommand(); command.CommandText = _query;
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))

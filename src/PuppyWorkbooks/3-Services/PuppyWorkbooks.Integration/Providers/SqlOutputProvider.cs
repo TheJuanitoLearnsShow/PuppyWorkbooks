@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System.Data;
+using System.Data.Common;
 using PuppyWorkbooks.Integration.Models;
 
 namespace PuppyWorkbooks.Integration.Providers;
@@ -14,10 +15,11 @@ public sealed class SqlOutputProvider : IOutputProvider
         _connection = connection;
         _tableName = tableName;
         _query = query;
-        _connection.Open();
     }
     public async ValueTask<OutputStatus> WriteAsync(IntegrationRecord record, CancellationToken cancellationToken = default)
     {
+        if (_connection.State != ConnectionState.Open)
+            await _connection.OpenAsync(cancellationToken);
         await using var command = _connection.CreateCommand();
         var names = record.Values.Keys.ToArray(); 
         command.CommandText = !string.IsNullOrWhiteSpace(_query) ? _query : $"INSERT INTO {Quote(_tableName)} ({string.Join(",", names.Select(Quote))}) VALUES ({string.Join(",", names.Select((_, i) => "@p" + i))})";
