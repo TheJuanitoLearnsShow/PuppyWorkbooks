@@ -68,6 +68,7 @@ public class CLITests
                     Debug = true
                 });
                 await worker.StartAsync(CancellationToken.None);
+                // --IntegrationPath="" --Debug="true"
             }
             finally
             {

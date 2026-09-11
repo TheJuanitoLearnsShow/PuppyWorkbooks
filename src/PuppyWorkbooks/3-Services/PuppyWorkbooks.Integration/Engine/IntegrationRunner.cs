@@ -19,7 +19,10 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         var outputs = new List<IOutputProvider>();
         try
         {
-            foreach (var output in definition.Steps.OfType<OutputStep>()) outputs.Add(CreateOutput(output));
+            foreach (var output in definition.Steps.OfType<OutputStep>())
+            {
+                outputs.Add(CreateOutput(output));
+            }
             var reduceSteps = GetReduceSteps(definition.Steps).ToList();
             var reduceStates = reduceSteps.ToDictionary(step => step, step => ValueBinder.ParseInitialState(step.InitialStateJson));
             var outputSteps = definition.Steps.OfType<OutputStep>().ToList();
