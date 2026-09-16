@@ -419,3 +419,6 @@ FodyWeavers.xsd
 src/PuppyWorkbooks/5-Presentation/PuppyWorkbooks.App.Wpf/SyncfusionLicenseConstant.cs
 .parcel-cache/
 dist/
+src/PuppyWorkbooks/.output.txt
+src/PuppyWorkbooks/.codex/config.toml
+src/PuppyWorkbooks/.air/mcp.json
