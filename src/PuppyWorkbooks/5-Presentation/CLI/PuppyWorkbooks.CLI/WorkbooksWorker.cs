@@ -57,6 +57,9 @@ public sealed class WorkbooksWorker : IHostedService
         var mockSteps = !string.IsNullOrWhiteSpace(_settings.UseMockDataForSteps)
             ? _settings.UseMockDataForSteps
             : GetMockArgument(cmdArgs);
+        var scenario = !string.IsNullOrWhiteSpace(_settings.Scenario)
+            ? _settings.Scenario
+            : GetScenarioArgument(cmdArgs);
         var simplePaths = GetPositionalArguments(cmdArgs);
         if (simplePaths.Count == 1)
         {
@@ -64,7 +67,7 @@ public sealed class WorkbooksWorker : IHostedService
             switch (rootName)
             {
                 case "Integration":
-                    await ExecuteIntegration(simplePaths[0], isDebug, mockSteps, cancellationToken);
+                    await ExecuteIntegration(simplePaths[0], isDebug, mockSteps, scenario, cancellationToken);
                     return;
                 case "Workbook":
                     await ExecuteWorksheets(cancellationToken);
@@ -73,7 +76,7 @@ public sealed class WorkbooksWorker : IHostedService
         }
         if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
         {
-            await ExecuteIntegration(_settings.IntegrationPath, isDebug, mockSteps, cancellationToken);
+            await ExecuteIntegration(_settings.IntegrationPath, isDebug, mockSteps, scenario, cancellationToken);
             return;
         }
 
@@ -133,6 +136,36 @@ public sealed class WorkbooksWorker : IHostedService
         string.Equals(key, "--mock", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "-m", StringComparison.OrdinalIgnoreCase);
 
+    private static string? GetScenarioArgument(string[] cmdArgs)
+    {
+        for (var i = 1; i < cmdArgs.Length; i++)
+        {
+            var arg = cmdArgs[i];
+            var equalIndex = arg.IndexOf('=');
+            if (equalIndex > 0)
+            {
+                var key = arg[..equalIndex];
+                var val = arg[(equalIndex + 1)..];
+                if (IsScenarioKey(key)) return val;
+            }
+            else if (IsScenarioKey(arg) && i + 1 < cmdArgs.Length)
+            {
+                return cmdArgs[i + 1];
+            }
+        }
+        return null;
+    }
+
+    private static bool IsScenarioKey(string key) =>
+        string.Equals(key, "--scenario", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-scenario", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "/scenario", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--scenario-name", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--scenarioName", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-scenarioName", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "/scenarioName", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-s", StringComparison.OrdinalIgnoreCase);
+
     private string GetFirstXmlNodeName(string simplePath)
     {
         if (string.IsNullOrWhiteSpace(simplePath) || !File.Exists(simplePath))
@@ -184,7 +217,7 @@ public sealed class WorkbooksWorker : IHostedService
         }
     }
 
-    private async Task ExecuteIntegration(string path, bool isDebug, string? mockSteps, CancellationToken cancellationToken)
+    private async Task ExecuteIntegration(string path, bool isDebug, string? mockSteps, string? scenario, CancellationToken cancellationToken)
     {
         try
         {
@@ -192,7 +225,8 @@ public sealed class WorkbooksWorker : IHostedService
             var runner = new IntegrationRunner(new IntegrationRunnerOptions
             {
                 Debug = isDebug,
-                UseMockDataForSteps = mockSteps ?? string.Empty
+                UseMockDataForSteps = mockSteps ?? string.Empty,
+                Scenario = scenario
             });
             var result = await runner.RunAsync(definition, cancellationToken);
             if (isDebug && result.DebugData is not null)

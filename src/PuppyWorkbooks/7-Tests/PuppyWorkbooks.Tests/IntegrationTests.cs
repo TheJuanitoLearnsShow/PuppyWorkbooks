@@ -594,6 +594,224 @@ public sealed class IntegrationTests
         }
     }
 
+    [Fact]
+    public async Task IntegrationRunner_WithMultipleMockScenarios_CsvAndSql_SelectsRequestedScenario()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Multiple Mock Scenarios Test">
+                <Steps>
+                    <IOInput Id="input1" Kind="CSVReader" FilePath="dummy.csv">
+                        <MockDataSources>
+                            <MockData Name="Small">
+            Name,Amount
+            Alice,10
+                            </MockData>
+                            <MockData Name="Large">
+            Name,Amount
+            Alice,10
+            Bob,20
+            Cara,30
+                            </MockData>
+                        </MockDataSources>
+                    </IOInput>
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+
+        var runnerLarge = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            UseMockDataForSteps = "input1",
+            Scenario = "Large"
+        });
+        var resultLarge = await runnerLarge.RunAsync(definition);
+        Assert.Equal(3, resultLarge.Read);
+
+        var runnerSmall = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            UseMockDataForSteps = "input1",
+            Scenario = "Small"
+        });
+        var resultSmall = await runnerSmall.RunAsync(definition);
+        Assert.Equal(1, resultSmall.Read);
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WithMultipleMockScenarios_WhenScenarioNotFound_UsesFirstMockData()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Scenario Fallback Test">
+                <Steps>
+                    <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
+                        <MockData Name="Primary">
+            Name,Amount
+            Alice,10
+            Bob,20
+                        </MockData>
+                        <MockData Name="Secondary">
+            Name,Amount
+            Cara,30
+                        </MockData>
+                    </IOInput>
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+
+        var runner = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            ConnectionFactory = null,
+            UseMockDataForSteps = "ALL",
+            Scenario = "NonExistentScenario"
+        });
+
+        var result = await runner.RunAsync(definition);
+        Assert.Equal(2, result.Read);
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WithHttpMockData_JsonPayload_SelectsScenarioAndParsesJson()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="HTTP Mock Test">
+                <Steps>
+                    <IOInput Id="httpInput" Kind="HttpReader" Endpoint="customers" JsonPath="$.data.items">
+                        <MockData Name="Default">
+                        {
+                            "data": {
+                                "items": [
+                                    {"Id": 1, "Name": "Alice"}
+                                ]
+                            }
+                        }
+                        </MockData>
+                        <MockData Name="MultiCustomer">
+                        {
+                            "data": {
+                                "items": [
+                                    {"Id": 1, "Name": "Alice"},
+                                    {"Id": 2, "Name": "Bob"},
+                                    {"Id": 3, "Name": "Charlie"}
+                                ]
+                            }
+                        }
+                        </MockData>
+                    </IOInput>
+                </Steps>
+            </Integration>
+            """;
+
+        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+
+        // Run with MultiCustomer scenario
+        var runnerMulti = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            UseMockDataForSteps = "httpInput",
+            Scenario = "MultiCustomer"
+        });
+        var resultMulti = await runnerMulti.RunAsync(definition);
+        Assert.Equal(3, resultMulti.Read);
+
+        // Run with Default scenario
+        var runnerDefault = new IntegrationRunner(new IntegrationRunnerOptions
+        {
+            UseMockDataForSteps = "httpInput"
+        });
+        var resultDefault = await runnerDefault.RunAsync(definition);
+        Assert.Equal(1, resultDefault.Read);
+    }
+
+    [Fact]
+    public async Task IntegrationRunner_WithHttpMockData_JsonFilePath_ReadsFromFile()
+    {
+        var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(directory);
+        var jsonFile = Path.Combine(directory, "mock_response.json");
+        await File.WriteAllTextAsync(jsonFile, """
+            [
+                {"Id": 10, "Name": "Grace"},
+                {"Id": 20, "Name": "Alan"}
+            ]
+            """);
+
+        try
+        {
+            var xml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Integration Name="HTTP File Mock Test">
+                    <Steps>
+                        <IOInput Id="httpInput" Kind="HttpReader" Endpoint="users" JsonPath="$">
+                            <MockData Name="FromFile" FilePath="{jsonFile.Replace("\\", "/")}" />
+                        </IOInput>
+                    </Steps>
+                </Integration>
+                """;
+
+            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var runner = new IntegrationRunner(new IntegrationRunnerOptions
+            {
+                UseMockDataForSteps = "httpInput",
+                Scenario = "FromFile"
+            });
+            var result = await runner.RunAsync(definition);
+
+            Assert.Equal(2, result.Read);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IntegrationXmlSerializer_LoadsMultipleMockDataSources_FromDirectAndContainerTags()
+    {
+        var xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Integration Name="Multiple Mock Formats">
+                <Steps>
+                    <IOInput Id="step1" Kind="CSVReader" FilePath="dummy.csv">
+                        <MockDataSources>
+                            <MockData Name="ScenarioA">
+            Name,Amount
+            Alice,10
+                            </MockData>
+                            <MockData Name="ScenarioB" FilePath="SampleFiles/Input1.csv" />
+                        </MockDataSources>
+                    </IOInput>
+                    <IOInput Id="step2" Kind="HttpReader" Endpoint="users">
+                        <MockData Name="Scenario1">
+                        [{"Id": 1}]
+                        </MockData>
+                        <MockCsv Name="Scenario2">
+                        [{"Id": 2}]
+                        </MockCsv>
+                    </IOInput>
+                </Steps>
+            </Integration>
+            """;
+
+        var serializer = new IntegrationXmlSerializer();
+        var definition = serializer.Deserialize(xml, AppContext.BaseDirectory);
+
+        var step1 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[0];
+        Assert.Equal(2, step1.MockDataSources.Count);
+        Assert.True(step1.MockDataSources.ContainsKey("ScenarioA"));
+        Assert.True(step1.MockDataSources.ContainsKey("ScenarioB"));
+        Assert.Contains("Alice,10", step1.MockDataSources["ScenarioA"].Content);
+        Assert.True(File.Exists(step1.MockDataSources["ScenarioB"].FilePath));
+
+        var step2 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[1];
+        Assert.Equal(2, step2.MockDataSources.Count);
+        Assert.True(step2.MockDataSources.ContainsKey("Scenario1"));
+        Assert.True(step2.MockDataSources.ContainsKey("Scenario2"));
+    }
+
     private sealed class TestHttpClientFactory(HttpMessageHandler handler, string expectedName) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name)

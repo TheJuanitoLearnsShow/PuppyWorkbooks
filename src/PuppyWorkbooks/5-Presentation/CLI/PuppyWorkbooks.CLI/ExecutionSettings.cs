@@ -36,4 +36,9 @@ public class ExecutionSettings
     /// Can be "ALL" to use mock data for all IO steps, or a comma-separated list of step IDs.
     /// </summary>
     public string? UseMockDataForSteps { get; set; }
+
+    /// <summary>
+    /// When specified, defines the scenario name to select mock data for input steps.
+    /// </summary>
+    public string? Scenario { get; set; }
 }

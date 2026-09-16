@@ -6,7 +6,8 @@ internal static class JsonPath
 {
     public static IEnumerable<JsonElement> Select(JsonElement root, string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || path == "$") return [root];
+        if (string.IsNullOrWhiteSpace(path) || path == "$")
+            return root.ValueKind == JsonValueKind.Array ? root.EnumerateArray() : [root];
         if (!path.StartsWith('$')) throw new InvalidOperationException("JsonPath must start with '$'.");
         var current = new List<JsonElement> { root };
         for (var index = 1; index < path.Length;)

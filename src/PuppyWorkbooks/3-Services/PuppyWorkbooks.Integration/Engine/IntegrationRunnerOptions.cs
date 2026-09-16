@@ -28,4 +28,9 @@ public sealed class IntegrationRunnerOptions
     /// The setting could be "ALL" to use mock data for all or a comma separated string to define the IO steps ids to use a mock for
     /// </summary>
     public string UseMockDataForSteps { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The optional name of the mock data scenario to run for input steps.
+    /// </summary>
+    public string? Scenario { get; set; }
 }

@@ -209,4 +209,68 @@ public class CLITests
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task Test_RunIntegration_WithScenario_UsesSpecifiedScenarioMockData()
+    {
+        var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(directory);
+        var integrationXmlPath = Path.Combine(directory, "integration.xml");
+        var outputPath = Path.Combine(directory, "output.csv");
+
+        try
+        {
+            var xml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Integration Name="CLI Scenario Test">
+                    <Steps>
+                        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
+                            <MockData Name="ScenarioOne">
+                Name,Active,Amount
+                Alice,true,10
+                            </MockData>
+                            <MockData Name="ScenarioTwo">
+                Name,Active,Amount
+                Bob,true,20
+                Cara,true,30
+                            </MockData>
+                        </IOInput>
+                        <Map Id="map">
+                            <Worksheet>
+                                <Name>Map</Name>
+                                <Cells>
+                                    <WorkCell>
+                                        <Id>1</Id>
+                                        <Name>Name</Name>
+                                        <Formula>InputRecord.Name</Formula>
+                                        <Comments/>
+                                    </WorkCell>
+                                </Cells>
+                            </Worksheet>
+                        </Map>
+                        <IOOutput Id="output" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
+                    </Steps>
+                </Integration>
+                """;
+            await File.WriteAllTextAsync(integrationXmlPath, xml);
+
+            var worker = new WorkbooksWorker(new ExecutionSettings
+            {
+                IntegrationPath = integrationXmlPath,
+                UseMockDataForSteps = "sqlInput",
+                Scenario = "ScenarioTwo"
+            });
+            await worker.StartAsync(CancellationToken.None);
+
+            Assert.True(File.Exists(outputPath));
+            var lines = await File.ReadAllLinesAsync(outputPath);
+            Assert.Equal(3, lines.Length);
+            Assert.Contains("Bob", lines[1]);
+            Assert.Contains("Cara", lines[2]);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
 }
