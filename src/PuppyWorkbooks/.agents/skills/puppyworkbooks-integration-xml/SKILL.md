@@ -1,114 +1,244 @@
 ---
 name: puppyworkbooks-integration-xml
-description: Create or edit PuppyWorkbooks integration XML definitions containing CSV or SQL I/O and worksheet-driven map, filter, reduce, or switch steps.
+description: Create, edit, and validate PuppyWorkbooks XML integration definitions containing CSV, SQL, JSON, or HTTP I/O and worksheet-driven Map, Filter, Reduce, or Switch steps with mock data testing.
 ---
 
-# PuppyWorkbooks integration XML
+# PuppyWorkbooks Integration XML
 
-Use this skill when a request is to create, change, review, or validate an XML
-integration for PuppyWorkbooks. Do not use it for a standalone `WorkSheet` XML
-file unless that worksheet is being prepared for an integration step.
+Use this skill to create, modify, inspect, and validate XML integration pipeline definitions for PuppyWorkbooks.
 
-## Start from the repository examples
+## Repository Reference Examples
 
-Read the sample closest to the requested behavior before editing:
+Before drafting or modifying integrations, consult the reference samples in `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/`:
 
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/TestIntegrationWithFileReferences.xml`
-  for an input, map, filter, reduce, output, and referenced worksheets.
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/Map.xml`, `Filter.xml`, and
-  `Reduce.xml` for standalone worksheet files.
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/Switch.xml` for inline
-  switch worksheets and branches.
+- `TestIntegrationWithFileReferences.xml`: Pipeline with input, external map/filter/reduce worksheets, and output.
+- `Switch.xml`: Conditional routing using inline switch worksheets and multiple execution branches.
+- `HttpProviders.xml`: HTTP reader/writer endpoints and `HttpConfigurations`.
+- `MultipleMockScenarios.xml` & `MultipleMockDataSources.xml`: Defining multiple named mock data scenarios.
+- `Map.xml`, `Filter.xml`, `Reduce.xml`: Standalone worksheet definitions used in pipeline steps.
 
-Keep the root as `Integration`, give the integration and every step a meaningful
-`Name` or `Id`, and place every top-level step inside its single `Steps` element.
-The runner uses the first `IOInput` as the input source and executes top-level
-steps in declaration order.
+## Pipeline Architecture & XML Structure
 
-## Step semantics and XML shape
-
-- `IOInput` yields one record at a time. Use `Kind="CSVReader" FilePath="..."`
-  for CSV. For `Kind="SqlReader"`, use `ConnectionString="..."` and a `Query`
-  child; `FilePath` is not needed by the implementation for SQL despite the
-  original XSD declaring it required.
-- `Map` evaluates its worksheet against the current record. Every non-empty
-  formula cell becomes a new record field using that cell's `Name`; it replaces
-  the previous record. `OutputField` is accepted for compatibility but does not
-  limit map output.
-- `Filter` evaluates its worksheet and reads the final non-empty formula cell.
-  It keeps a record when the value is true. `KeepWhenTrue="false"` reverses the
-  decision.
-- `Reduce` requires `InitialStateJson`, `OutputField`, and a worksheet. The
-  worksheet receives `State` and the record; the named output cell, or the final
-  formula cell if there is no matching name, becomes the next state. The record
-  after the step contains only the `OutputField` state value. When any reduce
-  exists, top-level outputs run once after all input records, using the final
-  record.
-- `Switch` evaluates its worksheet once for each record. Each `Branch` needs a
-  `WorkCell` equal to a boolean worksheet-cell `Name`. All branches whose cells
-  are true run, in XML order. Branches may contain `Map`, `Filter`, `Reduce`, or
-  nested `Switch` steps; they cannot contain `IOInput` or `IOOutput`.
-- `IOOutput` writes the current record and passes it forward with
-  `<step-id>.Status`, `<step-id>.StatusMessage`, and `<step-id>.AffectedRows`.
-  Use `Kind="CSVWriter" FilePath="..."` for CSV. For `Kind="SqlWriter"`, use
-  `ConnectionString` plus `TableName`, or a `Query` child for a custom command.
-
-Use an inline worksheet when it is specific to one integration; otherwise use a
-separate `WorkSheet` XML file:
+Integration pipelines are declared under a root `<Integration Name="...">` with child `<Steps>`. Optional `<HttpConfigurations>` can precede `<Steps>`.
 
 ```xml
-<Map Id="normalize">
-  <Worksheet FilePath="worksheets/normalize.xml" />
-</Map>
+<?xml version="1.0" encoding="utf-8"?>
+<Integration Name="OrderProcessing">
+  <HttpConfigurations>
+    <HttpConfiguration Name="BillingApi" BaseUrl="https://api.example.com/v1/" HttpClientName="billing-client">
+      <Headers>
+        <Header Name="Authorization" Value="Bearer secret-token" />
+        <Header Name="Accept" Value="application/json" />
+      </Headers>
+    </HttpConfiguration>
+  </HttpConfigurations>
+  <Steps>
+    <!-- Pipeline steps defined in sequential execution order -->
+  </Steps>
+</Integration>
 ```
 
-Referenced paths are relative to the integration XML. `Path`, `File`,
-`Filename`, and `FileName` are supported aliases for `FilePath`, but write new
-definitions with `FilePath`.
+The pipeline executes steps in declaration order for each record yielded by the primary `IOInput` (except when `Reduce` is present, which aggregates all records and passes the final state record to subsequent output steps).
 
-Every inline worksheet must contain `Cells` and at least one `WorkCell`. A
-`WorkCell` has `Id`, `Name`, and `Formula`, in that order. XML-escape formulas,
-for example write `&amp;` for Power Fx string concatenation and `&quot;` for a string
-literal. Worksheets receive the current record as `InputRecord`; direct field
-names are also provided for compatibility. Reduce worksheets additionally
-receive `State`.
+## Step Types & Configuration
 
-## Safe validation
+### 1. `IOInput` (Input Data Source)
+Yields records sequentially into the pipeline.
+- **CSV Reader**: `<IOInput Id="source" Kind="CSVReader" FilePath="data/orders.csv" />`
+- **SQL Reader**: `<IOInput Id="source" Kind="SqlReader" ConnectionString="Server=...;Database=..." Query="SELECT Id, Customer, Amount FROM Orders" />` (or child `<Query>SELECT ...</Query>`)
+- **HTTP Reader**: `<IOInput Id="source" Kind="HttpReader" HttpConfiguration="BillingApi" Endpoint="invoices" JsonPath="$.data.items" HttpMethod="GET" />`
 
-First validate a referenced worksheet by running the CLI with its worksheet XML
-path. Locate an existing `PuppyWorkbooks.CLI.exe`; if no built executable is
-available, use the project command below from the repository root:
+### 2. `Map` (Record Transformation)
+Transforms the incoming record by evaluating a Power Fx worksheet. Each non-empty formula cell becomes a field in the output record matching the cell's `Name`.
+- **Referenced Worksheet**: `<Map Id="transform"><Worksheet FilePath="worksheets/order_map.xml" /></Map>`
+- **Inline Worksheet**:
+  ```xml
+  <Map Id="transform">
+    <Worksheet>
+      <Name>OrderTransform</Name>
+      <Cells>
+        <WorkCell>
+          <Id>1</Id>
+          <Name>OrderId</Name>
+          <Formula>InputRecord.Id</Formula>
+        </WorkCell>
+        <WorkCell>
+          <Id>2</Id>
+          <Name>TotalWithTax</Name>
+          <Formula>AddTax(Value(InputRecord.Amount))</Formula>
+        </WorkCell>
+      </Cells>
+    </Worksheet>
+  </Map>
+  ```
 
-```powershell
-dotnet run --project 5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj -- path/to/worksheet.xml
-```
+### 3. `Filter` (Record Inclusion / Exclusion)
+Evaluates a worksheet expression. The boolean result of the final non-empty formula cell determines whether the record proceeds.
+- Attributes: `KeepWhenTrue="true"` (default) keeps matching records; `KeepWhenTrue="false"` discards matching records.
+- Example:
+  ```xml
+  <Filter Id="activeFilter" KeepWhenTrue="true">
+    <Worksheet>
+      <Name>ActiveOnly</Name>
+      <Cells>
+        <WorkCell>
+          <Id>1</Id>
+          <Name>ShouldKeep</Name>
+          <Formula>InputRecord.Status = &quot;Active&quot; And Value(InputRecord.Amount) &gt; 0</Formula>
+        </WorkCell>
+      </Cells>
+    </Worksheet>
+  </Filter>
+  ```
 
-To execute an integration without reading its configured CSV or SQL input,
-declare mock CSV data on each input that will be selected and pass `ALL`:
+### 4. `Reduce` (Batch Aggregation)
+Accumulates state across all input records.
+- Attributes / Elements:
+  - `InitialStateJson`: Initial accumulator value as JSON (e.g., `0`, `{}`, `{"Count": 0, "Sum": 0}`).
+  - `OutputField`: Name of the record field that stores the resulting accumulator value.
+  - `Worksheet`: Accesses `State` (previous accumulator value) and `InputRecord`.
+- Example:
+  ```xml
+  <Reduce Id="calculateTotal" OutputField="Summary">
+    <InitialStateJson>0</InitialStateJson>
+    <Worksheet>
+      <Name>SumAmounts</Name>
+      <Cells>
+        <WorkCell>
+          <Id>1</Id>
+          <Name>Summary</Name>
+          <Formula>State + Value(InputRecord.Amount)</Formula>
+        </WorkCell>
+      </Cells>
+    </Worksheet>
+  </Reduce>
+  ```
 
+### 5. `Switch` (Conditional Routing)
+Evaluates a worksheet for each record and dispatches the record to one or more matching branches.
+- Contains a `<Worksheet>` defining boolean cells and one or more `<Branch WorkCell="CellName">` blocks.
+- All branches whose referenced `WorkCell` evaluates to `true` will execute in XML declaration order.
+- Branches can contain `Map`, `Filter`, `Reduce`, or nested `Switch` steps (cannot contain `IOInput` or `IOOutput`).
+- Example:
+  ```xml
+  <Switch Id="routeByRegion">
+    <Worksheet>
+      <Name>RegionRouter</Name>
+      <Cells>
+        <WorkCell>
+          <Id>1</Id>
+          <Name>IsDomestic</Name>
+          <Formula>InputRecord.Country = &quot;US&quot;</Formula>
+        </WorkCell>
+        <WorkCell>
+          <Id>2</Id>
+          <Name>IsInternational</Name>
+          <Formula>InputRecord.Country &lt;&gt; &quot;US&quot;</Formula>
+        </WorkCell>
+      </Cells>
+    </Worksheet>
+    <Branch WorkCell="IsDomestic">
+      <Map Id="domesticMap">
+        <Worksheet FilePath="worksheets/domestic.xml" />
+      </Map>
+    </Branch>
+    <Branch WorkCell="IsInternational">
+      <Map Id="internationalMap">
+        <Worksheet FilePath="worksheets/intl.xml" />
+      </Map>
+    </Branch>
+  </Switch>
+  ```
+
+### 6. `IOOutput` (Output Destination)
+Writes the current record to an external sink and appends status metadata (`<step-id>.Status`, `<step-id>.StatusMessage`, `<step-id>.AffectedRows`).
+- **CSV Writer**: `<IOOutput Id="csvSink" Kind="CSVWriter" FilePath="output/results.csv" />`
+- **JSON Writer**: `<IOOutput Id="jsonSink" Kind="JsonWriter" FilePath="output/results.json" />`
+- **XML Writer**: `<IOOutput Id="xmlSink" Kind="XmlWriter" FilePath="output/results.xml" XmlRootElement="Orders" XmlRecordElement="Order" />`
+- **SQL Writer**: `<IOOutput Id="sqlSink" Kind="SqlWriter" ConnectionString="..." TableName="ProcessedOrders" />` (or with custom `<Query>INSERT INTO ...</Query>`)
+- **HTTP Writer**: `<IOOutput Id="httpSink" Kind="HttpWriter" HttpConfiguration="BillingApi" Endpoint="archive" HttpMethod="POST" PayloadFormat="Json" />`
+
+---
+
+## Defining Mock Data for Testing
+
+To safely test integrations without external databases, network calls, or input files, define mock data on `IOInput` steps:
+
+### 1. Inline Mock CSV
 ```xml
-<IOInput Id="source" Kind="SqlReader" ConnectionString="not-used-when-mocked">
+<IOInput Id="source" Kind="CSVReader" FilePath="production/path.csv">
   <MockCsv>
-Name,Active,Amount
-Alice,true,10
+Id,Customer,Amount,Status
+101,Acme Corp,250.00,Active
+102,Beta LLC,120.50,Inactive
+103,Gamma Inc,85.00,Active
   </MockCsv>
 </IOInput>
 ```
 
-```powershell
-dotnet run --project 5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj -- path/to/integration.xml --use-mock-data-for-steps ALL --debug
+### 2. Named Mock Scenarios
+Define multiple scenarios within `<MockDataSources>` for edge-case and volume testing:
+```xml
+<IOInput Id="source" Kind="CSVReader" FilePath="data.csv">
+  <MockDataSources>
+    <MockData Name="Standard">
+Id,Amount,Status
+1,100,Active
+2,200,Active
+    </MockData>
+    <MockData Name="Empty" FilePath="mocks/empty.csv" />
+    <MockData Name="TaxExempt">
+Id,Amount,Status
+3,500,Exempt
+    </MockData>
+  </MockDataSources>
+</IOInput>
 ```
 
-`ALL` replaces input reads only. CSV outputs still write their configured file,
-and SQL outputs still require an application-supplied database connection
-factory, which the CLI does not provide. Before execution, direct outputs to a
-disposable test file and do not validate a definition that has a real SQL output
-through the CLI. `--debug` prints per-record input and worksheet-cell results
-for inspection.
+### 3. External Mock Files
+Use the `MockCsvFilePath` attribute on `IOInput` or `FilePath` attribute on `<MockData>`:
+```xml
+<IOInput Id="source" Kind="CSVReader" FilePath="data.csv" MockCsvFilePath="testdata/mock_orders.csv" />
+```
 
-When a core integration behavior changes, add or update a focused xUnit test in
-`7-Tests/PuppyWorkbooks.Tests` and run:
+### 4. HTTP Reader Mock JSON
+For `Kind="HttpReader"`, provide mock JSON inline or via file path:
+```xml
+<IOInput Id="apiSource" Kind="HttpReader" HttpConfiguration="BillingApi" Endpoint="users" JsonPath="$.items">
+  <MockData>
+    {
+      "items": [
+        {"id": 1, "name": "Alice", "role": "Admin"},
+        {"id": 2, "name": "Bob", "role": "User"}
+      ]
+    }
+  </MockData>
+</IOInput>
+```
+
+---
+
+## Verification Using the CLI Tool
+
+The `puppyworkbooks` CLI executable is available directly in the system's PATH.
+
+### Running Integrations in Mock Mode
+Run the integration with mock data enabled for all steps or selected steps, and inspect per-step execution with `--debug`:
 
 ```powershell
-dotnet test 7-Tests/PuppyWorkbooks.Tests/PuppyWorkbooks.Tests.csproj
+# Run using mock data for all input steps with full debug output
+puppyworkbooks path/to/integration.xml --use-mock-data-for-steps ALL --debug
+
+# Run a specific named mock scenario
+puppyworkbooks path/to/integration.xml --use-mock-data-for-steps ALL --scenario TaxExempt --debug
+
+# Run using mock data for specific step IDs
+puppyworkbooks path/to/integration.xml --use-mock-data-for-steps source --debug
 ```
+
+*Note: Alternatively, you can run via `dotnet run --project 5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj -- path/to/integration.xml --use-mock-data-for-steps ALL --debug` if invoking via the project directly.*
+
+### Mock Execution Behavior
+- When an `IOInput` step runs under mock mode, it supplies records from its configured inline mock data or mock file.
+- When an `IOOutput` step runs under mock mode (or when `--use-mock-data-for-steps ALL` is specified), output writing uses an in-memory mock provider so no disk files or remote databases are altered.
+- `--debug` outputs formatted JSON showing every step's input record, intermediate cell calculations, and filter/branch evaluation results.
