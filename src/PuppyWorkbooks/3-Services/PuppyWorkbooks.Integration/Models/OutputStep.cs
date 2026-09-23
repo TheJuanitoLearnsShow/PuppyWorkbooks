@@ -13,5 +13,7 @@ public sealed class OutputStep : IntegrationStep
     [XmlAttribute] public string Endpoint { get; set; } = string.Empty;
     [XmlAttribute] public string HttpMethod { get; set; } = "POST";
     [XmlAttribute] public HttpPayloadFormat PayloadFormat { get; set; } = HttpPayloadFormat.Json;
+    [XmlAttribute] public string XmlRootElement { get; set; } = string.Empty;
+    [XmlAttribute] public string XmlRecordElement { get; set; } = string.Empty;
     [XmlIgnore] public HttpProviderSettings? ResolvedHttpConfiguration { get; set; }
 }

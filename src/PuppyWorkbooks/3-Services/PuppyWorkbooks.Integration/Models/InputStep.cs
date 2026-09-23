@@ -15,6 +15,7 @@ public sealed class InputStep : IntegrationStep
     [XmlAttribute] public string Endpoint { get; set; } = string.Empty;
     [XmlAttribute] public string HttpMethod { get; set; } = "GET";
     [XmlAttribute] public string JsonPath { get; set; } = "$";
+    [XmlAttribute] public string XmlItemElement { get; set; } = string.Empty;
     [XmlIgnore] public HttpProviderSettings? ResolvedHttpConfiguration { get; set; }
 
     [XmlIgnore]

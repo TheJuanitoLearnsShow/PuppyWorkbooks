@@ -133,6 +133,8 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         return step.Kind switch
         {
             InputKind.CSVReader when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvInputProvider(step.FilePath),
+            InputKind.JsonReader when !string.IsNullOrWhiteSpace(step.FilePath) => JsonInputProvider.FromFile(step.FilePath, step.JsonPath),
+            InputKind.XmlReader when !string.IsNullOrWhiteSpace(step.FilePath) => new XmlInputProvider(step.FilePath, step.XmlItemElement),
             InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
             InputKind.HttpReader when step.ResolvedHttpConfiguration is not null => new HttpInputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.JsonPath, _options.HttpClientFactory),
             InputKind.SqlReader => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
@@ -232,6 +234,8 @@ public sealed class IntegrationRunner(IntegrationRunnerOptions? options = null)
         return step.Kind switch
         {
             OutputKind.CSVWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvOutputProvider(step.FilePath),
+            OutputKind.JsonWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new JsonOutputProvider(step.FilePath),
+            OutputKind.XmlWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new XmlOutputProvider(step.FilePath, step.XmlRootElement, step.XmlRecordElement),
             OutputKind.SqlWriter when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(step.ConnectionString), step.TableName, step.Query),
             OutputKind.HttpWriter when step.ResolvedHttpConfiguration is not null => new HttpOutputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.PayloadFormat, _options.HttpClientFactory),
             OutputKind.SqlWriter => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration."),
