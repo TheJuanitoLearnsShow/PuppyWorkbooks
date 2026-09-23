@@ -100,40 +100,9 @@ public class CLITests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="CLI Mock Test">
-                    <Steps>
-                        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
-                            <MockCsv>
-                Name,Active,Amount
-                Alice,true,10
-                Cara,true,5
-                            </MockCsv>
-                        </IOInput>
-                        <Map Id="map">
-                            <Worksheet>
-                                <Name>Map</Name>
-                                <Cells>
-                                    <WorkCell>
-                                        <Id>1</Id>
-                                        <Name>Name</Name>
-                                        <Formula>InputRecord.Name</Formula>
-                                        <Comments/>
-                                    </WorkCell>
-                                    <WorkCell>
-                                        <Id>2</Id>
-                                        <Name>Amount</Name>
-                                        <Formula>Value(InputRecord.Amount)</Formula>
-                                        <Comments/>
-                                    </WorkCell>
-                                </Cells>
-                            </Worksheet>
-                        </Map>
-                        <IOOutput Id="output" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
-                    </Steps>
-                </Integration>
-                """;
+            var xmlSourcePath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "CliMockData.xml");
+            var xml = (await File.ReadAllTextAsync(xmlSourcePath))
+                .Replace("__OUTPUT_PATH__", outputPath.Replace("\\", "/"), StringComparison.Ordinal);
             await File.WriteAllTextAsync(integrationXmlPath, xml);
 
             var worker = new WorkbooksWorker(new ExecutionSettings
@@ -165,34 +134,9 @@ public class CLITests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="CLI Mock Test All">
-                    <Steps>
-                        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
-                            <MockCsv>
-                Name,Active,Amount
-                Alice,true,10
-                Cara,true,5
-                            </MockCsv>
-                        </IOInput>
-                        <Map Id="map">
-                            <Worksheet>
-                                <Name>Map</Name>
-                                <Cells>
-                                    <WorkCell>
-                                        <Id>1</Id>
-                                        <Name>Name</Name>
-                                        <Formula>InputRecord.Name</Formula>
-                                        <Comments/>
-                                    </WorkCell>
-                                </Cells>
-                            </Worksheet>
-                        </Map>
-                        <IOOutput Id="output" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
-                    </Steps>
-                </Integration>
-                """;
+            var xmlSourcePath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "CliMockDataAll.xml");
+            var xml = (await File.ReadAllTextAsync(xmlSourcePath))
+                .Replace("__OUTPUT_PATH__", outputPath.Replace("\\", "/"), StringComparison.Ordinal);
             await File.WriteAllTextAsync(integrationXmlPath, xml);
 
             var worker = new WorkbooksWorker(new ExecutionSettings
@@ -220,38 +164,9 @@ public class CLITests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="CLI Scenario Test">
-                    <Steps>
-                        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
-                            <MockData Name="ScenarioOne">
-                Name,Active,Amount
-                Alice,true,10
-                            </MockData>
-                            <MockData Name="ScenarioTwo">
-                Name,Active,Amount
-                Bob,true,20
-                Cara,true,30
-                            </MockData>
-                        </IOInput>
-                        <Map Id="map">
-                            <Worksheet>
-                                <Name>Map</Name>
-                                <Cells>
-                                    <WorkCell>
-                                        <Id>1</Id>
-                                        <Name>Name</Name>
-                                        <Formula>InputRecord.Name</Formula>
-                                        <Comments/>
-                                    </WorkCell>
-                                </Cells>
-                            </Worksheet>
-                        </Map>
-                        <IOOutput Id="output" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
-                    </Steps>
-                </Integration>
-                """;
+            var xmlSourcePath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "CliScenario.xml");
+            var xml = (await File.ReadAllTextAsync(xmlSourcePath))
+                .Replace("__OUTPUT_PATH__", outputPath.Replace("\\", "/"), StringComparison.Ordinal);
             await File.WriteAllTextAsync(integrationXmlPath, xml);
 
             var worker = new WorkbooksWorker(new ExecutionSettings

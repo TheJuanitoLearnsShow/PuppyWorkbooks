@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkSheet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Cells>
+    <WorkCell>
+      <Id>1</Id>
+      <Name>Ages</Name>
+      <Formula>[1,2,3]</Formula>
+      <Comments>None</Comments>
+    </WorkCell>
+    <WorkCell>
+      <Id>2</Id>
+      <Name>SquaredAge</Name>
+      <Formula>Sum(Ages, Value * Value)</Formula>
+      <Comments>None</Comments>
+    </WorkCell>
+  </Cells>
+</WorkSheet>

@@ -11,21 +11,8 @@ public sealed class IntegrationTests
     public async Task HttpProviders_ReadConfiguredJsonCollectionAndWriteJsonRows()
     {
         var handler = new RecordingHttpMessageHandler();
-        var xml = """
-            <Integration Name="HTTP test">
-              <HttpConfigurations>
-                <HttpConfiguration Name="api" BaseUrl="https://example.test/api/" HttpClientName="integration-api">
-                  <Headers><Header Name="X-Integration" Value="Puppy" /></Headers>
-                </HttpConfiguration>
-              </HttpConfigurations>
-              <Steps>
-                <IOInput Id="source" Kind="HttpReader" HttpConfiguration="api" Endpoint="customers" JsonPath="$.data.items" />
-                <IOOutput Id="sink" Kind="HttpWriter" HttpConfiguration="api" Endpoint="archive" PayloadFormat="Json" />
-              </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "HttpProviders.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
         var result = await new IntegrationRunner(new IntegrationRunnerOptions
         {
             HttpClientFactory = new TestHttpClientFactory(handler, "integration-api")
@@ -277,36 +264,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WithInlineMockCsv_UsesMockDataWhenAllSpecified()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Mock Data Inline Test">
-                <Steps>
-                    <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;Database=none;">
-                        <MockCsv>
-            Name,Active,Amount
-            Alice,true,10
-            Bob,false,100
-            Cara,true,5
-                        </MockCsv>
-                    </IOInput>
-                    <Map Id="map">
-                        <Worksheet>
-                            <Name>Map</Name>
-                            <Cells>
-                                <WorkCell>
-                                    <Id>1</Id>
-                                    <Name>Total</Name>
-                                    <Formula>Value(InputRecord.Amount) * 2</Formula>
-                                    <Comments/>
-                                </WorkCell>
-                            </Cells>
-                        </Worksheet>
-                    </Map>
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockCsvInline.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
         var runner = new IntegrationRunner(new IntegrationRunnerOptions
         {
             UseMockDataForSteps = "ALL"
@@ -328,28 +287,9 @@ public sealed class IntegrationTests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="Mock Data File Test">
-                    <Steps>
-                        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;" MockCsvFilePath="{mockCsvPath.Replace("\\", "/")}" />
-                        <Map Id="map">
-                            <Worksheet>
-                                <Name>Map</Name>
-                                <Cells>
-                                    <WorkCell>
-                                        <Id>1</Id>
-                                        <Name>Greeting</Name>
-                                        <Formula>"Hello " &amp; InputRecord.Name</Formula>
-                                        <Comments/>
-                                    </WorkCell>
-                                </Cells>
-                            </Worksheet>
-                        </Map>
-                    </Steps>
-                </Integration>
-                """;
-
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockCsvFilePath.xml");
+            var xml = (await File.ReadAllTextAsync(xmlPath))
+                .Replace("__MOCK_CSV_PATH__", mockCsvPath.Replace("\\", "/"), StringComparison.Ordinal);
             var definition = new IntegrationXmlSerializer().Deserialize(xml);
             var runner = new IntegrationRunner(new IntegrationRunnerOptions
             {
@@ -370,16 +310,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WhenMockDataRequestedForStepWithoutMock_ThrowsInvalidOperationException()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Mock Data Missing Test">
-                <Steps>
-                    <IOInput Id="input1" Kind="CSVReader" FilePath="input.csv" />
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockDataMissing.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
         var runner = new IntegrationRunner(new IntegrationRunnerOptions
         {
             UseMockDataForSteps = "input1"
@@ -393,18 +325,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WhenStepIdNotMatched_UsesActualProvider()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Mock Not Matched Test">
-                <Steps>
-                    <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
-                        <MockCsv>Name,Amount&#10;Alice,10</MockCsv>
-                    </IOInput>
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockNotMatched.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
         var runner = new IntegrationRunner(new IntegrationRunnerOptions
         {
             ConnectionFactory = null,
@@ -419,29 +341,8 @@ public sealed class IntegrationTests
     [Fact]
     public void IntegrationXmlSerializer_LoadsMockDataFromVariousXmlFormats()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Mock Formats">
-                <Steps>
-                    <IOInput Id="step1" Kind="SqlReader" ConnectionString="conn1">
-                        <MockCsv>
-            Name,Amount
-            Alice,10
-                        </MockCsv>
-                    </IOInput>
-                    <IOInput Id="step2" Kind="SqlReader" ConnectionString="conn2">
-                        <MockData>
-            Name,Amount
-            Bob,20
-                        </MockData>
-                    </IOInput>
-                    <IOInput Id="step3" Kind="SqlReader" ConnectionString="conn3" MockCsvFilePath="SampleFiles/Input1.csv" />
-                    <IOInput Id="step4" Kind="SqlReader" ConnectionString="conn4">
-                        <MockCsv FilePath="SampleFiles/Input1.csv" />
-                    </IOInput>
-                </Steps>
-            </Integration>
-            """;
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockDataVariousFormats.xml");
+        var xml = File.ReadAllText(xmlPath);
 
         var serializer = new IntegrationXmlSerializer();
         var definition = serializer.Deserialize(xml, AppContext.BaseDirectory);
@@ -468,22 +369,9 @@ public sealed class IntegrationTests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="Mock Output Test">
-                    <Steps>
-                        <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
-                            <MockCsv>
-                Name,Amount
-                Alice,10
-                Bob,20
-                            </MockCsv>
-                        </IOInput>
-                        <IOOutput Id="output1" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
-                    </Steps>
-                </Integration>
-                """;
-
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockOutput.xml");
+            var xml = (await File.ReadAllTextAsync(xmlPath))
+                .Replace("__OUTPUT_PATH__", outputPath.Replace("\\", "/"), StringComparison.Ordinal);
             var definition = new IntegrationXmlSerializer().Deserialize(xml);
             var runner = new IntegrationRunner(new IntegrationRunnerOptions
             {
@@ -506,22 +394,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WithMockDataForSqlOutput_DoesNotRequireConnectionFactoryOrConnect()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Mock Sql Output Test">
-                <Steps>
-                    <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
-                        <MockCsv>
-            Name,Amount
-            Alice,10
-                        </MockCsv>
-                    </IOInput>
-                    <IOOutput Id="sqlOut" Kind="SqlWriter" ConnectionString="Server=invalid;" TableName="TargetTable" />
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockSqlOutput.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
         var runner = new IntegrationRunner(new IntegrationRunnerOptions
         {
             ConnectionFactory = null,
@@ -544,36 +418,9 @@ public sealed class IntegrationTests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="Mock Deferred Output Test">
-                    <Steps>
-                        <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
-                            <MockCsv>
-                Name,Amount
-                Alice,10
-                Bob,20
-                            </MockCsv>
-                        </IOInput>
-                        <Reduce Id="reduce1" OutputField="Sum">
-                            <InitialStateJson>0</InitialStateJson>
-                            <Worksheet>
-                                <Name>Reduce</Name>
-                                <Cells>
-                                    <WorkCell>
-                                        <Id>1</Id>
-                                        <Name>Sum</Name>
-                                        <Formula>State + Value(InputRecord.Amount)</Formula>
-                                        <Comments/>
-                                    </WorkCell>
-                                </Cells>
-                            </Worksheet>
-                        </Reduce>
-                        <IOOutput Id="output1" Kind="CSVWriter" FilePath="{outputPath.Replace("\\", "/")}" />
-                    </Steps>
-                </Integration>
-                """;
-
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockDeferredOutput.xml");
+            var xml = (await File.ReadAllTextAsync(xmlPath))
+                .Replace("__OUTPUT_PATH__", outputPath.Replace("\\", "/"), StringComparison.Ordinal);
             var definition = new IntegrationXmlSerializer().Deserialize(xml);
             var runner = new IntegrationRunner(new IntegrationRunnerOptions
             {
@@ -597,29 +444,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WithMultipleMockScenarios_CsvAndSql_SelectsRequestedScenario()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Multiple Mock Scenarios Test">
-                <Steps>
-                    <IOInput Id="input1" Kind="CSVReader" FilePath="dummy.csv">
-                        <MockDataSources>
-                            <MockData Name="Small">
-            Name,Amount
-            Alice,10
-                            </MockData>
-                            <MockData Name="Large">
-            Name,Amount
-            Alice,10
-            Bob,20
-            Cara,30
-                            </MockData>
-                        </MockDataSources>
-                    </IOInput>
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MultipleMockScenarios.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
 
         var runnerLarge = new IntegrationRunner(new IntegrationRunnerOptions
         {
@@ -641,26 +467,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WithMultipleMockScenarios_WhenScenarioNotFound_UsesFirstMockData()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Scenario Fallback Test">
-                <Steps>
-                    <IOInput Id="input1" Kind="SqlReader" ConnectionString="Server=invalid;">
-                        <MockData Name="Primary">
-            Name,Amount
-            Alice,10
-            Bob,20
-                        </MockData>
-                        <MockData Name="Secondary">
-            Name,Amount
-            Cara,30
-                        </MockData>
-                    </IOInput>
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "ScenarioFallback.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
 
         var runner = new IntegrationRunner(new IntegrationRunnerOptions
         {
@@ -676,37 +484,8 @@ public sealed class IntegrationTests
     [Fact]
     public async Task IntegrationRunner_WithHttpMockData_JsonPayload_SelectsScenarioAndParsesJson()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="HTTP Mock Test">
-                <Steps>
-                    <IOInput Id="httpInput" Kind="HttpReader" Endpoint="customers" JsonPath="$.data.items">
-                        <MockData Name="Default">
-                        {
-                            "data": {
-                                "items": [
-                                    {"Id": 1, "Name": "Alice"}
-                                ]
-                            }
-                        }
-                        </MockData>
-                        <MockData Name="MultiCustomer">
-                        {
-                            "data": {
-                                "items": [
-                                    {"Id": 1, "Name": "Alice"},
-                                    {"Id": 2, "Name": "Bob"},
-                                    {"Id": 3, "Name": "Charlie"}
-                                ]
-                            }
-                        }
-                        </MockData>
-                    </IOInput>
-                </Steps>
-            </Integration>
-            """;
-
-        var definition = new IntegrationXmlSerializer().Deserialize(xml);
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "HttpMockData.xml");
+        var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
 
         // Run with MultiCustomer scenario
         var runnerMulti = new IntegrationRunner(new IntegrationRunnerOptions
@@ -741,17 +520,9 @@ public sealed class IntegrationTests
 
         try
         {
-            var xml = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Integration Name="HTTP File Mock Test">
-                    <Steps>
-                        <IOInput Id="httpInput" Kind="HttpReader" Endpoint="users" JsonPath="$">
-                            <MockData Name="FromFile" FilePath="{jsonFile.Replace("\\", "/")}" />
-                        </IOInput>
-                    </Steps>
-                </Integration>
-                """;
-
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "HttpMockDataFile.xml");
+            var xml = (await File.ReadAllTextAsync(xmlPath))
+                .Replace("__JSON_FILE_PATH__", jsonFile.Replace("\\", "/"), StringComparison.Ordinal);
             var definition = new IntegrationXmlSerializer().Deserialize(xml);
             var runner = new IntegrationRunner(new IntegrationRunnerOptions
             {
@@ -771,30 +542,8 @@ public sealed class IntegrationTests
     [Fact]
     public void IntegrationXmlSerializer_LoadsMultipleMockDataSources_FromDirectAndContainerTags()
     {
-        var xml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Integration Name="Multiple Mock Formats">
-                <Steps>
-                    <IOInput Id="step1" Kind="CSVReader" FilePath="dummy.csv">
-                        <MockDataSources>
-                            <MockData Name="ScenarioA">
-            Name,Amount
-            Alice,10
-                            </MockData>
-                            <MockData Name="ScenarioB" FilePath="SampleFiles/Input1.csv" />
-                        </MockDataSources>
-                    </IOInput>
-                    <IOInput Id="step2" Kind="HttpReader" Endpoint="users">
-                        <MockData Name="Scenario1">
-                        [{"Id": 1}]
-                        </MockData>
-                        <MockCsv Name="Scenario2">
-                        [{"Id": 2}]
-                        </MockCsv>
-                    </IOInput>
-                </Steps>
-            </Integration>
-            """;
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MultipleMockDataSources.xml");
+        var xml = File.ReadAllText(xmlPath);
 
         var serializer = new IntegrationXmlSerializer();
         var definition = serializer.Deserialize(xml, AppContext.BaseDirectory);
