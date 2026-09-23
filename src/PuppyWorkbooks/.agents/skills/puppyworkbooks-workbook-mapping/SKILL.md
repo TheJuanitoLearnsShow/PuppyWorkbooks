@@ -9,11 +9,12 @@ Use this skill when authoring, modifying, or reviewing PuppyWorkbooks `<WorkShee
 
 ## Reference Examples
 
-Inspect the sample files in the repository for reference patterns:
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/Map.xml`: Record transformation and field projection.
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/Filter.xml`: Record predicate filtering.
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/Reduce.xml`: State accumulation with `State` and `InputRecord`.
-- `7-Tests/PuppyWorkbooks.Tests/SampleFiles/TestWorkbook.xml`: Multi-cell formula chain with variables and arrays.
+This skill is self-contained: every construct you need is documented inline below. You do not need access to any source repository or sample project. The common worksheet patterns are:
+
+- **Record transformation (Map)**: Each formula cell projects a field into the emitted record (see the multi-cell example in "Worksheet XML Structure").
+- **Record filtering (Filter)**: A final boolean cell decides record inclusion, e.g. `Value(InputRecord.Amount) &gt; 100`.
+- **State accumulation (Reduce)**: Cells combine the previous `State` with the current `InputRecord`, e.g. `State + Value(InputRecord.Amount)`.
+- **Multi-cell formula chain**: Declare `Variables` (including a sample `InputRecord`) and chain cells that reference earlier cell names, arrays, and records (see the example below).
 
 ## Worksheet XML Structure
 
@@ -178,8 +179,6 @@ Evaluate a standalone worksheet XML file or integration mapping file directly to
 ```powershell
 puppyworkbooks path/to/worksheet.xml
 ```
-
-*Note: You can also execute via `dotnet run --project 5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj -- path/to/worksheet.xml`.*
 
 ### Overriding Input Values During CLI Validation
 Pass JSON input data to override variables defined in the worksheet:

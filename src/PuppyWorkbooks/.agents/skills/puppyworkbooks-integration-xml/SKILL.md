@@ -7,15 +7,15 @@ description: Create, edit, and validate PuppyWorkbooks XML integration definitio
 
 Use this skill to create, modify, inspect, and validate XML integration pipeline definitions for PuppyWorkbooks.
 
-## Repository Reference Examples
+## Reference Patterns
 
-Before drafting or modifying integrations, consult the reference samples in `7-Tests/PuppyWorkbooks.Tests/SampleFiles/Integration/`:
+This skill is self-contained: every construct you need is documented inline below. You do not need access to any source repository or sample project. The most common pipeline shapes are:
 
-- `TestIntegrationWithFileReferences.xml`: Pipeline with input, external map/filter/reduce worksheets, and output.
-- `Switch.xml`: Conditional routing using inline switch worksheets and multiple execution branches.
-- `HttpProviders.xml`: HTTP reader/writer endpoints and `HttpConfigurations`.
-- `MultipleMockScenarios.xml` & `MultipleMockDataSources.xml`: Defining multiple named mock data scenarios.
-- `Map.xml`, `Filter.xml`, `Reduce.xml`: Standalone worksheet definitions used in pipeline steps.
+- **File pipeline**: An `IOInput` reading from CSV/SQL, one or more `Map`/`Filter`/`Reduce` steps referencing external worksheets, and an `IOOutput` sink (see the full structure and step examples below).
+- **Conditional routing**: A `Switch` step with inline worksheet boolean cells and multiple execution `Branch` blocks (see the `Switch` section).
+- **HTTP endpoints**: `HttpReader`/`HttpWriter` steps driven by `<HttpConfigurations>` (see the structure example and `IOInput`/`IOOutput` sections).
+- **Mock scenarios**: One or more named mock data sources for edge-case and volume testing (see "Defining Mock Data for Testing").
+- **Standalone worksheets**: Map/Filter/Reduce worksheet definitions used within pipeline steps (see the companion `puppyworkbooks-workbook-mapping` skill).
 
 ## Pipeline Architecture & XML Structure
 
@@ -235,8 +235,6 @@ puppyworkbooks path/to/integration.xml --use-mock-data-for-steps ALL --scenario 
 # Run using mock data for specific step IDs
 puppyworkbooks path/to/integration.xml --use-mock-data-for-steps source --debug
 ```
-
-*Note: Alternatively, you can run via `dotnet run --project 5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj -- path/to/integration.xml --use-mock-data-for-steps ALL --debug` if invoking via the project directly.*
 
 ### Mock Execution Behavior
 - When an `IOInput` step runs under mock mode, it supplies records from its configured inline mock data or mock file.
