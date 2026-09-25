@@ -9,10 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PuppyWorkbooks.ViewModels\PuppyWorkbooks.ViewModels.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -36,5 +32,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="wwwroot\**" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\3-Services\PuppyWorkbooks.Integration\PuppyWorkbooks.Integration.csproj" />
+    <ProjectReference Include="..\..\3-Services\PuppyWorkbooks\PuppyWorkbooks.csproj" />
   </ItemGroup>
 </Project>

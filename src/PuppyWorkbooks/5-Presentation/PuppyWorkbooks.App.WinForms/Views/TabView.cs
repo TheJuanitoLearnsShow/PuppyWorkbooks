@@ -1,6 +1,5 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
-using PuppyWorkbooks;
 using PuppyWorkbooks.App.WinForms.ViewModels;
 
 public partial class TabView : UserControl

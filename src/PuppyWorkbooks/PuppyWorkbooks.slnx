@@ -6,21 +6,13 @@
   <Folder Name="/5-Presentation/">
     <Project Path="5-Presentation/MinimalInterpreterExamples/MinimalInterpreterExamples.csproj" />
     <Project Path="5-Presentation/PuppyWorkbooks.App.WinForms/PuppyWorkbooks.App.WinForms.csproj" />
-    <Project Path="5-Presentation/PuppyWorkbooks.App.Wpf/PuppyWorkbooks.App.Wpf.csproj" />
-    <Project Path="5-Presentation/PuppyWorkbooks.App/PuppyWorkbooks.App.csproj" />
-    <Project Path="5-Presentation/PuppyWorkbooks.ViewModels/PuppyWorkbooks.ViewModels.csproj" />
   </Folder>
   <Folder Name="/5-Presentation/CLI/">
     <Project Path="5-Presentation/CLI/PuppyWorkbooks.CLI/PuppyWorkbooks.CLI.csproj" />
   </Folder>
   <Folder Name="/5-Presentation/REACTOR/" />
   <Folder Name="/5-Presentation/UNO/" />
-  <Folder Name="/5-Presentation/WINUI/">
-    <Project Path="5-Presentation/WINUI/PuppyWorkbooks.App.WinUI3/PuppyWorkbooks.App.WinUI3.csproj" Id="3817da08-243e-4d2c-8f92-259cc9871eca">
-      <Platform Project="x64" />
-      <Deploy />
-    </Project>
-  </Folder>
+  <Folder Name="/5-Presentation/WINUI/" />
   <Folder Name="/7-Tests/">
     <Project Path="7-Tests/PuppyWorkbooks.Tests/PuppyWorkbooks.Tests.csproj" />
   </Folder>
