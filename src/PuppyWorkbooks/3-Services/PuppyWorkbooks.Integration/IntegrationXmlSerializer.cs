@@ -14,7 +14,7 @@ public sealed class IntegrationXmlSerializer
 
     public IntegrationDefinition Deserialize(string xml, string? baseDirectory)
     {
-        using var reader = new StringReader(xml);
+        using var reader = new StringReader(NormalizeInputProviderElements(xml));
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
         ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
@@ -53,7 +53,43 @@ public sealed class IntegrationXmlSerializer
     {
         using var writer = new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
         _serializer.Serialize(writer, definition);
-        return writer.ToString();
+        return UseInputProviderElementNames(writer.ToString());
+    }
+
+    private static string NormalizeInputProviderElements(string xml)
+    {
+        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        var inputElements = document.Root?.Element("Steps")?.Elements()
+            .Where(element => InputKindXmlNames.TryParseElementName(element.Name.LocalName, out _));
+
+        if (inputElements is not null)
+        {
+            foreach (var element in inputElements)
+            {
+                InputKindXmlNames.TryParseElementName(element.Name.LocalName, out var kind);
+                element.Name = element.Name.Namespace + "IOInput";
+                element.SetAttributeValue("Kind", kind);
+            }
+        }
+
+        return document.ToString(SaveOptions.DisableFormatting);
+    }
+
+    private static string UseInputProviderElementNames(string xml)
+    {
+        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        var inputElements = document.Root?.Element("Steps")?.Elements("IOInput") ?? [];
+        foreach (var element in inputElements)
+        {
+            if (!Enum.TryParse((string?)element.Attribute("Kind"), out InputKind kind))
+                throw new InvalidOperationException("An input step has an unsupported provider kind.");
+
+            element.Name = element.Name.Namespace + kind.GetElementName();
+            element.Attribute("Kind")?.Remove();
+        }
+
+        var declaration = document.Declaration is null ? string.Empty : document.Declaration + Environment.NewLine;
+        return declaration + (document.Root?.ToString(SaveOptions.DisableFormatting) ?? string.Empty);
     }
 
     private static void LoadReferencedWorksheets(IntegrationDefinition definition, string xml,

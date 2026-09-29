@@ -18,6 +18,19 @@ public sealed class InputStep : IntegrationStep
     [XmlAttribute] public string XmlItemElement { get; set; } = string.Empty;
     [XmlIgnore] public HttpProviderSettings? ResolvedHttpConfiguration { get; set; }
 
+    public bool ShouldSerializeFilePath() => Kind is InputKind.CSVReader or InputKind.JsonReader or InputKind.XmlReader;
+    public bool ShouldSerializeConnectionString() => Kind == InputKind.SqlReader;
+    public bool ShouldSerializeQuery() => Kind == InputKind.SqlReader && !string.IsNullOrWhiteSpace(Query);
+    public bool ShouldSerializeMockCsvFilePath() => !string.IsNullOrWhiteSpace(MockCsvFilePath);
+    public bool ShouldSerializeHttpConfiguration() => Kind == InputKind.HttpReader;
+    public bool ShouldSerializeEndpoint() => Kind == InputKind.HttpReader;
+    public bool ShouldSerializeHttpMethod() => Kind == InputKind.HttpReader;
+    public bool ShouldSerializeJsonPath() => Kind is InputKind.HttpReader or InputKind.JsonReader;
+    public bool ShouldSerializeXmlItemElement() => Kind == InputKind.XmlReader;
+    public bool ShouldSerializeMockCsv() => !string.IsNullOrWhiteSpace(MockCsv);
+    public bool ShouldSerializeMockData() => !string.IsNullOrWhiteSpace(MockData);
+    public bool ShouldSerializeMockDataSourcesList() => MockDataSources.Count > 0;
+
     [XmlIgnore]
     public Dictionary<string, MockDataSource> MockDataSources { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

@@ -6,7 +6,7 @@ and one or more outputs. A worksheet's last non-empty cell is its result.
 ```xml
 <Integration Name="Customers">
   <Steps>
-    <IOInput Id="customers" Kind="CSVReader" FilePath="customers.csv" />
+    <CsvInputProvider Id="customers" FilePath="customers.csv" />
     <Map Id="normalize" OutputField="FullName">
       <Worksheet>
         <Name>Normalize</Name>
@@ -69,7 +69,7 @@ XML, or CSV.
     </HttpConfiguration>
   </HttpConfigurations>
   <Steps>
-    <IOInput Id="read" Kind="HttpReader" HttpConfiguration="customerApi" Endpoint="customers" JsonPath="$.items" />
+    <HttpInputProvider Id="read" HttpConfiguration="customerApi" Endpoint="customers" JsonPath="$.items" />
     <IOOutput Id="write" Kind="HttpWriter" HttpConfiguration="customerApi" Endpoint="archive" PayloadFormat="Xml" />
   </Steps>
 </Integration>

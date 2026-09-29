@@ -1,12 +1,63 @@
 using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
+using PuppyWorkbooks.Integration.Models;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Xml.Linq;
 
 namespace PuppyWorkbooks.Tests;
 
 public sealed class IntegrationTests
 {
+    [Fact]
+    public void InputProviderElements_RoundTripWithProviderSpecificAttributes()
+    {
+        const string xml = """
+            <Integration Name="Providers">
+              <HttpConfigurations>
+                <HttpConfiguration Name="api" BaseUrl="https://example.test/" />
+              </HttpConfigurations>
+              <Steps>
+                <CsvInputProvider Id="csv" FilePath="data.csv" />
+                <SqlInputProvider Id="sql" ConnectionString="connection">
+                  <Query>SELECT 1</Query>
+                </SqlInputProvider>
+                <HttpInputProvider Id="http" HttpConfiguration="api" Endpoint="items" HttpMethod="POST" JsonPath="$.items" />
+                <JsonInputProvider Id="json" FilePath="data.json" JsonPath="$.items" />
+                <XmlInputProvider Id="xml" FilePath="data.xml" XmlItemElement="Item" />
+              </Steps>
+            </Integration>
+            """;
+        var serializer = new IntegrationXmlSerializer();
+
+        var definition = serializer.Deserialize(xml);
+        var inputs = definition.Steps.Cast<InputStep>().ToList();
+
+        Assert.Equal(
+            [InputKind.CSVReader, InputKind.SqlReader, InputKind.HttpReader, InputKind.JsonReader, InputKind.XmlReader],
+            inputs.Select(input => input.Kind));
+
+        var serialized = XDocument.Parse(serializer.Serialize(definition));
+        var steps = serialized.Root!.Element("Steps")!.Elements().ToList();
+        Assert.Equal(
+            ["CsvInputProvider", "SqlInputProvider", "HttpInputProvider", "JsonInputProvider", "XmlInputProvider"],
+            steps.Select(step => step.Name.LocalName));
+
+        Assert.Equal("data.csv", (string?)steps[0].Attribute("FilePath"));
+        Assert.Null(steps[0].Attribute("ConnectionString"));
+        Assert.Null(steps[0].Attribute("Kind"));
+        Assert.Equal("connection", (string?)steps[1].Attribute("ConnectionString"));
+        Assert.Equal("SELECT 1", (string?)steps[1].Element("Query"));
+        Assert.Null(steps[1].Attribute("FilePath"));
+        Assert.Equal("api", (string?)steps[2].Attribute("HttpConfiguration"));
+        Assert.Equal("POST", (string?)steps[2].Attribute("HttpMethod"));
+        Assert.Null(steps[2].Attribute("ConnectionString"));
+        Assert.Equal("$.items", (string?)steps[3].Attribute("JsonPath"));
+        Assert.Null(steps[3].Attribute("HttpConfiguration"));
+        Assert.Equal("Item", (string?)steps[4].Attribute("XmlItemElement"));
+        Assert.Null(steps[4].Attribute("JsonPath"));
+    }
+
     [Fact]
     public async Task HttpProviders_ReadConfiguredJsonCollectionAndWriteJsonRows()
     {

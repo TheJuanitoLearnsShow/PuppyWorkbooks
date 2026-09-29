@@ -4,8 +4,6 @@ namespace PuppyWorkbooks.Integration.Models;
 
 public sealed class MockDataSource
 {
-    private string _content = string.Empty;
-
     [XmlAttribute]
     public string Name { get; set; } = string.Empty;
 
@@ -24,16 +22,12 @@ public sealed class MockDataSource
     public string FilePath { get; set; } = string.Empty;
 
     [XmlText]
-    public string Content
-    {
-        get => _content;
-        set => _content = value;
-    }
+    public string Content { get; set; } = string.Empty;
 
     [XmlIgnore]
     public string RawText
     {
-        get => _content;
-        set => _content = value;
+        get => Content;
+        set => Content = value;
     }
 }
