@@ -8,6 +8,6 @@ Alice,10
 Bob,20
             </MockCsv>
         </SqlInputProvider>
-        <IOOutput Id="output1" Kind="CSVWriter" FilePath="__OUTPUT_PATH__" />
+        <CsvOutput Id="output1" FilePath="__OUTPUT_PATH__" />
     </Steps>
 </Integration>

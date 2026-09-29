@@ -14,7 +14,7 @@ public sealed class IntegrationXmlSerializer
 
     public IntegrationDefinition Deserialize(string xml, string? baseDirectory)
     {
-        using var reader = new StringReader(NormalizeInputProviderElements(xml));
+        using var reader = new StringReader(NormalizeProviderElements(xml));
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
         ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
@@ -53,39 +53,63 @@ public sealed class IntegrationXmlSerializer
     {
         using var writer = new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
         _serializer.Serialize(writer, definition);
-        return UseInputProviderElementNames(writer.ToString());
+        return UseProviderElementNames(writer.ToString());
     }
 
-    private static string NormalizeInputProviderElements(string xml)
+    private static string NormalizeProviderElements(string xml)
     {
         var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        var inputElements = document.Root?.Element("Steps")?.Elements()
-            .Where(element => InputKindXmlNames.TryParseElementName(element.Name.LocalName, out _));
-
-        if (inputElements is not null)
+        var stepElements = document.Root?.Element("Steps")?.Elements() ?? [];
+        foreach (var element in stepElements)
         {
-            foreach (var element in inputElements)
+            if (InputKindXmlNames.TryParseElementName(element.Name.LocalName, out var inputKind))
             {
-                InputKindXmlNames.TryParseElementName(element.Name.LocalName, out var kind);
                 element.Name = element.Name.Namespace + "IOInput";
-                element.SetAttributeValue("Kind", kind);
+                element.SetAttributeValue("Kind", inputKind);
+            }
+            else if (OutputKindXmlNames.TryParseElementName(element.Name.LocalName, out var outputKind))
+            {
+                element.Name = element.Name.Namespace + "IOOutput";
+                element.SetAttributeValue("Kind", outputKind);
+            }
+
+            if (element.Name.LocalName == "IOOutput" || OutputKindXmlNames.TryParseElementName(element.Name.LocalName, out _))
+            {
+                foreach (var childName in new[] { "TableName", "Query" })
+                {
+                    var child = element.Element(childName);
+                    if (child is null) continue;
+                    element.SetAttributeValue(childName, child.Value);
+                    child.Remove();
+                }
             }
         }
 
         return document.ToString(SaveOptions.DisableFormatting);
     }
 
-    private static string UseInputProviderElementNames(string xml)
+    private static string UseProviderElementNames(string xml)
     {
         var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        var inputElements = document.Root?.Element("Steps")?.Elements("IOInput") ?? [];
-        foreach (var element in inputElements)
+        var stepElements = document.Root?.Element("Steps")?.Elements() ?? [];
+        foreach (var element in stepElements)
         {
-            if (!Enum.TryParse((string?)element.Attribute("Kind"), out InputKind kind))
-                throw new InvalidOperationException("An input step has an unsupported provider kind.");
+            if (element.Name.LocalName == "IOInput")
+            {
+                if (!Enum.TryParse((string?)element.Attribute("Kind"), out InputKind kind))
+                    throw new InvalidOperationException("An input step has an unsupported provider kind.");
 
-            element.Name = element.Name.Namespace + kind.GetElementName();
-            element.Attribute("Kind")?.Remove();
+                element.Name = element.Name.Namespace + kind.GetElementName();
+                element.Attribute("Kind")?.Remove();
+            }
+            else if (element.Name.LocalName == "IOOutput")
+            {
+                if (!Enum.TryParse((string?)element.Attribute("Kind"), out OutputKind kind))
+                    throw new InvalidOperationException("An output step has an unsupported provider kind.");
+
+                element.Name = element.Name.Namespace + kind.GetElementName();
+                element.Attribute("Kind")?.Remove();
+            }
         }
 
         var declaration = document.Declaration is null ? string.Empty : document.Declaration + Environment.NewLine;

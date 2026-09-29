@@ -6,6 +6,6 @@
   </HttpConfigurations>
   <Steps>
     <HttpInputProvider Id="source" HttpConfiguration="api" Endpoint="customers" JsonPath="$.data.items" />
-    <IOOutput Id="sink" Kind="HttpWriter" HttpConfiguration="api" Endpoint="archive" PayloadFormat="Json" />
+    <HttpOutput Id="sink" HttpConfiguration="api" Endpoint="archive" PayloadFormat="Json" />
   </Steps>
 </Integration>

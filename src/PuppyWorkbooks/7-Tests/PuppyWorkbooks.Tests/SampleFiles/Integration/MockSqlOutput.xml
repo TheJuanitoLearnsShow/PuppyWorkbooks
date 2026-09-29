@@ -7,6 +7,6 @@ Name,Amount
 Alice,10
             </MockCsv>
         </SqlInputProvider>
-        <IOOutput Id="sqlOut" Kind="SqlWriter" ConnectionString="Server=invalid;" TableName="TargetTable" />
+        <SqlOutput Id="sqlOut" ConnectionString="Server=invalid;" TableName="TargetTable" />
     </Steps>
 </Integration>

@@ -22,6 +22,6 @@ Bob,20
                 </Cells>
             </Worksheet>
         </Reduce>
-        <IOOutput Id="output1" Kind="CSVWriter" FilePath="__OUTPUT_PATH__" />
+        <CsvOutput Id="output1" FilePath="__OUTPUT_PATH__" />
     </Steps>
 </Integration>

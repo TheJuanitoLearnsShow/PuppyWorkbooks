@@ -22,7 +22,7 @@ and one or more outputs. A worksheet's last non-empty cell is its result.
         </Cells>
       </Worksheet>
     </Filter>
-    <IOOutput Id="archive" Kind="CSVWriter" FilePath="archive.csv" />
+    <CsvOutput Id="archive" FilePath="archive.csv" />
   </Steps>
 </Integration>
 ```
@@ -70,7 +70,7 @@ XML, or CSV.
   </HttpConfigurations>
   <Steps>
     <HttpInputProvider Id="read" HttpConfiguration="customerApi" Endpoint="customers" JsonPath="$.items" />
-    <IOOutput Id="write" Kind="HttpWriter" HttpConfiguration="customerApi" Endpoint="archive" PayloadFormat="Xml" />
+    <HttpOutput Id="write" HttpConfiguration="customerApi" Endpoint="archive" PayloadFormat="Xml" />
   </Steps>
 </Integration>
 ```

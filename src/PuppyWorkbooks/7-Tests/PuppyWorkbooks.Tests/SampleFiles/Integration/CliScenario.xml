@@ -25,6 +25,6 @@ Cara,true,30
                 </Cells>
             </Worksheet>
         </Map>
-        <IOOutput Id="output" Kind="CSVWriter" FilePath="__OUTPUT_PATH__" />
+        <CsvOutput Id="output" FilePath="__OUTPUT_PATH__" />
     </Steps>
 </Integration>

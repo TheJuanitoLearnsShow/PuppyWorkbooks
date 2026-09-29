@@ -59,6 +59,65 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public void OutputProviderElements_RoundTripWithProviderSpecificAttributes()
+    {
+        const string xml = """
+            <Integration Name="Providers">
+              <HttpConfigurations>
+                <HttpConfiguration Name="api" BaseUrl="https://example.test/" />
+              </HttpConfigurations>
+              <Steps>
+                <CsvOutput Id="csv" FilePath="data.csv" />
+                <SqlOutput Id="sql" ConnectionString="connection" TableName="Results" Query="INSERT INTO Results VALUES (1)" />
+                <HttpOutput Id="http" HttpConfiguration="api" Endpoint="items" HttpMethod="PUT" PayloadFormat="Xml" />
+                <JsonOutput Id="json" FilePath="data.json" />
+                <XmlOutput Id="xml" FilePath="data.xml" XmlRootElement="Items" XmlRecordElement="Item" />
+              </Steps>
+            </Integration>
+            """;
+        var serializer = new IntegrationXmlSerializer();
+
+        var definition = serializer.Deserialize(xml);
+        var outputs = definition.Steps.Cast<OutputStep>().ToList();
+
+        Assert.Equal(
+            [OutputKind.CSVWriter, OutputKind.SqlWriter, OutputKind.HttpWriter, OutputKind.JsonWriter, OutputKind.XmlWriter],
+            outputs.Select(output => output.Kind));
+
+        var serialized = XDocument.Parse(serializer.Serialize(definition));
+        var steps = serialized.Root!.Element("Steps")!.Elements().ToList();
+        Assert.Equal(
+            ["CsvOutput", "SqlOutput", "HttpOutput", "JsonOutput", "XmlOutput"],
+            steps.Select(step => step.Name.LocalName));
+
+        Assert.Equal("data.csv", (string?)steps[0].Attribute("FilePath"));
+        Assert.Null(steps[0].Attribute("ConnectionString"));
+        Assert.Null(steps[0].Attribute("Kind"));
+        Assert.Equal("Results", (string?)steps[1].Attribute("TableName"));
+        Assert.Equal("INSERT INTO Results VALUES (1)", (string?)steps[1].Attribute("Query"));
+        Assert.Null(steps[1].Attribute("FilePath"));
+        Assert.Equal("api", (string?)steps[2].Attribute("HttpConfiguration"));
+        Assert.Equal("PUT", (string?)steps[2].Attribute("HttpMethod"));
+        Assert.Equal("Xml", (string?)steps[2].Attribute("PayloadFormat"));
+        Assert.Equal("data.json", (string?)steps[3].Attribute("FilePath"));
+        Assert.Null(steps[3].Attribute("HttpConfiguration"));
+        Assert.Equal("Items", (string?)steps[4].Attribute("XmlRootElement"));
+        Assert.Equal("Item", (string?)steps[4].Attribute("XmlRecordElement"));
+
+        var legacy = serializer.Deserialize("""
+            <Integration><Steps>
+              <IOOutput Id="legacy" Kind="SqlWriter" ConnectionString="legacy-connection">
+                <TableName>LegacyResults</TableName>
+                <Query>SELECT 1</Query>
+              </IOOutput>
+            </Steps></Integration>
+            """);
+        var legacyOutput = Assert.IsType<OutputStep>(legacy.Steps.Single());
+        Assert.Equal("LegacyResults", legacyOutput.TableName);
+        Assert.Equal("SELECT 1", legacyOutput.Query);
+    }
+
+    [Fact]
     public async Task HttpProviders_ReadConfiguredJsonCollectionAndWriteJsonRows()
     {
         var handler = new RecordingHttpMessageHandler();
