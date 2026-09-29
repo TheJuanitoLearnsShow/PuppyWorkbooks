@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Integration Name="CLI Mock Test All">
     <Steps>
-        <IOInput Id="sqlInput" Kind="SqlReader" ConnectionString="Server=invalid;">
+        <SqlInputProvider Id="sqlInput" ConnectionString="Server=invalid;">
             <MockCsv>
 Name,Active,Amount
 Alice,true,10
 Cara,true,5
             </MockCsv>
-        </IOInput>
+        </SqlInputProvider>
         <Map Id="map">
             <Worksheet>
                 <Name>Map</Name>
