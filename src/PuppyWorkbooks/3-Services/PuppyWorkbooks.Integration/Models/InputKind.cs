@@ -6,11 +6,11 @@ public static class InputKindXmlNames
 {
     public static string GetElementName(this InputKind kind) => kind switch
     {
-        InputKind.CSVReader => "CsvInputProvider",
-        InputKind.SqlReader => "SqlInputProvider",
-        InputKind.HttpReader => "HttpInputProvider",
-        InputKind.JsonReader => "JsonInputProvider",
-        InputKind.XmlReader => "XmlInputProvider",
+        InputKind.CSVReader => "CsvInput",
+        InputKind.SqlReader => "SqlInput",
+        InputKind.HttpReader => "HttpInput",
+        InputKind.JsonReader => "JsonInput",
+        InputKind.XmlReader => "XmlInput",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported input provider kind.")
     };
 
@@ -18,15 +18,18 @@ public static class InputKindXmlNames
     {
         kind = elementName switch
         {
-            "CsvInputProvider" => InputKind.CSVReader,
-            "SqlInputProvider" => InputKind.SqlReader,
-            "HttpInputProvider" => InputKind.HttpReader,
-            "JsonInputProvider" => InputKind.JsonReader,
-            "XmlInputProvider" => InputKind.XmlReader,
+            "CsvInput" or "CsvInputProvider" => InputKind.CSVReader,
+            "SqlInput" or "SqlInputProvider" => InputKind.SqlReader,
+            "HttpInput" or "HttpInputProvider" => InputKind.HttpReader,
+            "JsonInput" or "JsonInputProvider" => InputKind.JsonReader,
+            "XmlInput" or "XmlInputProvider" => InputKind.XmlReader,
             _ => default
         };
 
-        return elementName is "CsvInputProvider" or "SqlInputProvider" or "HttpInputProvider"
-            or "JsonInputProvider" or "XmlInputProvider";
+        return elementName is "CsvInput" or "CsvInputProvider"
+            or "SqlInput" or "SqlInputProvider"
+            or "HttpInput" or "HttpInputProvider"
+            or "JsonInput" or "JsonInputProvider"
+            or "XmlInput" or "XmlInputProvider";
     }
 }

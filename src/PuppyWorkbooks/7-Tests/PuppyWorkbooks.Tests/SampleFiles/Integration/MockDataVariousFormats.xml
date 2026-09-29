@@ -1,21 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Integration Name="Mock Formats">
     <Steps>
-        <SqlInputProvider Id="step1" ConnectionString="conn1">
+        <SqlInput Id="step1" ConnectionString="conn1">
             <MockCsv>
 Name,Amount
 Alice,10
             </MockCsv>
-        </SqlInputProvider>
-        <SqlInputProvider Id="step2" ConnectionString="conn2">
+        </SqlInput>
+        <SqlInput Id="step2" ConnectionString="conn2">
             <MockData>
 Name,Amount
 Bob,20
             </MockData>
-        </SqlInputProvider>
-        <SqlInputProvider Id="step3" ConnectionString="conn3" MockCsvFilePath="SampleFiles/Input1.csv" />
-        <SqlInputProvider Id="step4" ConnectionString="conn4">
+        </SqlInput>
+        <SqlInput Id="step3" ConnectionString="conn3" MockCsvFilePath="SampleFiles/Input1.csv" />
+        <SqlInput Id="step4" ConnectionString="conn4">
             <MockCsv FilePath="SampleFiles/Input1.csv" />
-        </SqlInputProvider>
+        </SqlInput>
     </Steps>
 </Integration>

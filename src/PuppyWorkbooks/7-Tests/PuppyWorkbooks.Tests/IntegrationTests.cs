@@ -18,13 +18,13 @@ public sealed class IntegrationTests
                 <HttpConfiguration Name="api" BaseUrl="https://example.test/" />
               </HttpConfigurations>
               <Steps>
-                <CsvInputProvider Id="csv" FilePath="data.csv" />
-                <SqlInputProvider Id="sql" ConnectionString="connection">
+                <CsvInput Id="csv" FilePath="data.csv" />
+                <SqlInput Id="sql" ConnectionString="connection">
                   <Query>SELECT 1</Query>
-                </SqlInputProvider>
-                <HttpInputProvider Id="http" HttpConfiguration="api" Endpoint="items" HttpMethod="POST" JsonPath="$.items" />
-                <JsonInputProvider Id="json" FilePath="data.json" JsonPath="$.items" />
-                <XmlInputProvider Id="xml" FilePath="data.xml" XmlItemElement="Item" />
+                </SqlInput>
+                <HttpInput Id="http" HttpConfiguration="api" Endpoint="items" HttpMethod="POST" JsonPath="$.items" />
+                <JsonInput Id="json" FilePath="data.json" JsonPath="$.items" />
+                <XmlInput Id="xml" FilePath="data.xml" XmlItemElement="Item" />
               </Steps>
             </Integration>
             """;
@@ -40,7 +40,7 @@ public sealed class IntegrationTests
         var serialized = XDocument.Parse(serializer.Serialize(definition));
         var steps = serialized.Root!.Element("Steps")!.Elements().ToList();
         Assert.Equal(
-            ["CsvInputProvider", "SqlInputProvider", "HttpInputProvider", "JsonInputProvider", "XmlInputProvider"],
+            ["CsvInput", "SqlInput", "HttpInput", "JsonInput", "XmlInput"],
             steps.Select(step => step.Name.LocalName));
 
         Assert.Equal("data.csv", (string?)steps[0].Attribute("FilePath"));

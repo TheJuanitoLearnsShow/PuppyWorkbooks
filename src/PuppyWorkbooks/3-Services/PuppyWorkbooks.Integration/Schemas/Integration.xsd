@@ -53,6 +53,11 @@
       <xs:element name="HttpInputProvider" type="HttpInputStepType" />
       <xs:element name="JsonInputProvider" type="JsonInputStepType" />
       <xs:element name="XmlInputProvider" type="XmlInputStepType" />
+      <xs:element name="CsvInput" type="CsvInputStepType" />
+      <xs:element name="SqlInput" type="SqlInputStepType" />
+      <xs:element name="HttpInput" type="HttpInputStepType" />
+      <xs:element name="JsonInput" type="JsonInputStepType" />
+      <xs:element name="XmlInput" type="XmlInputStepType" />
       <xs:element name="Map" type="MapStepType" />
       <xs:element name="Filter" type="FilterStepType" />
       <xs:element name="Reduce" type="ReduceStepType" />
