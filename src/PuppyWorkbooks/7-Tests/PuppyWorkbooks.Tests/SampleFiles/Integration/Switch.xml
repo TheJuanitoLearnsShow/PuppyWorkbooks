@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Integration Name="Switch branches">
+<Integration Name="Switch branches"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
     <Steps>
         <CsvInput Id="input" FilePath="__INPUT_PATH__" />
 <!--        <Map Id="map">-->

@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Integration Name="Sales total">
-    <Steps>
+<Integration Name="Sales total"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
+
+<Steps>
         <CsvInput Id="input" FilePath="__INPUT_PATH__"/>
         <Map Id="map">
             <Worksheet FilePath="Map.xml"/>
