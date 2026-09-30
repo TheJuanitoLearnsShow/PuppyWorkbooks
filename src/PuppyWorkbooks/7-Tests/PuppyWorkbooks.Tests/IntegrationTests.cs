@@ -12,25 +12,10 @@ public sealed class IntegrationTests
     [Fact]
     public void InputProviderElements_RoundTripWithProviderSpecificAttributes()
     {
-        const string xml = """
-            <Integration Name="Providers">
-              <HttpConfigurations>
-                <HttpConfiguration Name="api" BaseUrl="https://example.test/" />
-              </HttpConfigurations>
-              <Steps>
-                <CsvInput Id="csv" FilePath="data.csv" />
-                <SqlInput Id="sql" ConnectionString="connection">
-                  <Query>SELECT 1</Query>
-                </SqlInput>
-                <HttpInput Id="http" HttpConfiguration="api" Endpoint="items" HttpMethod="POST" JsonPath="$.items" />
-                <JsonInput Id="json" FilePath="data.json" JsonPath="$.items" />
-                <XmlInput Id="xml" FilePath="data.xml" XmlItemElement="Item" />
-              </Steps>
-            </Integration>
-            """;
         var serializer = new IntegrationXmlSerializer();
+        var sampleDirectory = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration");
 
-        var definition = serializer.Deserialize(xml);
+        var definition = serializer.DeserializeFile(Path.Combine(sampleDirectory, "InputProviders.xml"));
         var inputs = definition.Steps.Cast<InputStep>().ToList();
 
         Assert.Equal(
@@ -61,23 +46,10 @@ public sealed class IntegrationTests
     [Fact]
     public void OutputProviderElements_RoundTripWithProviderSpecificAttributes()
     {
-        const string xml = """
-            <Integration Name="Providers">
-              <HttpConfigurations>
-                <HttpConfiguration Name="api" BaseUrl="https://example.test/" />
-              </HttpConfigurations>
-              <Steps>
-                <CsvOutput Id="csv" FilePath="data.csv" />
-                <SqlOutput Id="sql" ConnectionString="connection" TableName="Results" Query="INSERT INTO Results VALUES (1)" />
-                <HttpOutput Id="http" HttpConfiguration="api" Endpoint="items" HttpMethod="PUT" PayloadFormat="Xml" />
-                <JsonOutput Id="json" FilePath="data.json" />
-                <XmlOutput Id="xml" FilePath="data.xml" XmlRootElement="Items" XmlRecordElement="Item" />
-              </Steps>
-            </Integration>
-            """;
         var serializer = new IntegrationXmlSerializer();
+        var sampleDirectory = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration");
 
-        var definition = serializer.Deserialize(xml);
+        var definition = serializer.DeserializeFile(Path.Combine(sampleDirectory, "OutputProviders.xml"));
         var outputs = definition.Steps.Cast<OutputStep>().ToList();
 
         Assert.Equal(
@@ -104,14 +76,7 @@ public sealed class IntegrationTests
         Assert.Equal("Items", (string?)steps[4].Attribute("XmlRootElement"));
         Assert.Equal("Item", (string?)steps[4].Attribute("XmlRecordElement"));
 
-        var legacy = serializer.Deserialize("""
-            <Integration><Steps>
-              <IOOutput Id="legacy" Kind="SqlWriter" ConnectionString="legacy-connection">
-                <TableName>LegacyResults</TableName>
-                <Query>SELECT 1</Query>
-              </IOOutput>
-            </Steps></Integration>
-            """);
+        var legacy = serializer.DeserializeFile(Path.Combine(sampleDirectory, "LegacySqlOutput.xml"));
         var legacyOutput = Assert.IsType<OutputStep>(legacy.Steps.Single());
         Assert.Equal("LegacyResults", legacyOutput.TableName);
         Assert.Equal("SELECT 1", legacyOutput.Query);
@@ -217,17 +182,11 @@ public sealed class IntegrationTests
 
         try
         {
-            var xml = """
-                <Integration Name="AdditionalInput">
-                  <Steps>
-                    <CsvInput Id="source" FilePath="__INPUT_PATH__" />
-                    <CsvInput Id="lookup" FilePath="{{ input.LookupPath }}" />
-                    <CsvOutput Id="sink" FilePath="__OUTPUT_PATH__" />
-                  </Steps>
-                </Integration>
-                """.Replace("__INPUT_PATH__", inputPath, StringComparison.Ordinal)
+            var samplePath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "AdditionalInput.xml");
+            var xml = (await File.ReadAllTextAsync(samplePath))
+                .Replace("__INPUT_PATH__", inputPath, StringComparison.Ordinal)
                 .Replace("__OUTPUT_PATH__", outputPath, StringComparison.Ordinal);
-            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+            var definition = new IntegrationXmlSerializer().Deserialize(xml, Path.GetDirectoryName(samplePath));
 
             var result = await new IntegrationRunner().RunAsync(definition);
 

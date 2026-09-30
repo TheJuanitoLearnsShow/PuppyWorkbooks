@@ -10,7 +10,7 @@ namespace PuppyWorkbooks.Integration.Engine;
 public sealed class IntegrationRunner
 {
     private static readonly Regex InputTemplatePattern = new(
-        @"\{\{\s*input\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        @"\{\{\s*InputRecord\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private readonly WorkbookInterpreter _interpreter = new();
     private readonly IntegrationRunnerOptions _options;
     private readonly MockManager _mockManager;

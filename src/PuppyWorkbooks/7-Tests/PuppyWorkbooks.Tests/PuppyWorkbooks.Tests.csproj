@@ -61,6 +61,18 @@
       <None Update="SampleFiles\Integration\HttpProviders.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="SampleFiles\Integration\InputProviders.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="SampleFiles\Integration\OutputProviders.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="SampleFiles\Integration\LegacySqlOutput.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="SampleFiles\Integration\AdditionalInput.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
       <None Update="SampleFiles\Integration\MockCsvInline.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -112,6 +124,10 @@
       <None Update="SampleFiles\Integration\WorkSheet.xsd">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="SampleFiles\Integration\SampleData\" />
     </ItemGroup>
 
 </Project>
