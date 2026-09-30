@@ -202,6 +202,55 @@ public sealed class IntegrationTests
     }
 
     [Fact]
+    public async Task IntegrationRunner_AdditionalInputExpandsRowsAndOverridesMatchingFields()
+    {
+        var directory = Path.Combine(".", "PuppyWorkbooks-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var inputPath = Path.Combine(directory, "input.csv");
+        var firstLookupPath = Path.Combine(directory, "first.csv");
+        var secondLookupPath = Path.Combine(directory, "second.csv");
+        var outputPath = Path.Combine(directory, "output.csv");
+        await File.WriteAllTextAsync(inputPath,
+            $"LookupPath,ParentId,Shared\n{firstLookupPath},P1,parent-one\n{secondLookupPath},P2,parent-two\n");
+        await File.WriteAllTextAsync(firstLookupPath, "Shared,Value\nchild-one,one-a\nchild-two,one-b\n");
+        await File.WriteAllTextAsync(secondLookupPath, "Shared,Value\nchild-three,two-a\n");
+
+        try
+        {
+            var xml = """
+                <Integration Name="AdditionalInput">
+                  <Steps>
+                    <CsvInput Id="source" FilePath="__INPUT_PATH__" />
+                    <CsvInput Id="lookup" FilePath="{{ input.LookupPath }}" />
+                    <CsvOutput Id="sink" FilePath="__OUTPUT_PATH__" />
+                  </Steps>
+                </Integration>
+                """.Replace("__INPUT_PATH__", inputPath, StringComparison.Ordinal)
+                .Replace("__OUTPUT_PATH__", outputPath, StringComparison.Ordinal);
+            var definition = new IntegrationXmlSerializer().Deserialize(xml);
+
+            var result = await new IntegrationRunner().RunAsync(definition);
+
+            Assert.Equal(2, result.Read);
+            Assert.Equal(3, result.Written);
+            var rows = await File.ReadAllLinesAsync(outputPath);
+            Assert.Equal(4, rows.Length);
+            Assert.Contains("ParentId", rows[0]);
+            Assert.Contains("P1", rows[1]);
+            Assert.Contains("child-one", rows[1]);
+            Assert.Contains("child-two", rows[2]);
+            Assert.Contains("P2", rows[3]);
+            Assert.Contains("child-three", rows[3]);
+            Assert.DoesNotContain("parent-one", string.Join(Environment.NewLine, rows));
+            Assert.DoesNotContain("parent-two", string.Join(Environment.NewLine, rows));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Switch_RunsOnlyBranchesWhoseWorkCellIsTrue()
     {
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");

@@ -44,6 +44,12 @@ The path is resolved relative to the integration file:
 `Path`, `File`, `Filename`, and `FileName` are also accepted as aliases for
 `FilePath`.
 
+The first input step supplies the initial rows. Any later input step runs once for
+each row reaching it, and each row it yields is merged with that incoming row; fields
+from the later input take precedence when names match. Input settings can interpolate
+incoming fields with `{{ input.FieldName }}`, for example
+`<SqlInput Id="details" ConnectionString="..."><Query>SELECT * FROM Details WHERE CustomerId = '{{ input.CustomerId }}'</Query></SqlInput>`.
+
 For SQL, provide a vendor-specific ADO.NET connection factory. The library deliberately
 does not reference a database vendor package:
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using PuppyWorkbooks.Integration.Models;
 using PuppyWorkbooks.Integration.Providers;
 
@@ -8,6 +9,8 @@ namespace PuppyWorkbooks.Integration.Engine;
 
 public sealed class IntegrationRunner
 {
+    private static readonly Regex InputTemplatePattern = new(
+        @"\{\{\s*input\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private readonly WorkbookInterpreter _interpreter = new();
     private readonly IntegrationRunnerOptions _options;
     private readonly MockManager _mockManager;
@@ -39,99 +42,146 @@ public sealed class IntegrationRunner
             var isDebug = _options.Debug;
             var debugRows = isDebug ? new List<IntegrationDebugRow>() : null;
 
-            await foreach (var sourceRecord in inputProvider.ReadAsync(cancellationToken))
-            {
-                read++;
-                var record = sourceRecord;
-                var rowDebug = IntegrationDebugger.InitializeDebugRow(isDebug, sourceRecord, debugRows);
-                
-                foreach (var step in definition.Steps)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    switch (step)
-                    {
-                        case InputStep inputStep:
-                            IntegrationDebugger.DebugInputStep(rowDebug, inputStep, record);
-                            break;
+            await ProcessTopLevelInput(inputProvider);
 
-                        case MapStep map:
-                            var (mapRecord, mapDebug) = await ExecuteMapStep(map, record, isDebug, cancellationToken);
-                            record = mapRecord;
-                            IntegrationDebugger.DebugWorksheetStep(mapDebug, rowDebug);
-                            break;
-
-                        case FilterStep filter:
-                            var (keepFilter, filterDebug) = await ExecuteFilterStep(filter, record, isDebug, cancellationToken);
-                            IntegrationDebugger.DebugWorksheetStep(filterDebug, rowDebug);
-                            if (!keepFilter)
-                            {
-                                excluded++;
-                                goto NextRecord;
-                            }
-                            break;
-
-                        case ReduceStep reduce:
-                            var (reduceRecord, nextState, reduceDebug) = await ExecuteReduceStep(reduce, record, reduceStates[reduce], isDebug, cancellationToken);
-                            reduceStates[reduce] = nextState;
-                            record = reduceRecord;
-                            IntegrationDebugger.DebugWorksheetStep(reduceDebug, rowDebug);
-                            break;
-
-                        case SwitchStep @switch:
-                            var (switchRecord, switchExcluded, switchDebug) = await ExecuteSwitchStep(@switch, record, reduceStates, isDebug, cancellationToken);
-                            record = switchRecord;
-                            IntegrationDebugger.DebugWorksheetStep(switchDebug, rowDebug);
-                            if (switchExcluded)
-                            {
-                                excluded++;
-                                goto NextRecord;
-                            }
-                            break;
-
-                        case OutputStep output when !deferOutput:
-                            IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
-                            var status = await outputs[outputSteps.IndexOf(output)].WriteAsync(record, cancellationToken);
-                            record[output.Id + ".Status"] = status.Succeeded;
-                            record[output.Id + ".StatusMessage"] = status.Message;
-                            record[output.Id + ".AffectedRows"] = status.AffectedRows;
-                            written += status.AffectedRows;
-                            break;
-
-                        case OutputStep output when deferOutput:
-                            IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
-                            break;
-                    }
-                }
-                final = record;
-                NextRecord:;
-            }
-
-            if (deferOutput && final is not null)
-            {
-                for (var outputIndex = 0; outputIndex < outputSteps.Count; outputIndex++)
-                {
-                    var output = outputSteps[outputIndex];
-                    var status = await outputs[outputIndex].WriteAsync(final, cancellationToken);
-                    final[output.Id + ".Status"] = status.Succeeded;
-                    final[output.Id + ".StatusMessage"] = status.Message;
-                    final[output.Id + ".AffectedRows"] = status.AffectedRows;
-                    written += status.AffectedRows;
-                }
-            }
+            await ProcessDeferredOutput();
 
             return new IntegrationResult(read, written, excluded, final)
             {
                 DebugData = debugRows
             };
+
+            async Task ProcessDeferredOutput()
+            {
+                if (deferOutput && final is not null)
+                {
+                    for (var outputIndex = 0; outputIndex < outputSteps.Count; outputIndex++)
+                    {
+                        var output = outputSteps[outputIndex];
+                        var status = await outputs[outputIndex].WriteAsync(final, cancellationToken);
+                        final[output.Id + ".Status"] = status.Succeeded;
+                        final[output.Id + ".StatusMessage"] = status.Message;
+                        final[output.Id + ".AffectedRows"] = status.AffectedRows;
+                        written += status.AffectedRows;
+                    }
+                }
+            }
+
+            async Task ProcessTopLevelInput(IInputProvider provider)
+            {
+                await foreach (var sourceRecord in provider.ReadAsync(cancellationToken))
+                {
+                    read++;
+                    var rowDebug = isDebug
+                        ? new IntegrationDebugRow { InputRow = new Dictionary<string, object?>(sourceRecord.Values, StringComparer.OrdinalIgnoreCase) }
+                        : null;
+                    await ProcessStepsAsync(0, sourceRecord, rowDebug, sourceRecord);
+                }
+            }
+
+            async Task ProcessStepsAsync(int stepIndex, IntegrationRecord record, IntegrationDebugRow? rowDebug, IntegrationRecord sourceRecord)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (stepIndex >= definition.Steps.Count)
+                {
+                    final = record;
+                    if (rowDebug is not null) debugRows!.Add(rowDebug);
+                    return;
+                }
+
+                var step = definition.Steps[stepIndex];
+                switch (step)
+                {
+                    case InputStep inputStep when ReferenceEquals(inputStep, input):
+                        IntegrationDebugger.DebugInputStep(rowDebug, inputStep, record);
+                        await ProcessStepsAsync(stepIndex + 1, record, rowDebug, sourceRecord);
+                        break;
+
+                    case InputStep inputStep:
+                        await ProcessChildInputProvider(cancellationToken, inputStep, record, rowDebug, stepIndex, sourceRecord);
+                        break;
+
+                    case MapStep map:
+                        var (mapRecord, mapDebug) = await ExecuteMapStep(map, record, isDebug, cancellationToken);
+                        IntegrationDebugger.DebugWorksheetStep(mapDebug, rowDebug);
+                        await ProcessStepsAsync(stepIndex + 1, mapRecord, rowDebug, sourceRecord);
+                        break;
+
+                    case FilterStep filter:
+                        var (keepFilter, filterDebug) = await ExecuteFilterStep(filter, record, isDebug, cancellationToken);
+                        IntegrationDebugger.DebugWorksheetStep(filterDebug, rowDebug);
+                        if (!keepFilter)
+                        {
+                            excluded++;
+                            if (rowDebug is not null) debugRows!.Add(rowDebug);
+                            return;
+                        }
+                        await ProcessStepsAsync(stepIndex + 1, record, rowDebug, sourceRecord);
+                        break;
+
+                    case ReduceStep reduce:
+                        var (reduceRecord, nextState, reduceDebug) = await ExecuteReduceStep(reduce, record, reduceStates[reduce], isDebug, cancellationToken);
+                        reduceStates[reduce] = nextState;
+                        IntegrationDebugger.DebugWorksheetStep(reduceDebug, rowDebug);
+                        await ProcessStepsAsync(stepIndex + 1, reduceRecord, rowDebug, sourceRecord);
+                        break;
+
+                    case SwitchStep @switch:
+                        var (switchRecord, switchExcluded, switchDebug) = await ExecuteSwitchStep(@switch, record, reduceStates, isDebug, cancellationToken);
+                        IntegrationDebugger.DebugWorksheetStep(switchDebug, rowDebug);
+                        if (switchExcluded)
+                        {
+                            excluded++;
+                            if (rowDebug is not null) debugRows!.Add(rowDebug);
+                            return;
+                        }
+                        await ProcessStepsAsync(stepIndex + 1, switchRecord, rowDebug, sourceRecord);
+                        break;
+
+                    case OutputStep output when !deferOutput:
+                        IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
+                        var status = await outputs[outputSteps.IndexOf(output)].WriteAsync(record, cancellationToken);
+                        record[output.Id + ".Status"] = status.Succeeded;
+                        record[output.Id + ".StatusMessage"] = status.Message;
+                        record[output.Id + ".AffectedRows"] = status.AffectedRows;
+                        written += status.AffectedRows;
+                        await ProcessStepsAsync(stepIndex + 1, record, rowDebug, sourceRecord);
+                        break;
+
+                    case OutputStep output when deferOutput:
+                        IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
+                        await ProcessStepsAsync(stepIndex + 1, record, rowDebug, sourceRecord);
+                        break;
+                }
+            }
+            async Task ProcessChildInputProvider(CancellationToken cancellationToken2, InputStep inputStep,
+                IntegrationRecord record, IntegrationDebugRow? rowDebug, int stepIndex, IntegrationRecord sourceRecord)
+            {
+                await using var provider = CreateInput(inputStep, record);
+                await foreach (var providerRecord in provider.ReadAsync(cancellationToken2))
+                {
+                    var merged = new Dictionary<string, object?>(record.Values, StringComparer.OrdinalIgnoreCase);
+                    foreach (var field in providerRecord.Values)
+                        merged[field.Key] = field.Value;
+                    var combinedRecord = new IntegrationRecord(merged);
+                    var childDebug = CloneDebugRow(rowDebug);
+                    IntegrationDebugger.DebugInputStep(childDebug, inputStep, combinedRecord);
+                    await ProcessStepsAsync(stepIndex + 1, combinedRecord, childDebug, sourceRecord);
+                }
+            }
         }
         finally
         {
             foreach (var output in outputs) await output.DisposeAsync();
         }
     }
+    
 
-    private IInputProvider CreateInput(InputStep step)
+    private IInputProvider CreateInput(InputStep step, IntegrationRecord? inputRecord = null)
     {
+        if (inputRecord is not null)
+            step = BindInputStep(step, inputRecord);
+
         if (_mockManager.ShouldUseMock(step))
         {
             return _mockManager.CreateMockInput(step);
@@ -147,6 +197,88 @@ public sealed class IntegrationRunner
             InputKind.SqlReader => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
             InputKind.HttpReader => throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."),
             _ => throw new InvalidOperationException("Input provider configuration is missing or unsupported.")
+        };
+    }
+
+    private static InputStep BindInputStep(InputStep step, IntegrationRecord inputRecord)
+    {
+        string Bind(string value) => InputTemplatePattern.Replace(value, match =>
+        {
+            var fieldName = match.Groups[1].Value;
+            var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fieldName, StringComparison.OrdinalIgnoreCase));
+            if (field.Key is null)
+                throw new InvalidOperationException($"Input step '{step.Id}' references missing input field '{fieldName}'.");
+            return FormatInputValue(field.Value);
+        });
+
+        var bound = new InputStep
+        {
+            Id = step.Id,
+            Kind = step.Kind,
+            FilePath = Bind(step.FilePath),
+            ConnectionString = Bind(step.ConnectionString),
+            Query = Bind(step.Query),
+            MockCsvFilePath = Bind(step.MockCsvFilePath),
+            MockCsv = Bind(step.MockCsv),
+            MockData = Bind(step.MockData),
+            HttpConfiguration = step.HttpConfiguration,
+            Endpoint = Bind(step.Endpoint),
+            HttpMethod = Bind(step.HttpMethod),
+            JsonPath = Bind(step.JsonPath),
+            XmlItemElement = Bind(step.XmlItemElement),
+            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, Bind)
+        };
+
+        foreach (var (name, source) in step.MockDataSources)
+        {
+            bound.MockDataSources[name] = new MockDataSource
+            {
+                Name = source.Name,
+                FilePath = Bind(source.FilePath),
+                Content = Bind(source.Content)
+            };
+        }
+
+        return bound;
+    }
+
+    private static HttpProviderSettings? BindHttpConfiguration(HttpProviderSettings? settings, Func<string, string> bind)
+    {
+        if (settings is null) return null;
+        return new HttpProviderSettings
+        {
+            Name = settings.Name,
+            BaseUrl = bind(settings.BaseUrl),
+            HttpClientName = bind(settings.HttpClientName),
+            OAuthClientId = bind(settings.OAuthClientId),
+            OAuthClientSecret = bind(settings.OAuthClientSecret),
+            OAuthScope = bind(settings.OAuthScope),
+            OAuthTokenUrl = bind(settings.OAuthTokenUrl),
+            OAuthHttpClientName = bind(settings.OAuthHttpClientName),
+            ClientCertificateThumbprint = bind(settings.ClientCertificateThumbprint),
+            Headers = settings.Headers.Select(header => new HttpHeader
+            {
+                Name = bind(header.Name),
+                Value = bind(header.Value)
+            }).ToList()
+        };
+    }
+
+    private static string FormatInputValue(object? value) => value switch
+    {
+        null => string.Empty,
+        JsonElement { ValueKind: JsonValueKind.String } json => json.GetString() ?? string.Empty,
+        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+        _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty
+    };
+
+    private static IntegrationDebugRow? CloneDebugRow(IntegrationDebugRow? rowDebug)
+    {
+        if (rowDebug is null) return null;
+        return new IntegrationDebugRow
+        {
+            InputRow = new Dictionary<string, object?>(rowDebug.InputRow, StringComparer.OrdinalIgnoreCase),
+            Steps = [.. rowDebug.Steps]
         };
     }
 
