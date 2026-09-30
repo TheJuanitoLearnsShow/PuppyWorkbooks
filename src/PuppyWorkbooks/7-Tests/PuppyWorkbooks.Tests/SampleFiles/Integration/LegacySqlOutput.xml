@@ -1,4 +1,4 @@
-<Integration>
+<Integration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
   <Steps>
     <IOOutput Id="legacy" Kind="SqlWriter" ConnectionString="legacy-connection">
       <TableName>LegacyResults</TableName>

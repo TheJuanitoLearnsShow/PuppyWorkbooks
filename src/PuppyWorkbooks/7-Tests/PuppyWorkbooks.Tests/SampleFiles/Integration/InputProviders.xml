@@ -1,4 +1,4 @@
-<Integration Name="Providers">
+<Integration Name="Providers" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
   <HttpConfigurations>
     <HttpConfiguration Name="api" BaseUrl="https://example.test/" />
   </HttpConfigurations>
