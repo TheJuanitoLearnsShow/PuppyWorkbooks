@@ -134,8 +134,7 @@ public sealed class IntegrationTests
         Directory.CreateDirectory(directory);
         var inputPath = Path.Combine(directory, "input.csv");
         var outputPath = Path.Combine(directory, "output.csv");
-        await File.WriteAllTextAsync(inputPath,
-            "Name,Active,Amount\nAlice,true,10\nBob,false,100\nCara,true,5\n");
+        await File.WriteAllTextAsync(inputPath, await File.ReadAllTextAsync(GetSampleDataPath("StandardInput.csv")));
 
         try
         {
@@ -175,10 +174,12 @@ public sealed class IntegrationTests
         var firstLookupPath = Path.Combine(directory, "first.csv");
         var secondLookupPath = Path.Combine(directory, "second.csv");
         var outputPath = Path.Combine(directory, "output.csv");
-        await File.WriteAllTextAsync(inputPath,
-            $"LookupPath,ParentId,Shared\n{firstLookupPath},P1,parent-one\n{secondLookupPath},P2,parent-two\n");
-        await File.WriteAllTextAsync(firstLookupPath, "Shared,Value\nchild-one,one-a\nchild-two,one-b\n");
-        await File.WriteAllTextAsync(secondLookupPath, "Shared,Value\nchild-three,two-a\n");
+        var inputData = (await File.ReadAllTextAsync(GetSampleDataPath("AdditionalInput.csv")))
+            .Replace("__FIRST_LOOKUP_PATH__", firstLookupPath, StringComparison.Ordinal)
+            .Replace("__SECOND_LOOKUP_PATH__", secondLookupPath, StringComparison.Ordinal);
+        await File.WriteAllTextAsync(inputPath, inputData);
+        await File.WriteAllTextAsync(firstLookupPath, await File.ReadAllTextAsync(GetSampleDataPath("FirstLookup.csv")));
+        await File.WriteAllTextAsync(secondLookupPath, await File.ReadAllTextAsync(GetSampleDataPath("SecondLookup.csv")));
 
         try
         {
@@ -215,7 +216,7 @@ public sealed class IntegrationTests
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(directory);
         var inputPath = Path.Combine(directory, "input.csv");
-        await File.WriteAllTextAsync(inputPath, "Name,Amount,Active\nAlice,10,true\nBob,100,false\n");
+        await File.WriteAllTextAsync(inputPath, await File.ReadAllTextAsync(GetSampleDataPath("SwitchInput.csv")));
 
         try
         {
@@ -242,8 +243,7 @@ public sealed class IntegrationTests
         Directory.CreateDirectory(directory);
         var inputPath = Path.Combine(directory, "input.csv");
         var outputPath = Path.Combine(directory, "output.csv");
-        await File.WriteAllTextAsync(inputPath,
-            "Name,Active,Amount\nAlice,true,10\nBob,false,100\nCara,true,5\n");
+        await File.WriteAllTextAsync(inputPath, await File.ReadAllTextAsync(GetSampleDataPath("StandardInput.csv")));
 
         try
         {
@@ -312,7 +312,7 @@ public sealed class IntegrationTests
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(directory);
         var inputPath = Path.Combine(directory, "input.csv");
-        await File.WriteAllTextAsync(inputPath, "Name,Amount,Active\nAlice,10,true\nBob,100,false\n");
+        await File.WriteAllTextAsync(inputPath, await File.ReadAllTextAsync(GetSampleDataPath("SwitchInput.csv")));
 
         try
         {
@@ -401,7 +401,7 @@ public sealed class IntegrationTests
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(directory);
         var mockCsvPath = Path.Combine(directory, "mock.csv");
-        await File.WriteAllTextAsync(mockCsvPath, "Name,Active,Amount\nAlice,true,10\nBob,false,100\n");
+        await File.WriteAllTextAsync(mockCsvPath, await File.ReadAllTextAsync(GetSampleDataPath("MockCsvInput.csv")));
 
         try
         {
@@ -629,12 +629,7 @@ public sealed class IntegrationTests
         var directory = "./PuppyWorkbooks-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(directory);
         var jsonFile = Path.Combine(directory, "mock_response.json");
-        await File.WriteAllTextAsync(jsonFile, """
-            [
-                {"Id": 10, "Name": "Grace"},
-                {"Id": 20, "Name": "Alan"}
-            ]
-            """);
+        await File.WriteAllTextAsync(jsonFile, await File.ReadAllTextAsync(GetSampleDataPath("HttpMockResponse.json")));
 
         try
         {
@@ -678,6 +673,9 @@ public sealed class IntegrationTests
         Assert.True(step2.MockDataSources.ContainsKey("Scenario1"));
         Assert.True(step2.MockDataSources.ContainsKey("Scenario2"));
     }
+
+    private static string GetSampleDataPath(string fileName) =>
+        Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "SampleData", fileName);
 
     private sealed class TestHttpClientFactory(HttpMessageHandler handler, string expectedName) : IHttpClientFactory
     {

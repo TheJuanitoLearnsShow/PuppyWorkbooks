@@ -47,7 +47,8 @@ public class CLITests
         var inputPath = Path.Combine(directory, "input.csv");
         var outputPath = Path.Combine(directory, "output.csv");
         var integrationXmlPath = Path.Combine(directory, "integration.xml");
-        await File.WriteAllTextAsync(inputPath, "Name,Active,Amount\nAlice,true,10\nBob,false,100\nCara,true,5\n");
+        var sampleInputPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "SampleData", "StandardInput.csv");
+        await File.WriteAllTextAsync(inputPath, await File.ReadAllTextAsync(sampleInputPath));
 
         try
         {

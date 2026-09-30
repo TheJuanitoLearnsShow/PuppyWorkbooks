@@ -10,23 +10,14 @@ public sealed class FileProviderTests
     [Fact]
     public async Task JsonInputProvider_FromFile_ReadsObjectsFromArray()
     {
-        var directory = CreateTempDirectory();
-        try
-        {
-            var path = Path.Combine(directory, "input.json");
-            await File.WriteAllTextAsync(path, "[{\"Name\":\"Ada\",\"Amount\":10},{\"Name\":\"Bob\",\"Amount\":20}]");
+        var path = GetSampleDataPath("InputRecords.json");
 
-            var records = await ReadAllAsync(JsonInputProvider.FromFile(path));
+        var records = await ReadAllAsync(JsonInputProvider.FromFile(path));
 
-            Assert.Equal(2, records.Count);
-            Assert.Equal("Ada", records[0]["Name"]);
-            Assert.Equal(10L, records[0]["Amount"]);
-            Assert.Equal("Bob", records[1]["Name"]);
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
+        Assert.Equal(2, records.Count);
+        Assert.Equal("Ada", records[0]["Name"]);
+        Assert.Equal(10L, records[0]["Amount"]);
+        Assert.Equal("Bob", records[1]["Name"]);
     }
 
     [Fact]
@@ -57,24 +48,14 @@ public sealed class FileProviderTests
     [Fact]
     public async Task XmlInputProvider_ReadsElementsAndAttributesAsRecords()
     {
-        var directory = CreateTempDirectory();
-        try
-        {
-            var path = Path.Combine(directory, "input.xml");
-            await File.WriteAllTextAsync(path,
-                "<Records><Record Id=\"1\"><Name>Ada</Name></Record><Record Id=\"2\"><Name>Bob</Name></Record></Records>");
+        var path = GetSampleDataPath("InputRecords.xml");
 
-            var records = await ReadAllAsync(new XmlInputProvider(path));
+        var records = await ReadAllAsync(new XmlInputProvider(path));
 
-            Assert.Equal(2, records.Count);
-            Assert.Equal("1", records[0]["Id"]);
-            Assert.Equal("Ada", records[0]["Name"]);
-            Assert.Equal("Bob", records[1]["Name"]);
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
+        Assert.Equal(2, records.Count);
+        Assert.Equal("1", records[0]["Id"]);
+        Assert.Equal("Ada", records[0]["Name"]);
+        Assert.Equal("Bob", records[1]["Name"]);
     }
 
     [Fact]
@@ -126,4 +107,7 @@ public sealed class FileProviderTests
         Directory.CreateDirectory(directory);
         return directory;
     }
+
+    private static string GetSampleDataPath(string fileName) =>
+        Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "SampleData", fileName);
 }
