@@ -17,9 +17,9 @@ public sealed class IntegrationXmlSerializer
     {
         using var reader = new StringReader(NormalizeProviderElements(xml));
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
-        ResolveSecrets(definition);
         ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
+        ResolveSecrets(definition);
         return definition;
     }
 
@@ -36,6 +36,43 @@ public sealed class IntegrationXmlSerializer
             httpConfig.OAuthTokenUrl = secretManager.Resolve(httpConfig.OAuthTokenUrl);
             foreach (var header in httpConfig.Headers)
                 header.Value = secretManager.Resolve(header.Value);
+        }
+
+        ResolveSecretsInSteps(definition.Steps, secretManager);
+    }
+
+    private static void ResolveSecretsInSteps(IEnumerable<IntegrationStep> steps, SecretManager secretManager)
+    {
+        foreach (var step in steps)
+        {
+            switch (step)
+            {
+                case MapStep map:
+                    ResolveSecretsInWorksheet(map.Worksheet, secretManager);
+                    break;
+                case FilterStep filter:
+                    ResolveSecretsInWorksheet(filter.Worksheet, secretManager);
+                    break;
+                case ReduceStep reduce:
+                    ResolveSecretsInWorksheet(reduce.Worksheet, secretManager);
+                    break;
+                case SwitchStep @switch:
+                    ResolveSecretsInWorksheet(@switch.Worksheet, secretManager);
+                    foreach (var branch in @switch.Branches)
+                    {
+                        ResolveSecretsInSteps(branch.Steps, secretManager);
+                    }
+                    break;
+            }
+        }
+    }
+
+    private static void ResolveSecretsInWorksheet(WorkSheet? worksheet, SecretManager secretManager)
+    {
+        if (worksheet == null) return;
+        foreach (var cell in worksheet.Cells)
+        {
+            cell.Formula = secretManager.Resolve(cell.Formula);
         }
     }
 

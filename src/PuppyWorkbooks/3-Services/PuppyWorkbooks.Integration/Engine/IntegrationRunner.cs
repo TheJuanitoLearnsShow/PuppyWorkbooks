@@ -439,7 +439,7 @@ public sealed class IntegrationRunner
             .Where(c => !string.IsNullOrWhiteSpace(c.Formula))
             .ToList();
         var copy = new WorkSheet { Name = worksheet.Name, Cells =
-            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, _secretManager!.Resolve(c.Formula), c.Comments))],
+            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))],
             Variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase)
         };
         ValueBinder.BindRecord(copy, record);

@@ -28,4 +28,6 @@ public sealed class SqlInputProvider : IInputProvider
         }
     }
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
+
+    public string ConnectionString => _connection.ConnectionString;
 }

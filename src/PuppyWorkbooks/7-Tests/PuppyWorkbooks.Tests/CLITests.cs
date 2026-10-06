@@ -189,4 +189,5 @@ public class CLITests
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
+    
 }

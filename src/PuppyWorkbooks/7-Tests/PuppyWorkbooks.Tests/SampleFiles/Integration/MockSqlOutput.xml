@@ -1,8 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Integration Name="Mock Sql Output Test"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
+
+    <SecretManager>
+        <EnvSecret SecretName='MySecret' EnvVarName='TEST_SECRET' />
+    </SecretManager>
     <Steps>
-        <SqlInput Id="input1" ConnectionString="Server=invalid;">
+        <SqlInput Id="input1" ConnectionString="Server={{ secrets.MySecret }};">
             <MockCsv>
 Name,Amount
 Alice,10
