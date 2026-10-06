@@ -16,9 +16,12 @@ public sealed class InputStep : IntegrationStep
     [XmlAttribute] public string HttpMethod { get; set; } = "GET";
     [XmlAttribute] public string JsonPath { get; set; } = "$";
     [XmlAttribute] public string XmlItemElement { get; set; } = string.Empty;
+    [XmlAttribute] public bool AddFileSizeField { get; set; }
+    [XmlAttribute] public bool AddCreatedOnDate { get; set; }
+    [XmlAttribute] public bool AddLastModifiedDateField { get; set; }
     [XmlIgnore] public HttpProviderSettings? ResolvedHttpConfiguration { get; set; }
 
-    public bool ShouldSerializeFilePath() => Kind is InputKind.CSVReader or InputKind.JsonReader or InputKind.XmlReader;
+    public bool ShouldSerializeFilePath() => Kind is InputKind.CSVReader or InputKind.JsonReader or InputKind.XmlReader or InputKind.FileSystemReader;
     public bool ShouldSerializeConnectionString() => Kind == InputKind.SqlReader;
     public bool ShouldSerializeQuery() => Kind == InputKind.SqlReader && !string.IsNullOrWhiteSpace(Query);
     public bool ShouldSerializeMockCsvFilePath() => !string.IsNullOrWhiteSpace(MockCsvFilePath);

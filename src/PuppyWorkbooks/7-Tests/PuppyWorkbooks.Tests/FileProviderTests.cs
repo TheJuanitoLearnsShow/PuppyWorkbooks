@@ -84,6 +84,36 @@ public sealed class FileProviderTests
         }
     }
 
+    [Fact]
+    public async Task FileSystemInputProvider_EnumerateDirectory_ReadsFiles()
+    {
+        var directory = CreateTempDirectory();
+        try
+        {
+            var file1 = Path.Combine(directory, "file1.txt");
+            var file2 = Path.Combine(directory, "file2.csv");
+            File.WriteAllText(file1, "content1");
+            File.WriteAllText(file2, "content2");
+
+            var provider = new FileSystemInputProvider(directory, addFileSize: true, addCreatedOnDate: true, addLastModifiedDate: true);
+            var records = await ReadAllAsync(provider);
+
+            Assert.Equal(2, records.Count);
+            
+            var file1Record = records.FirstOrDefault(r => r["File Name"] as string == "file1.txt");
+            Assert.NotNull(file1Record);
+            Assert.Equal(".txt", file1Record["file extension"]);
+            Assert.Equal(8L, file1Record["file size in bytes"]);
+            Assert.NotNull(file1Record["file created date"]);
+            Assert.NotNull(file1Record["file last modified date"]);
+            Assert.Equal(file1, file1Record["file path"]);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static IntegrationRecord CreateRecord(params (string Key, object? Value)[] values)
     {
         var dictionary = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);

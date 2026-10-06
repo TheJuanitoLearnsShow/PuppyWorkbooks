@@ -1,6 +1,6 @@
 ﻿namespace PuppyWorkbooks.Integration.Models;
 
-public enum InputKind { CSVReader, SqlReader, HttpReader, JsonReader, XmlReader }
+public enum InputKind { CSVReader, SqlReader, HttpReader, JsonReader, XmlReader, FileSystemReader }
 
 public static class InputKindXmlNames
 {
@@ -11,6 +11,7 @@ public static class InputKindXmlNames
         InputKind.HttpReader => "HttpInput",
         InputKind.JsonReader => "JsonInput",
         InputKind.XmlReader => "XmlInput",
+        InputKind.FileSystemReader => "FileSystemInput",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported input provider kind.")
     };
 
@@ -23,6 +24,7 @@ public static class InputKindXmlNames
             "HttpInput" or "HttpInputProvider" => InputKind.HttpReader,
             "JsonInput" or "JsonInputProvider" => InputKind.JsonReader,
             "XmlInput" or "XmlInputProvider" => InputKind.XmlReader,
+            "FileSystemInput" or "FileSystemInputProvider" => InputKind.FileSystemReader,
             _ => default
         };
 
@@ -30,6 +32,7 @@ public static class InputKindXmlNames
             or "SqlInput" or "SqlInputProvider"
             or "HttpInput" or "HttpInputProvider"
             or "JsonInput" or "JsonInputProvider"
-            or "XmlInput" or "XmlInputProvider";
+            or "XmlInput" or "XmlInputProvider"
+            or "FileSystemInput" or "FileSystemInputProvider";
     }
 }

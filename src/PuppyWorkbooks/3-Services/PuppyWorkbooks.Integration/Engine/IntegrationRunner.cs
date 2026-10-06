@@ -194,6 +194,7 @@ public sealed class IntegrationRunner
             InputKind.CSVReader when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvInputProvider(step.FilePath),
             InputKind.JsonReader when !string.IsNullOrWhiteSpace(step.FilePath) => JsonInputProvider.FromFile(step.FilePath, step.JsonPath),
             InputKind.XmlReader when !string.IsNullOrWhiteSpace(step.FilePath) => new XmlInputProvider(step.FilePath, step.XmlItemElement),
+            InputKind.FileSystemReader when !string.IsNullOrWhiteSpace(step.FilePath) => new FileSystemInputProvider(step.FilePath, step.AddFileSizeField, step.AddCreatedOnDate, step.AddLastModifiedDateField),
             InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
             InputKind.HttpReader when step.ResolvedHttpConfiguration is not null => new HttpInputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.JsonPath, _options.HttpClientFactory),
             InputKind.SqlReader => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
