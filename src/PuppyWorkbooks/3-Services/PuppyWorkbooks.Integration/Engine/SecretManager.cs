@@ -1,4 +1,7 @@
 using System.Text.RegularExpressions;
+using AdysTech.CredentialManager;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using PuppyWorkbooks.Integration.Models;
 
 namespace PuppyWorkbooks.Integration.Engine;
@@ -9,10 +12,12 @@ public sealed class SecretManager
         @"\{\{\s*secrets\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     
     private readonly SecretManagerConfiguration? _configuration;
+    private readonly KeyVaultSecretManager _keyVaultSecretManager;
 
     public SecretManager(SecretManagerConfiguration? configuration)
     {
         _configuration = configuration;
+        _keyVaultSecretManager = new KeyVaultSecretManager();
     }
 
     public string Resolve(string? value)
@@ -35,8 +40,9 @@ public sealed class SecretManager
         return secretDef switch
         {
             EnvSecret env => Environment.GetEnvironmentVariable(env.EnvVarName) ?? throw new InvalidOperationException($"Environment variable '{env.EnvVarName}' not found for secret '{secretName}'."),
-            // For now, return placeholder or throw if not implemented, as external libraries might not be available
-            _ => throw new NotSupportedException($"Secret provider type '{secretDef.GetType().Name}' is not yet implemented.")
+            WindowsCredentialsSecret win => WindowsCredentialStoreSecretManager.GetWindowsCredential(win, secretName),
+            KeyVaultCredential kv => _keyVaultSecretManager.GetKeyVaultSecret(kv, secretName),
+            _ => throw new NotSupportedException($"Secret provider type '{secretDef.GetType().Name}' is not supported.")
         };
     }
 }

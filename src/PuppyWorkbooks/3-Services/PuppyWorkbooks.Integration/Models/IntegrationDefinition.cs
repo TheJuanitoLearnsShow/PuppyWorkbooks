@@ -44,7 +44,7 @@ public sealed class WindowsCredentialsSecret : SecretDefinition
 
 public sealed class KeyVaultCredential : SecretDefinition
 {
-    [XmlAttribute] public string SecretURI { get; set; } = string.Empty;
+    [XmlAttribute] public string KeyVaultURI { get; set; } = string.Empty;
 }
 
 public sealed class EnvSecret : SecretDefinition
