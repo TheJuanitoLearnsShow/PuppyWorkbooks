@@ -63,9 +63,9 @@ public sealed class SecretManagerTests
       var serializer = new IntegrationXmlSerializer();
       var definition = serializer.DeserializeFile(integrationXmlPath);
       
-      var sqlInputStep = definition.Steps.OfType<SqlInputProvider>().FirstOrDefault();
+      var sqlInputStep = definition.Steps.OfType<InputStep>().FirstOrDefault(s => s.Kind == InputKind.SqlReader);
         
       Assert.NotNull(sqlInputStep);
-      Assert.Equal("Server=TEST_SECRET", sqlInputStep.ConnectionString);
+      Assert.Equal("Server=secret_value;", sqlInputStep.ConnectionString);
     }
 }

@@ -63,6 +63,31 @@ public sealed class IntegrationXmlSerializer
                         ResolveSecretsInSteps(branch.Steps, secretManager);
                     }
                     break;
+                case InputStep input:
+                    input.FilePath = secretManager.Resolve(input.FilePath);
+                    input.ConnectionString = secretManager.Resolve(input.ConnectionString);
+                    input.Query = secretManager.Resolve(input.Query);
+                    input.MockCsvFilePath = secretManager.Resolve(input.MockCsvFilePath);
+                    input.MockCsv = secretManager.Resolve(input.MockCsv);
+                    input.MockData = secretManager.Resolve(input.MockData);
+                    input.Endpoint = secretManager.Resolve(input.Endpoint);
+                    input.HttpMethod = secretManager.Resolve(input.HttpMethod);
+                    input.JsonPath = secretManager.Resolve(input.JsonPath);
+                    input.XmlItemElement = secretManager.Resolve(input.XmlItemElement);
+                    foreach (var dataSource in input.MockDataSources.Values)
+                    {
+                        dataSource.FilePath = secretManager.Resolve(dataSource.FilePath);
+                        dataSource.Content = secretManager.Resolve(dataSource.Content);
+                    }
+                    break;
+                case OutputStep output:
+                    output.FilePath = secretManager.Resolve(output.FilePath);
+                    output.ConnectionString = secretManager.Resolve(output.ConnectionString);
+                    output.TableName = secretManager.Resolve(output.TableName);
+                    output.Query = secretManager.Resolve(output.Query);
+                    output.Endpoint = secretManager.Resolve(output.Endpoint);
+                    output.HttpMethod = secretManager.Resolve(output.HttpMethod);
+                    break;
             }
         }
     }
