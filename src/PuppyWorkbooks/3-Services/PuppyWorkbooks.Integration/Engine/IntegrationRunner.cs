@@ -14,6 +14,7 @@ public sealed class IntegrationRunner
     private readonly WorkbookInterpreter _interpreter = new();
     private readonly IntegrationRunnerOptions _options;
     private readonly MockManager _mockManager;
+    private SecretManager? _secretManager;
 
     public IntegrationRunner(IntegrationRunnerOptions? options = null)
     {
@@ -23,6 +24,7 @@ public sealed class IntegrationRunner
 
     public async Task<IntegrationResult> RunAsync(IntegrationDefinition definition, CancellationToken cancellationToken = default)
     {
+        _secretManager = new SecretManager(definition.SecretManager);
         var input = definition.Steps.OfType<InputStep>().FirstOrDefault();
         if (input is null) throw new InvalidOperationException("An integration must contain an IOInput step.");
         await using var inputProvider = CreateInput(input);
@@ -200,33 +202,39 @@ public sealed class IntegrationRunner
         };
     }
 
-    private static InputStep BindInputStep(InputStep step, IntegrationRecord inputRecord)
+    private string ResolveValue(string value, IntegrationRecord? inputRecord = null)
     {
-        string Bind(string value) => InputTemplatePattern.Replace(value, match =>
+        var resolved = _secretManager!.Resolve(value);
+        if (inputRecord is null) return resolved;
+        
+        return InputTemplatePattern.Replace(resolved, match =>
         {
             var fieldName = match.Groups[1].Value;
             var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fieldName, StringComparison.OrdinalIgnoreCase));
             if (field.Key is null)
-                throw new InvalidOperationException($"Input step '{step.Id}' references missing input field '{fieldName}'.");
+                throw new InvalidOperationException($"Input step references missing input field '{fieldName}'.");
             return FormatInputValue(field.Value);
         });
+    }
 
+    private InputStep BindInputStep(InputStep step, IntegrationRecord inputRecord)
+    {
         var bound = new InputStep
         {
             Id = step.Id,
             Kind = step.Kind,
-            FilePath = Bind(step.FilePath),
-            ConnectionString = Bind(step.ConnectionString),
-            Query = Bind(step.Query),
-            MockCsvFilePath = Bind(step.MockCsvFilePath),
-            MockCsv = Bind(step.MockCsv),
-            MockData = Bind(step.MockData),
+            FilePath = ResolveValue(step.FilePath, inputRecord),
+            ConnectionString = ResolveValue(step.ConnectionString, inputRecord),
+            Query = ResolveValue(step.Query, inputRecord),
+            MockCsvFilePath = ResolveValue(step.MockCsvFilePath, inputRecord),
+            MockCsv = ResolveValue(step.MockCsv, inputRecord),
+            MockData = ResolveValue(step.MockData, inputRecord),
             HttpConfiguration = step.HttpConfiguration,
-            Endpoint = Bind(step.Endpoint),
-            HttpMethod = Bind(step.HttpMethod),
-            JsonPath = Bind(step.JsonPath),
-            XmlItemElement = Bind(step.XmlItemElement),
-            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, Bind)
+            Endpoint = ResolveValue(step.Endpoint, inputRecord),
+            HttpMethod = ResolveValue(step.HttpMethod, inputRecord),
+            JsonPath = ResolveValue(step.JsonPath, inputRecord),
+            XmlItemElement = ResolveValue(step.XmlItemElement, inputRecord),
+            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, v => ResolveValue(v, inputRecord))
         };
 
         foreach (var (name, source) in step.MockDataSources)
@@ -234,8 +242,8 @@ public sealed class IntegrationRunner
             bound.MockDataSources[name] = new MockDataSource
             {
                 Name = source.Name,
-                FilePath = Bind(source.FilePath),
-                Content = Bind(source.Content)
+                FilePath = ResolveValue(source.FilePath, inputRecord),
+                Content = ResolveValue(source.Content, inputRecord)
             };
         }
 
@@ -431,7 +439,7 @@ public sealed class IntegrationRunner
             .Where(c => !string.IsNullOrWhiteSpace(c.Formula))
             .ToList();
         var copy = new WorkSheet { Name = worksheet.Name, Cells =
-            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, c.Formula, c.Comments))],
+            [.. worksheet.Cells.Select(c => new WorkCell(c.Id, c.Name, _secretManager!.Resolve(c.Formula), c.Comments))],
             Variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase)
         };
         ValueBinder.BindRecord(copy, record);

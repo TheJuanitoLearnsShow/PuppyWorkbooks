@@ -2,6 +2,7 @@ using System.Xml.Serialization;
 using System.Xml.Linq;
 using PuppyWorkbooks.Serialization;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Engine;
 
 namespace PuppyWorkbooks.Integration;
 
@@ -16,9 +17,26 @@ public sealed class IntegrationXmlSerializer
     {
         using var reader = new StringReader(NormalizeProviderElements(xml));
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
+        ResolveSecrets(definition);
         ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
         return definition;
+    }
+
+    private static void ResolveSecrets(IntegrationDefinition definition)
+    {
+        var secretManager = new SecretManager(definition.SecretManager);
+
+        foreach (var httpConfig in definition.HttpConfigurations)
+        {
+            httpConfig.BaseUrl = secretManager.Resolve(httpConfig.BaseUrl);
+            httpConfig.OAuthClientId = secretManager.Resolve(httpConfig.OAuthClientId);
+            httpConfig.OAuthClientSecret = secretManager.Resolve(httpConfig.OAuthClientSecret);
+            httpConfig.OAuthScope = secretManager.Resolve(httpConfig.OAuthScope);
+            httpConfig.OAuthTokenUrl = secretManager.Resolve(httpConfig.OAuthTokenUrl);
+            foreach (var header in httpConfig.Headers)
+                header.Value = secretManager.Resolve(header.Value);
+        }
     }
 
     private static void ResolveHttpConfigurations(IntegrationDefinition definition)
