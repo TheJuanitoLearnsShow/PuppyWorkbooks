@@ -8,6 +8,7 @@ public sealed class InputStep : IntegrationStep
     [XmlAttribute] public string FilePath { get; set; } = string.Empty;
     [XmlAttribute] public string ConnectionString { get; set; } = string.Empty;
     [XmlElement] public string Query { get; set; } = string.Empty;
+    [XmlElement] public string MemoryData { get; set; } = string.Empty;
     [XmlAttribute] public string MockCsvFilePath { get; set; } = string.Empty;
     [XmlElement] public string MockCsv { get; set; } = string.Empty;
     [XmlElement] public string MockData { get; set; } = string.Empty;
@@ -24,6 +25,7 @@ public sealed class InputStep : IntegrationStep
     public bool ShouldSerializeFilePath() => Kind is InputKind.CSVReader or InputKind.JsonReader or InputKind.XmlReader or InputKind.FileSystemReader;
     public bool ShouldSerializeConnectionString() => Kind == InputKind.SqlReader;
     public bool ShouldSerializeQuery() => Kind == InputKind.SqlReader && !string.IsNullOrWhiteSpace(Query);
+    public bool ShouldSerializeMemoryData() => Kind == InputKind.MemoryReader && !string.IsNullOrWhiteSpace(MemoryData);
     public bool ShouldSerializeMockCsvFilePath() => !string.IsNullOrWhiteSpace(MockCsvFilePath);
     public bool ShouldSerializeHttpConfiguration() => Kind == InputKind.HttpReader;
     public bool ShouldSerializeEndpoint() => Kind == InputKind.HttpReader;

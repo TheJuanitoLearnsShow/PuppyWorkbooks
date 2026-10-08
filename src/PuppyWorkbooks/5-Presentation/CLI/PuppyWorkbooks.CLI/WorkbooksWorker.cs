@@ -53,6 +53,7 @@ public sealed class WorkbooksWorker : IHostedService
 
     private async Task Start(CancellationToken cancellationToken, string[] cmdArgs)
     {
+        _settings.MemoryInputData ??= GetInputJsonArgument(cmdArgs);
         var isDebug = _settings.Debug || cmdArgs.Any(IsDebugArgument);
         var mockSteps = !string.IsNullOrWhiteSpace(_settings.UseMockDataForSteps)
             ? _settings.UseMockDataForSteps
@@ -165,6 +166,30 @@ public sealed class WorkbooksWorker : IHostedService
         string.Equals(key, "-scenarioName", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "/scenarioName", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "-s", StringComparison.OrdinalIgnoreCase);
+
+    private static string? GetInputJsonArgument(string[] cmdArgs)
+    {
+        for (var i = 1; i < cmdArgs.Length; i++)
+        {
+            var arg = cmdArgs[i];
+            var equalIndex = arg.IndexOf('=');
+            if (equalIndex > 0)
+            {
+                var key = arg[..equalIndex];
+                var val = arg[(equalIndex + 1)..];
+                if (IsInputJsonKey(key)) return val;
+            }
+            else if (IsInputJsonKey(arg) && i + 1 < cmdArgs.Length)
+            {
+                return cmdArgs[i + 1];
+            }
+        }
+        return null;
+    }
+
+    private static bool IsInputJsonKey(string key) =>
+        string.Equals(key, "--input-json", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-i", StringComparison.OrdinalIgnoreCase);
 
     private string GetFirstXmlNodeName(string simplePath)
     {
@@ -298,6 +323,19 @@ public sealed class WorkbooksWorker : IHostedService
     private Dictionary<string, string> LoadInputValues()
     {
         var inputValues = _settings.InputData;
+        
+        if (!string.IsNullOrEmpty(_settings.MemoryInputData))
+        {
+            var valuesFromMemory = JsonSerializer.Deserialize<Dictionary<string, string>>(_settings.MemoryInputData);
+            if (valuesFromMemory is not null)
+            {
+                foreach (var kv in valuesFromMemory)
+                {
+                    inputValues[kv.Key] = kv.Value;
+                }
+            }
+        }
+
         if (string.IsNullOrEmpty(_settings.InputDataPath))
         {
             return inputValues;

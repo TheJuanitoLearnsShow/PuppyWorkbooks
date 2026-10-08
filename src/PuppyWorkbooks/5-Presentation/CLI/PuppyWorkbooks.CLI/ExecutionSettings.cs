@@ -17,6 +17,8 @@ public class ExecutionSettings
     
     public Dictionary<string, string> InputData { get; set; } = new();
 
+    public string? MemoryInputData { get; set; }
+
     /// <summary>
     /// List of workbooks to execute. All the outputs of each workbook will be included in the
     /// results collection in the output.
