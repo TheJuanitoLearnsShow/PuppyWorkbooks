@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using PuppyWorkbooks.CLI.Output;
 using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
+using PuppyWorkbooks.Integration.Models;
 using PuppyWorkbooks.Serialization;
 
 namespace PuppyWorkbooks.CLI;
@@ -14,17 +15,21 @@ public sealed class WorkbooksWorker : IHostedService
 {
     private readonly ILogger? _logger;
     private readonly IHostApplicationLifetime _appLifetime;
+    private readonly PuppyWorksheetWorker _worksheetWorker;
+    private readonly PuppyIntegrationWorker _integrationWorker;
     private readonly ExecutionSettings _settings;
-    private readonly WorkSheetSerializer _workSheetSerializer = new();
-    private readonly IntegrationXmlSerializer _integrationSerializer = new();
 
     public WorkbooksWorker(
         ILogger<WorkbooksWorker> logger,
         IOptions<ExecutionSettings> options,
-        IHostApplicationLifetime appLifetime)
+        IHostApplicationLifetime appLifetime,
+        PuppyWorksheetWorker worksheetWorker,
+        PuppyIntegrationWorker integrationWorker)
     {
         _logger = logger;
         _appLifetime = appLifetime;
+        _worksheetWorker = worksheetWorker;
+        _integrationWorker = integrationWorker;
         _settings = options.Value;
     }
 
@@ -32,6 +37,8 @@ public sealed class WorkbooksWorker : IHostedService
     {
         _logger = null;
         _settings = settings;
+        _worksheetWorker = new PuppyWorksheetWorker(settings);
+        _integrationWorker = new PuppyIntegrationWorker(settings);
     }
 
 
@@ -53,7 +60,7 @@ public sealed class WorkbooksWorker : IHostedService
 
     private async Task Start(CancellationToken cancellationToken, string[] cmdArgs)
     {
-        _settings.MemoryInputData ??= GetInputJsonArgument(cmdArgs);
+        _settings.InputDataPath ??= GetInputDataPathArgument(cmdArgs);
         var isDebug = _settings.Debug || cmdArgs.Any(IsDebugArgument);
         var mockSteps = !string.IsNullOrWhiteSpace(_settings.UseMockDataForSteps)
             ? _settings.UseMockDataForSteps
@@ -68,20 +75,20 @@ public sealed class WorkbooksWorker : IHostedService
             switch (rootName)
             {
                 case "Integration":
-                    await ExecuteIntegration(simplePaths[0], isDebug, mockSteps, scenario, cancellationToken);
+                    await _integrationWorker.ExecuteIntegration(simplePaths[0], isDebug, mockSteps, scenario, cancellationToken);
                     return;
                 case "Workbook":
-                    await ExecuteWorksheets(cancellationToken);
+                    await _worksheetWorker.ExecuteWorksheets(cancellationToken);
                     return;
             }
         }
         if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
         {
-            await ExecuteIntegration(_settings.IntegrationPath, isDebug, mockSteps, scenario, cancellationToken);
+            await _integrationWorker.ExecuteIntegration(_settings.IntegrationPath, isDebug, mockSteps, scenario, cancellationToken);
             return;
         }
 
-        await ExecuteWorksheets(cancellationToken);
+        await _worksheetWorker.ExecuteWorksheets(cancellationToken);
         return;
     }
 
@@ -167,7 +174,7 @@ public sealed class WorkbooksWorker : IHostedService
         string.Equals(key, "/scenarioName", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "-s", StringComparison.OrdinalIgnoreCase);
 
-    private static string? GetInputJsonArgument(string[] cmdArgs)
+    private static string? GetInputDataPathArgument(string[] cmdArgs)
     {
         for (var i = 1; i < cmdArgs.Length; i++)
         {
@@ -177,9 +184,9 @@ public sealed class WorkbooksWorker : IHostedService
             {
                 var key = arg[..equalIndex];
                 var val = arg[(equalIndex + 1)..];
-                if (IsInputJsonKey(key)) return val;
+                if (IsInputDataPathKey(key)) return val;
             }
-            else if (IsInputJsonKey(arg) && i + 1 < cmdArgs.Length)
+            else if (IsInputDataPathKey(arg) && i + 1 < cmdArgs.Length)
             {
                 return cmdArgs[i + 1];
             }
@@ -187,7 +194,13 @@ public sealed class WorkbooksWorker : IHostedService
         return null;
     }
 
-    private static bool IsInputJsonKey(string key) =>
+    private static bool IsInputDataPathKey(string key) =>
+        string.Equals(key, "--input-data-path", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--inputDataPath", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-inputDataPath", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "/inputDataPath", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--input-path", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--input", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "--input-json", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "-i", StringComparison.OrdinalIgnoreCase);
 
@@ -212,67 +225,6 @@ public sealed class WorkbooksWorker : IHostedService
         return string.Empty;
     }
 
-    private async Task ExecuteWorksheets(CancellationToken cancellationToken)
-    {
-        using IOutputWriter outputWriter = new ConsoleOutputWriter();
-        try
-        {
-            var workbookPaths = _settings.WorkbookPaths;
-            if (workbookPaths == null || workbookPaths.Length == 0)
-            {
-                var firstPositional = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(a =>
-                    !string.IsNullOrWhiteSpace(a) && !a.StartsWith("-") && !a.StartsWith("/"));
-                if (!string.IsNullOrEmpty(firstPositional))
-                {
-                    workbookPaths = new[] { firstPositional };
-                }
-            }
-
-            var inputValues = LoadInputValues();
-            outputWriter.OpenWriter();
-            await ExecuteWorkbooks(workbookPaths, inputValues, outputWriter, cancellationToken);
-        }
-        catch (Exception fatalError)
-        {
-            _logger?.LogError(fatalError.Message);
-        }
-        finally
-        {
-            outputWriter.CloseWriter();
-        }
-    }
-
-    private async Task ExecuteIntegration(string path, bool isDebug, string? mockSteps, string? scenario, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var definition = _integrationSerializer.DeserializeFile(path);
-            var runner = new IntegrationRunner(new IntegrationRunnerOptions
-            {
-                Debug = isDebug,
-                UseMockDataForSteps = mockSteps ?? string.Empty,
-                Scenario = scenario
-            });
-            var result = await runner.RunAsync(definition, cancellationToken);
-            if (isDebug && result.DebugData is not null)
-            {
-                var json = JsonSerializer.Serialize(result.DebugData, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-                Console.WriteLine(json);
-            }
-            if (_logger is not null)
-                _logger.LogInformation(
-                    "Integration {IntegrationName} completed. Read: {Read}, Written: {Written}, Excluded: {Excluded}",
-                    definition.Name, result.Read, result.Written, result.Excluded);
-        }
-        catch (Exception e)
-        {
-            _logger?.LogError(e, "Error executing integration at path: {Path}", path);
-        }
-    }
-
     private static bool IsDebugArgument(string arg) =>
         string.Equals(arg, "--debug", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(arg, "-debug", StringComparison.OrdinalIgnoreCase) ||
@@ -281,81 +233,6 @@ public sealed class WorkbooksWorker : IHostedService
         string.Equals(arg, "--Debug", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(arg, "debug", StringComparison.OrdinalIgnoreCase);
 
-    private async Task ExecuteWorkbooks(
-        string[] workbookPaths,
-        Dictionary<string, string> inputValues,
-        IOutputWriter outputWriter,
-        CancellationToken cancellationToken)
-    {
-        foreach (var path in workbookPaths)
-        {
-            await ExecuteWorkbook(inputValues, outputWriter, path, cancellationToken);
-        }
-    }
-
-    private async Task ExecuteWorkbook(Dictionary<string, string> inputValues, IOutputWriter outputWriter, string path,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var workbook = _workSheetSerializer.DeserializeFromXmlFile(path);
-            outputWriter.StartWorkbookResult(workbook.Name);
-            foreach (var inputValue in inputValues)
-            {
-                workbook.SetInputValue(inputValue.Key, inputValue.Value);
-            }
-
-            var interpreter = new WorkbookInterpreter();
-            await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true,
-                               cancellationToken: cancellationToken))
-            {
-                outputWriter.WriteCellResult(result);
-            }
-
-            outputWriter.EndWorkbookResult();
-        }
-        catch (Exception e)
-        {
-            _logger?.LogError(e.Message, "Error executing workbook at path: {Path}", path);
-        }
-    }
-
-    private Dictionary<string, string> LoadInputValues()
-    {
-        var inputValues = _settings.InputData;
-        
-        if (!string.IsNullOrEmpty(_settings.MemoryInputData))
-        {
-            var valuesFromMemory = JsonSerializer.Deserialize<Dictionary<string, string>>(_settings.MemoryInputData);
-            if (valuesFromMemory is not null)
-            {
-                foreach (var kv in valuesFromMemory)
-                {
-                    inputValues[kv.Key] = kv.Value;
-                }
-            }
-        }
-
-        if (string.IsNullOrEmpty(_settings.InputDataPath))
-        {
-            return inputValues;
-        }
-
-        var valuesFromInputFile = JsonSerializer.Deserialize<
-            Dictionary<string, string>>(_settings.InputDataPath);
-        if (valuesFromInputFile is not null)
-        {
-            foreach (var kv in valuesFromInputFile)
-            {
-                if (!inputValues.ContainsKey(kv.Key))
-                {
-                    inputValues[kv.Key] = kv.Value;
-                }
-            }
-        }
-
-        return inputValues;
-    }
 
 
     Task IHostedService.StopAsync(CancellationToken cancellationToken)

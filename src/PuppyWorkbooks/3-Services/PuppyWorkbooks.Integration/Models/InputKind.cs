@@ -12,6 +12,7 @@ public static class InputKindXmlNames
         InputKind.JsonReader => "JsonInput",
         InputKind.XmlReader => "XmlInput",
         InputKind.FileSystemReader => "FileSystemInput",
+        InputKind.MemoryReader => "MemoryInput",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported input provider kind.")
     };
 
@@ -25,6 +26,7 @@ public static class InputKindXmlNames
             "JsonInput" or "JsonInputProvider" => InputKind.JsonReader,
             "XmlInput" or "XmlInputProvider" => InputKind.XmlReader,
             "FileSystemInput" or "FileSystemInputProvider" => InputKind.FileSystemReader,
+            "MemoryInput" or "MemoryInputProvider" or "MemoryReader" => InputKind.MemoryReader,
             _ => default
         };
 
@@ -33,6 +35,7 @@ public static class InputKindXmlNames
             or "HttpInput" or "HttpInputProvider"
             or "JsonInput" or "JsonInputProvider"
             or "XmlInput" or "XmlInputProvider"
-            or "FileSystemInput" or "FileSystemInputProvider";
+            or "FileSystemInput" or "FileSystemInputProvider"
+            or "MemoryInput" or "MemoryInputProvider";
     }
 }

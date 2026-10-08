@@ -121,7 +121,12 @@
       <None Update="SampleFiles\Integration\CliScenario.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="SampleFiles\Integration\WorkSheet.xsd">
+      <None Include="..\..\3-Services\PuppyWorkbooks.Integration\Schemas\Integration.xsd">
+        <Link>SampleFiles\Integration\Integration.xsd</Link>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Include="..\..\3-Services\PuppyWorkbooks.Integration\Schemas\WorkSheet.xsd">
+        <Link>SampleFiles\Integration\WorkSheet.xsd</Link>
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="SampleFiles\Integration\SampleData\**\*">

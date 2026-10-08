@@ -197,7 +197,7 @@ public sealed class IntegrationRunner
             InputKind.FileSystemReader when !string.IsNullOrWhiteSpace(step.FilePath) => new FileSystemInputProvider(step.FilePath, step.AddFileSizeField, step.AddCreatedOnDate, step.AddLastModifiedDateField),
             InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
             InputKind.HttpReader when step.ResolvedHttpConfiguration is not null => new HttpInputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.JsonPath, _options.HttpClientFactory),
-            InputKind.MemoryReader => new MemoryInputProvider(step.MemoryData),
+            InputKind.MemoryReader => new MemoryInputProvider(step.Data),
             InputKind.SqlReader => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
             InputKind.HttpReader => throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."),
             _ => throw new InvalidOperationException("Input provider configuration is missing or unsupported.")
@@ -228,6 +228,7 @@ public sealed class IntegrationRunner
             FilePath = ResolveValue(step.FilePath, inputRecord),
             ConnectionString = ResolveValue(step.ConnectionString, inputRecord),
             Query = ResolveValue(step.Query, inputRecord),
+            Data = step.Data,
             MockCsvFilePath = ResolveValue(step.MockCsvFilePath, inputRecord),
             MockCsv = ResolveValue(step.MockCsv, inputRecord),
             MockData = ResolveValue(step.MockData, inputRecord),
