@@ -88,11 +88,8 @@
   <xs:complexType name="StepsType">
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="IOInput" type="InputStepType" />
-      <xs:element name="CsvInputProvider" type="CsvInputStepType" />
-      <xs:element name="SqlInputProvider" type="SqlInputStepType" />
-      <xs:element name="HttpInputProvider" type="HttpInputStepType" />
-      <xs:element name="JsonInputProvider" type="JsonInputStepType" />
-      <xs:element name="XmlInputProvider" type="XmlInputStepType" />
+      
+      <xs:element name="MemoryInput" type="MemoryInputStepType" />
       <xs:element name="CsvInput" type="CsvInputStepType" />
       <xs:element name="SqlInput" type="SqlInputStepType" />
       <xs:element name="HttpInput" type="HttpInputStepType" />
@@ -253,7 +250,15 @@
     <xs:attribute name="Id" type="xs:string" use="optional" />
     <xs:attribute name="MockCsvFilePath" type="xs:string" use="optional" />
   </xs:complexType>
+  
 
+  <xs:complexType name="MemoryInputStepType">
+    <xs:complexContent>
+      <xs:extension base="InputProviderCommonType">
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  
   <xs:complexType name="CsvInputStepType">
     <xs:complexContent>
       <xs:extension base="InputProviderCommonType">
