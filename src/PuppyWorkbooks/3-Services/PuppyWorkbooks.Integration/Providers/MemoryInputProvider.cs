@@ -166,6 +166,7 @@ public sealed class MemoryInputProvider : IInputProvider
         }
         else
         {
+            
             yield return FormulaValue.NewRecordFromFields(new NamedValue("Value", JsonElementToFormulaValue(element)));
         }
     }

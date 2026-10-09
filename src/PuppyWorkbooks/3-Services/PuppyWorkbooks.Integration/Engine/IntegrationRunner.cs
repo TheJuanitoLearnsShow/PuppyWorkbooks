@@ -25,6 +25,7 @@ public sealed class IntegrationRunner
     public async Task<IntegrationResult> RunAsync(IntegrationDefinition definition, CancellationToken cancellationToken = default)
     {
         _secretManager = new SecretManager(definition.SecretManager);
+        AssignDataToMemoryInputProviders(definition);
         var input = definition.Steps.OfType<InputStep>().FirstOrDefault();
         if (input is null) throw new InvalidOperationException("An integration must contain an IOInput step.");
         await using var inputProvider = CreateInput(input);
@@ -177,7 +178,20 @@ public sealed class IntegrationRunner
             foreach (var output in outputs) await output.DisposeAsync();
         }
     }
-    
+
+    private void AssignDataToMemoryInputProviders(IntegrationDefinition definition)
+    {
+        var inputData = _options.InputData;
+        if (inputData is not null)
+        {
+            var inputStep = definition.Steps.OfType<InputStep>().FirstOrDefault();
+            if (inputStep is not null && inputStep.Kind == InputKind.MemoryReader)
+            {
+                inputStep.Data = inputData;
+            }
+        }
+    }
+
 
     private IInputProvider CreateInput(InputStep step, IntegrationRecord? inputRecord = null)
     {

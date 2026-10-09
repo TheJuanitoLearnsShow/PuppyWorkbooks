@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Microsoft.PowerFx.Types;
 
 namespace PuppyWorkbooks.CLI;
 
@@ -50,5 +51,20 @@ class InputDataProvider
         }
 
         return inputValues;
+    }
+
+    public static string? LoadInputValuesAsJson(ExecutionSettings settings)
+    {
+        
+        var inputValues = new Dictionary<string, string>(settings.InputData, StringComparer.OrdinalIgnoreCase);
+
+        if (string.IsNullOrEmpty(settings.InputDataPath) || !File.Exists(settings.InputDataPath) )
+        {
+            return JsonSerializer.Serialize(inputValues);
+        }
+
+        var jsonContent = File.ReadAllText(settings.InputDataPath);
+
+        return jsonContent;
     }
 }

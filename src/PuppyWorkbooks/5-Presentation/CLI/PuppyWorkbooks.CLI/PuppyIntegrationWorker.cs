@@ -32,28 +32,14 @@ public class PuppyIntegrationWorker
         try
         {
             var definition = _integrationSerializer.DeserializeFile(path);
-            var inputValues = InputDataProvider.LoadInputValues(_settings);
-
-            var memoryStep = definition.Steps.OfType<InputStep>().FirstOrDefault(s => s.Kind == InputKind.MemoryReader);
-            if (memoryStep is not null && memoryStep.Data is null)
-            {
-                if (inputValues.Count > 0)
-                {
-                    memoryStep.Data = inputValues;
-                }
-                else if (!string.IsNullOrEmpty(_settings.InputDataPath))
-                {
-                    memoryStep.Data = File.Exists(_settings.InputDataPath)
-                        ? await File.ReadAllTextAsync(_settings.InputDataPath, cancellationToken)
-                        : _settings.InputDataPath;
-                }
-            }
+            var inputValues = InputDataProvider.LoadInputValuesAsJson(_settings);
 
             var runner = new IntegrationRunner(new IntegrationRunnerOptions
             {
                 Debug = isDebug,
                 UseMockDataForSteps = mockSteps ?? string.Empty,
-                Scenario = scenario
+                Scenario = scenario,
+                InputData = inputValues,
             });
             var result = await runner.RunAsync(definition, cancellationToken);
             if (isDebug && result.DebugData is not null)

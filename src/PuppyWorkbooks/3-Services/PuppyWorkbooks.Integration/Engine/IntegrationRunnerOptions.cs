@@ -33,4 +33,6 @@ public sealed class IntegrationRunnerOptions
     /// The optional name of the mock data scenario to run for input steps.
     /// </summary>
     public string? Scenario { get; set; }
+
+    public object? InputData { get; set; }
 }

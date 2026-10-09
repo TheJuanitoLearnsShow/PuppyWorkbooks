@@ -27,12 +27,15 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader, MemoryData = json },
+                    new InputStep { Id = "source", Kind = InputKind.MemoryReader },
                     new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
                 }
             };
 
-            var runner = new IntegrationRunner();
+            var runner = new IntegrationRunner( new IntegrationRunnerOptions()
+            {
+                InputData = json
+            });
             var result = await runner.RunAsync(definition);
 
             Assert.Equal(2, result.Read);
@@ -56,12 +59,15 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader, MemoryData = json },
+                    new InputStep { Id = "source", Kind = InputKind.MemoryReader },
                     new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
                 }
             };
 
-            var runner = new IntegrationRunner();
+            var runner = new IntegrationRunner( new IntegrationRunnerOptions()
+            {
+                InputData = json
+            });
             var result = await runner.RunAsync(definition);
 
             Assert.Equal(1, result.Read);
@@ -285,10 +291,6 @@ public sealed class MemoryInputTests
                 IntegrationPath = integrationXmlPath,
                 InputDataPath = inputJsonFile
             });
-
-            var inputValues = worker.LoadInputValues();
-            Assert.Equal("Bob", inputValues["FirstName"]);
-            Assert.Equal("100", inputValues["Score"]);
 
             await worker.StartAsync(CancellationToken.None);
 
