@@ -18,6 +18,11 @@ public sealed class XmlOutputProvider : IOutputProvider
         _recordName = string.IsNullOrWhiteSpace(recordElement) ? "Record" : recordElement;
     }
 
+    public XmlOutputProvider(XmlOutputProviderOptions options)
+        : this(options.FilePath, options.XmlRootElement, options.XmlRecordElement)
+    {
+    }
+
     public ValueTask<OutputStatus> WriteAsync(IntegrationRecord record, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -53,41 +53,41 @@ public sealed class FromFieldBindingTests
         Assert.Equal("AuthHeaderField", Assert.Single(httpConfig.Headers).ValueFromField);
 
         var steps = definition.Steps;
-        var csvIn = Assert.IsType<InputStep>(steps[0]);
+        var csvIn = Assert.IsType<CsvInputStep>(steps[0]);
         Assert.Equal("CsvInputPathField", csvIn.FilePathFromField);
 
-        var sqlIn = Assert.IsType<InputStep>(steps[1]);
+        var sqlIn = Assert.IsType<SqlInputStep>(steps[1]);
         Assert.Equal("ConnStrField", sqlIn.ConnectionStringFromField);
         Assert.Equal("QueryField", sqlIn.QueryFromField);
         Assert.Equal("TableNameField", sqlIn.TableNameFromField);
 
-        var httpIn = Assert.IsType<InputStep>(steps[2]);
+        var httpIn = Assert.IsType<HttpInputStep>(steps[2]);
         Assert.Equal("EndpointField", httpIn.EndpointFromField);
         Assert.Equal("JsonPathField", httpIn.JsonPathFromField);
 
-        var jsonIn = Assert.IsType<InputStep>(steps[3]);
+        var jsonIn = Assert.IsType<JsonInputStep>(steps[3]);
         Assert.Equal("JsonInputPathField", jsonIn.FilePathFromField);
         Assert.Equal("JsonPathField", jsonIn.JsonPathFromField);
 
-        var xmlIn = Assert.IsType<InputStep>(steps[4]);
+        var xmlIn = Assert.IsType<XmlInputStep>(steps[4]);
         Assert.Equal("XmlInputPathField", xmlIn.FilePathFromField);
         Assert.Equal("ItemElemField", xmlIn.XmlItemElementFromField);
 
-        var csvOut = Assert.IsType<OutputStep>(steps[5]);
+        var csvOut = Assert.IsType<CsvOutputStep>(steps[5]);
         Assert.Equal("CsvOutputPathField", csvOut.FilePathFromField);
 
-        var sqlOut = Assert.IsType<OutputStep>(steps[6]);
+        var sqlOut = Assert.IsType<SqlOutputStep>(steps[6]);
         Assert.Equal("ConnStrField", sqlOut.ConnectionStringFromField);
         Assert.Equal("TableNameField", sqlOut.TableNameFromField);
         Assert.Equal("QueryField", sqlOut.QueryFromField);
 
-        var httpOut = Assert.IsType<OutputStep>(steps[7]);
+        var httpOut = Assert.IsType<HttpOutputStep>(steps[7]);
         Assert.Equal("EndpointField", httpOut.EndpointFromField);
 
-        var jsonOut = Assert.IsType<OutputStep>(steps[8]);
+        var jsonOut = Assert.IsType<JsonOutputStep>(steps[8]);
         Assert.Equal("JsonOutputPathField", jsonOut.FilePathFromField);
 
-        var xmlOut = Assert.IsType<OutputStep>(steps[9]);
+        var xmlOut = Assert.IsType<XmlOutputStep>(steps[9]);
         Assert.Equal("XmlOutputPathField", xmlOut.FilePathFromField);
         Assert.Equal("RootElemField", xmlOut.XmlRootElementFromField);
         Assert.Equal("RecordElemField", xmlOut.XmlRecordElementFromField);

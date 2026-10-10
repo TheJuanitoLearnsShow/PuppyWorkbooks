@@ -20,6 +20,11 @@ public sealed class HttpOutputProvider : HttpProviderBase, IOutputProvider
         _payloadFormat = payloadFormat;
     }
 
+    public HttpOutputProvider(HttpOutputProviderOptions options, IHttpClientFactory? httpClientFactory = null)
+        : this(options.ResolvedHttpConfiguration ?? throw new InvalidOperationException("HTTP output requires a resolved HTTP configuration."), options.Endpoint, options.HttpMethod, options.PayloadFormat, httpClientFactory)
+    {
+    }
+
     public async ValueTask<OutputStatus> WriteAsync(IntegrationRecord record, CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(_method, _endpoint, CreateContent(record), cancellationToken);

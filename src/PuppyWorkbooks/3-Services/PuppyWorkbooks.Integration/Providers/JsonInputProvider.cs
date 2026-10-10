@@ -26,6 +26,11 @@ public sealed class JsonInputProvider : IInputProvider
         return new JsonInputProvider(() => File.OpenRead(filePath), jsonPath);
     }
 
+    public JsonInputProvider(JsonInputProviderOptions options)
+        : this(() => File.OpenRead(options.FilePath), options.JsonPath)
+    {
+    }
+
     public static JsonInputProvider FromText(string jsonText, string? jsonPath = null)
     {
         return new JsonInputProvider(jsonText, jsonPath);

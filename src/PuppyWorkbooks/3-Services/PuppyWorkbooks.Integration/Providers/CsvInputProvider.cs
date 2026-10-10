@@ -13,6 +13,11 @@ public sealed class CsvInputProvider : IInputProvider
         _readerFactory = () => new StreamReader(path);
     }
 
+    public CsvInputProvider(CsvInputProviderOptions options)
+        : this(options.FilePath)
+    {
+    }
+
     public CsvInputProvider(Func<TextReader> readerFactory)
     {
         _readerFactory = readerFactory;

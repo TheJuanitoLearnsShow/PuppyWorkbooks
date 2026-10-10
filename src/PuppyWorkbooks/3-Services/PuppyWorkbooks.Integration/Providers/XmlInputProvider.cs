@@ -15,6 +15,11 @@ public sealed class XmlInputProvider : IInputProvider
         _itemElement = string.IsNullOrWhiteSpace(itemElement) ? null : itemElement;
     }
 
+    public XmlInputProvider(XmlInputProviderOptions options)
+        : this(options.FilePath, options.XmlItemElement)
+    {
+    }
+
     public XmlInputProvider(Func<Stream> streamFactory, string? itemElement = null)
     {
         _streamFactory = streamFactory;

@@ -19,122 +19,10 @@ public sealed class IntegrationXmlSerializer
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
         ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
-        ResolveSecrets(definition);
+        SecretManager.ResolveSecrets(definition);
         return definition;
     }
 
-    private static void ResolveSecrets(IntegrationDefinition definition)
-    {
-        var secretManager = new SecretManager(definition.SecretManager);
-
-        foreach (var httpConfig in definition.HttpConfigurations)
-        {
-            httpConfig.BaseUrl = secretManager.Resolve(httpConfig.BaseUrl);
-            httpConfig.BaseUrlFromField = secretManager.Resolve(httpConfig.BaseUrlFromField);
-            httpConfig.OAuthClientId = secretManager.Resolve(httpConfig.OAuthClientId);
-            httpConfig.OAuthClientIdFromField = secretManager.Resolve(httpConfig.OAuthClientIdFromField);
-            httpConfig.OAuthClientSecret = secretManager.Resolve(httpConfig.OAuthClientSecret);
-            httpConfig.OAuthClientSecretFromField = secretManager.Resolve(httpConfig.OAuthClientSecretFromField);
-            httpConfig.OAuthScope = secretManager.Resolve(httpConfig.OAuthScope);
-            httpConfig.OAuthScopeFromField = secretManager.Resolve(httpConfig.OAuthScopeFromField);
-            httpConfig.OAuthTokenUrl = secretManager.Resolve(httpConfig.OAuthTokenUrl);
-            httpConfig.OAuthTokenUrlFromField = secretManager.Resolve(httpConfig.OAuthTokenUrlFromField);
-            httpConfig.ClientCertificateThumbprint = secretManager.Resolve(httpConfig.ClientCertificateThumbprint);
-            httpConfig.ClientCertificateThumbprintFromField = secretManager.Resolve(httpConfig.ClientCertificateThumbprintFromField);
-            foreach (var header in httpConfig.Headers)
-            {
-                header.Value = secretManager.Resolve(header.Value);
-                header.ValueFromField = secretManager.Resolve(header.ValueFromField);
-            }
-        }
-
-        ResolveSecretsInSteps(definition.Steps, secretManager);
-    }
-
-    private static void ResolveSecretsInSteps(IEnumerable<IntegrationStep> steps, SecretManager secretManager)
-    {
-        foreach (var step in steps)
-        {
-            switch (step)
-            {
-                case MapStep map:
-                    ResolveSecretsInWorksheet(map.Worksheet, secretManager);
-                    break;
-                case FilterStep filter:
-                    ResolveSecretsInWorksheet(filter.Worksheet, secretManager);
-                    break;
-                case ReduceStep reduce:
-                    ResolveSecretsInWorksheet(reduce.Worksheet, secretManager);
-                    break;
-                case SwitchStep @switch:
-                    ResolveSecretsInWorksheet(@switch.Worksheet, secretManager);
-                    foreach (var branch in @switch.Branches)
-                    {
-                        ResolveSecretsInSteps(branch.Steps, secretManager);
-                    }
-                    break;
-                case InputStep input:
-                    input.FilePath = secretManager.Resolve(input.FilePath);
-                    input.FilePathFromField = secretManager.Resolve(input.FilePathFromField);
-                    input.ConnectionString = secretManager.Resolve(input.ConnectionString);
-                    input.ConnectionStringFromField = secretManager.Resolve(input.ConnectionStringFromField);
-                    input.TableName = secretManager.Resolve(input.TableName);
-                    input.TableNameFromField = secretManager.Resolve(input.TableNameFromField);
-                    input.Query = secretManager.Resolve(input.Query);
-                    input.QueryFromField = secretManager.Resolve(input.QueryFromField);
-                    input.MockCsvFilePath = secretManager.Resolve(input.MockCsvFilePath);
-                    input.MockCsv = secretManager.Resolve(input.MockCsv);
-                    input.MockData = secretManager.Resolve(input.MockData);
-                    input.Endpoint = secretManager.Resolve(input.Endpoint);
-                    input.EndpointFromField = secretManager.Resolve(input.EndpointFromField);
-                    input.HttpMethod = secretManager.Resolve(input.HttpMethod);
-                    input.JsonPath = secretManager.Resolve(input.JsonPath);
-                    input.JsonPathFromField = secretManager.Resolve(input.JsonPathFromField);
-                    input.XmlItemElement = secretManager.Resolve(input.XmlItemElement);
-                    input.XmlItemElementFromField = secretManager.Resolve(input.XmlItemElementFromField);
-                    input.XmlRootElement = secretManager.Resolve(input.XmlRootElement);
-                    input.XmlRootElementFromField = secretManager.Resolve(input.XmlRootElementFromField);
-                    input.XmlRecordElement = secretManager.Resolve(input.XmlRecordElement);
-                    input.XmlRecordElementFromField = secretManager.Resolve(input.XmlRecordElementFromField);
-                    foreach (var dataSource in input.MockDataSources.Values)
-                    {
-                        dataSource.FilePath = secretManager.Resolve(dataSource.FilePath);
-                        dataSource.Content = secretManager.Resolve(dataSource.Content);
-                    }
-                    break;
-                case OutputStep output:
-                    output.FilePath = secretManager.Resolve(output.FilePath);
-                    output.FilePathFromField = secretManager.Resolve(output.FilePathFromField);
-                    output.ConnectionString = secretManager.Resolve(output.ConnectionString);
-                    output.ConnectionStringFromField = secretManager.Resolve(output.ConnectionStringFromField);
-                    output.TableName = secretManager.Resolve(output.TableName);
-                    output.TableNameFromField = secretManager.Resolve(output.TableNameFromField);
-                    output.Query = secretManager.Resolve(output.Query);
-                    output.QueryFromField = secretManager.Resolve(output.QueryFromField);
-                    output.Endpoint = secretManager.Resolve(output.Endpoint);
-                    output.EndpointFromField = secretManager.Resolve(output.EndpointFromField);
-                    output.HttpMethod = secretManager.Resolve(output.HttpMethod);
-                    output.JsonPath = secretManager.Resolve(output.JsonPath);
-                    output.JsonPathFromField = secretManager.Resolve(output.JsonPathFromField);
-                    output.XmlItemElement = secretManager.Resolve(output.XmlItemElement);
-                    output.XmlItemElementFromField = secretManager.Resolve(output.XmlItemElementFromField);
-                    output.XmlRootElement = secretManager.Resolve(output.XmlRootElement);
-                    output.XmlRootElementFromField = secretManager.Resolve(output.XmlRootElementFromField);
-                    output.XmlRecordElement = secretManager.Resolve(output.XmlRecordElement);
-                    output.XmlRecordElementFromField = secretManager.Resolve(output.XmlRecordElementFromField);
-                    break;
-            }
-        }
-    }
-
-    private static void ResolveSecretsInWorksheet(WorkSheet? worksheet, SecretManager secretManager)
-    {
-        if (worksheet == null) return;
-        foreach (var cell in worksheet.Cells)
-        {
-            cell.Formula = secretManager.Resolve(cell.Formula);
-        }
-    }
 
     private static void ResolveHttpConfigurations(IntegrationDefinition definition)
     {
@@ -146,15 +34,15 @@ public sealed class IntegrationXmlSerializer
         {
             var configurationName = step switch
             {
-                InputStep source => source.HttpConfiguration,
-                OutputStep sink => sink.HttpConfiguration,
+                HttpInputProviderOptions source => source.HttpConfiguration,
+                HttpOutputProviderOptions sink => sink.HttpConfiguration,
                 _ => null
             };
             if (string.IsNullOrWhiteSpace(configurationName)) continue;
             if (!configurations.TryGetValue(configurationName, out var configuration))
                 throw new InvalidOperationException($"HTTP configuration '{configurationName}' was not found.");
-            if (step is InputStep inputStep) inputStep.ResolvedHttpConfiguration = configuration;
-            if (step is OutputStep outputStep) outputStep.ResolvedHttpConfiguration = configuration;
+            if (step is HttpInputProviderOptions inputStep) inputStep.ResolvedHttpConfiguration = configuration;
+            if (step is HttpOutputProviderOptions outputStep) outputStep.ResolvedHttpConfiguration = configuration;
         }
     }
 
@@ -177,18 +65,33 @@ public sealed class IntegrationXmlSerializer
         var stepElements = document.Root?.Element("Steps")?.Elements() ?? [];
         foreach (var element in stepElements)
         {
-            if (InputKindXmlNames.TryParseElementName(element.Name.LocalName, out var inputKind))
+            NormalizeStepElement(element);
+        }
+
+        return document.ToString(SaveOptions.DisableFormatting);
+
+        static void NormalizeStepElement(XElement element)
+        {
+            if (element.Name.LocalName.Equals("IOInput", StringComparison.OrdinalIgnoreCase))
             {
-                element.Name = element.Name.Namespace + "IOInput";
-                element.SetAttributeValue("Kind", inputKind);
+                var kindAttr = element.Attribute("Kind")?.Value;
+                if (Enum.TryParse<InputKind>(kindAttr, out var kind))
+                {
+                    element.Name = element.Name.Namespace + kind.GetElementName();
+                    element.Attribute("Kind")?.Remove();
+                }
             }
-            else if (OutputKindXmlNames.TryParseElementName(element.Name.LocalName, out var outputKind))
+            else if (element.Name.LocalName.Equals("IOOutput", StringComparison.OrdinalIgnoreCase))
             {
-                element.Name = element.Name.Namespace + "IOOutput";
-                element.SetAttributeValue("Kind", outputKind);
+                var kindAttr = element.Attribute("Kind")?.Value;
+                if (Enum.TryParse<OutputKind>(kindAttr, out var kind))
+                {
+                    element.Name = element.Name.Namespace + kind.GetElementName();
+                    element.Attribute("Kind")?.Remove();
+                }
             }
 
-            if (element.Name.LocalName == "IOOutput" || OutputKindXmlNames.TryParseElementName(element.Name.LocalName, out _))
+            if (element.Name.LocalName is "SqlOutput" or "IOOutput" || OutputKindXmlNames.TryParseElementName(element.Name.LocalName, out _))
             {
                 foreach (var childName in new[] { "TableName", "Query", "TableNameFromField", "QueryFromField" })
                 {
@@ -198,9 +101,18 @@ public sealed class IntegrationXmlSerializer
                     child.Remove();
                 }
             }
-        }
 
-        return document.ToString(SaveOptions.DisableFormatting);
+            if (element.Name.LocalName.Equals("Switch", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var branch in element.Elements("Branch"))
+                {
+                    foreach (var child in branch.Elements())
+                    {
+                        NormalizeStepElement(child);
+                    }
+                }
+            }
+        }
     }
 
     private static string UseProviderElementNames(string xml)

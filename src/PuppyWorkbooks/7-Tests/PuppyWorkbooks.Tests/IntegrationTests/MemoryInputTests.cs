@@ -27,8 +27,8 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader },
-                    new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
+                    new MemoryInputStep { Id = "source" },
+                    new JsonOutputStep { Id = "sink", FilePath = tempFile }
                 }
             };
 
@@ -59,8 +59,8 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader },
-                    new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
+                    new MemoryInputStep { Id = "source" },
+                    new JsonOutputStep { Id = "sink", FilePath = tempFile }
                 }
             };
 
@@ -96,8 +96,8 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader, Data = orders },
-                    new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
+                    new MemoryInputStep { Id = "source", Data = orders },
+                    new JsonOutputStep { Id = "sink", FilePath = tempFile }
                 }
             };
 
@@ -125,8 +125,8 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader, Data = anonymous },
-                    new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
+                    new MemoryInputStep { Id = "source", Data = anonymous },
+                    new JsonOutputStep { Id = "sink", FilePath = tempFile }
                 }
             };
 
@@ -161,8 +161,8 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader, Data = new[] { powerFxRecord1, powerFxRecord2 } },
-                    new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
+                    new MemoryInputStep { Id = "source", Data = new[] { powerFxRecord1, powerFxRecord2 } },
+                    new JsonOutputStep { Id = "sink", FilePath = tempFile }
                 }
             };
 
@@ -220,7 +220,7 @@ public sealed class MemoryInputTests
                 Name = "Test",
                 Steps = new List<IntegrationStep>
                 {
-                    new InputStep { Id = "source", Kind = InputKind.MemoryReader, Data = data },
+                    new MemoryInputStep { Id = "source", Data = data },
                     new FilterStep
                     {
                         Id = "filter",
@@ -247,7 +247,7 @@ public sealed class MemoryInputTests
                             }
                         }
                     },
-                    new OutputStep { Id = "sink", Kind = OutputKind.JsonWriter, FilePath = tempFile }
+                    new JsonOutputStep { Id = "sink", FilePath = tempFile }
                 }
             };
 

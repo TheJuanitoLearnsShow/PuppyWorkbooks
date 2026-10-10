@@ -209,8 +209,8 @@ public sealed class IntegrationRunner
         var inputData = _options.InputData;
         if (inputData is not null)
         {
-            var inputStep = definition.Steps.OfType<InputStep>().FirstOrDefault();
-            if (inputStep is not null && inputStep.Kind == InputKind.MemoryReader)
+            var inputStep = definition.Steps.OfType<MemoryInputProviderOptions>().FirstOrDefault();
+            if (inputStep is not null)
             {
                 inputStep.Data = inputData;
             }
@@ -228,17 +228,17 @@ public sealed class IntegrationRunner
             return _mockManager.CreateMockInput(step);
         }
 
-        return step.Kind switch
+        return step switch
         {
-            InputKind.CSVReader when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvInputProvider(step.FilePath),
-            InputKind.JsonReader when !string.IsNullOrWhiteSpace(step.FilePath) => JsonInputProvider.FromFile(step.FilePath, step.JsonPath),
-            InputKind.XmlReader when !string.IsNullOrWhiteSpace(step.FilePath) => new XmlInputProvider(step.FilePath, step.XmlItemElement),
-            InputKind.FileSystemReader when !string.IsNullOrWhiteSpace(step.FilePath) => new FileSystemInputProvider(step.FilePath, step.AddFileSizeField, step.AddCreatedOnDate, step.AddLastModifiedDateField),
-            InputKind.SqlReader when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(step.ConnectionString), step.Query),
-            InputKind.HttpReader when step.ResolvedHttpConfiguration is not null => new HttpInputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.JsonPath, _options.HttpClientFactory),
-            InputKind.MemoryReader => new MemoryInputProvider(step.Data),
-            InputKind.SqlReader => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
-            InputKind.HttpReader => throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."),
+            CsvInputProviderOptions csv when !string.IsNullOrWhiteSpace(csv.FilePath) => new CsvInputProvider(csv.FilePath),
+            JsonInputProviderOptions json when !string.IsNullOrWhiteSpace(json.FilePath) => JsonInputProvider.FromFile(json.FilePath, json.JsonPath),
+            XmlInputProviderOptions xml when !string.IsNullOrWhiteSpace(xml.FilePath) => new XmlInputProvider(xml.FilePath, xml.XmlItemElement),
+            FileSystemInputProviderOptions fs when !string.IsNullOrWhiteSpace(fs.FilePath) => new FileSystemInputProvider(fs.FilePath, fs.AddFileSizeField, fs.AddCreatedOnDate, fs.AddLastModifiedDateField),
+            SqlInputProviderOptions sql when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(sql.ConnectionString), sql.Query),
+            HttpInputProviderOptions http when http.ResolvedHttpConfiguration is not null => new HttpInputProvider(http.ResolvedHttpConfiguration, http.Endpoint, http.HttpMethod, http.JsonPath, _options.HttpClientFactory),
+            MemoryInputProviderOptions mem => new MemoryInputProvider(mem.Data),
+            SqlInputProviderOptions => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
+            HttpInputProviderOptions => throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."),
             _ => throw new InvalidOperationException("Input provider configuration is missing or unsupported.")
         };
     }
@@ -279,39 +279,65 @@ public sealed class IntegrationRunner
 
     private InputStep BindInputStep(InputStep step, IntegrationRecord? inputRecord)
     {
-        var bound = new InputStep
+        InputStep bound = step switch
         {
-            Id = step.Id,
-            Kind = step.Kind,
-            FilePath = ResolveFieldOrValue(step.FilePath, step.FilePathFromField, inputRecord),
-            FilePathFromField = step.FilePathFromField,
-            ConnectionString = ResolveFieldOrValue(step.ConnectionString, step.ConnectionStringFromField, inputRecord),
-            ConnectionStringFromField = step.ConnectionStringFromField,
-            TableName = ResolveFieldOrValue(step.TableName, step.TableNameFromField, inputRecord),
-            TableNameFromField = step.TableNameFromField,
-            Query = ResolveFieldOrValue(step.Query, step.QueryFromField, inputRecord),
-            QueryFromField = step.QueryFromField,
-            Data = step.Data,
-            MockCsvFilePath = ResolveValue(step.MockCsvFilePath, inputRecord),
-            MockCsv = ResolveValue(step.MockCsv, inputRecord),
-            MockData = ResolveValue(step.MockData, inputRecord),
-            HttpConfiguration = step.HttpConfiguration,
-            Endpoint = ResolveFieldOrValue(step.Endpoint, step.EndpointFromField, inputRecord),
-            EndpointFromField = step.EndpointFromField,
-            HttpMethod = ResolveValue(step.HttpMethod, inputRecord),
-            JsonPath = ResolveFieldOrValue(step.JsonPath, step.JsonPathFromField, inputRecord),
-            JsonPathFromField = step.JsonPathFromField,
-            XmlItemElement = ResolveFieldOrValue(step.XmlItemElement, step.XmlItemElementFromField, inputRecord),
-            XmlItemElementFromField = step.XmlItemElementFromField,
-            XmlRootElement = ResolveFieldOrValue(step.XmlRootElement, step.XmlRootElementFromField, inputRecord),
-            XmlRootElementFromField = step.XmlRootElementFromField,
-            XmlRecordElement = ResolveFieldOrValue(step.XmlRecordElement, step.XmlRecordElementFromField, inputRecord),
-            XmlRecordElementFromField = step.XmlRecordElementFromField,
-            AddFileSizeField = step.AddFileSizeField,
-            AddCreatedOnDate = step.AddCreatedOnDate,
-            AddLastModifiedDateField = step.AddLastModifiedDateField,
-            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, inputRecord)
+            CsvInputProviderOptions csv => new CsvInputStep
+            {
+                FilePath = ResolveFieldOrValue(csv.FilePath, csv.FilePathFromField, inputRecord),
+                FilePathFromField = csv.FilePathFromField
+            },
+            SqlInputProviderOptions sql => new SqlInputStep
+            {
+                ConnectionString = ResolveFieldOrValue(sql.ConnectionString, sql.ConnectionStringFromField, inputRecord),
+                ConnectionStringFromField = sql.ConnectionStringFromField,
+                TableName = ResolveFieldOrValue(sql.TableName, sql.TableNameFromField, inputRecord),
+                TableNameFromField = sql.TableNameFromField,
+                Query = ResolveFieldOrValue(sql.Query, sql.QueryFromField, inputRecord),
+                QueryFromField = sql.QueryFromField
+            },
+            HttpInputProviderOptions http => new HttpInputStep
+            {
+                HttpConfiguration = http.HttpConfiguration,
+                Endpoint = ResolveFieldOrValue(http.Endpoint, http.EndpointFromField, inputRecord),
+                EndpointFromField = http.EndpointFromField,
+                HttpMethod = ResolveValue(http.HttpMethod, inputRecord),
+                JsonPath = ResolveFieldOrValue(http.JsonPath, http.JsonPathFromField, inputRecord),
+                JsonPathFromField = http.JsonPathFromField,
+                ResolvedHttpConfiguration = BindHttpConfiguration(http.ResolvedHttpConfiguration, inputRecord)
+            },
+            JsonInputProviderOptions json => new JsonInputStep
+            {
+                FilePath = ResolveFieldOrValue(json.FilePath, json.FilePathFromField, inputRecord),
+                FilePathFromField = json.FilePathFromField,
+                JsonPath = ResolveFieldOrValue(json.JsonPath, json.JsonPathFromField, inputRecord),
+                JsonPathFromField = json.JsonPathFromField
+            },
+            XmlInputProviderOptions xml => new XmlInputStep
+            {
+                FilePath = ResolveFieldOrValue(xml.FilePath, xml.FilePathFromField, inputRecord),
+                FilePathFromField = xml.FilePathFromField,
+                XmlItemElement = ResolveFieldOrValue(xml.XmlItemElement, xml.XmlItemElementFromField, inputRecord),
+                XmlItemElementFromField = xml.XmlItemElementFromField
+            },
+            FileSystemInputProviderOptions fs => new FileSystemInputStep
+            {
+                FilePath = ResolveFieldOrValue(fs.FilePath, fs.FilePathFromField, inputRecord),
+                FilePathFromField = fs.FilePathFromField,
+                AddFileSizeField = fs.AddFileSizeField,
+                AddCreatedOnDate = fs.AddCreatedOnDate,
+                AddLastModifiedDateField = fs.AddLastModifiedDateField
+            },
+            MemoryInputProviderOptions mem => new MemoryInputStep
+            {
+                Data = mem.Data
+            },
+            _ => throw new InvalidOperationException($"Unsupported input step type: {step.GetType().Name}")
         };
+
+        bound.Id = step.Id;
+        bound.MockCsvFilePath = ResolveValue(step.MockCsvFilePath, inputRecord);
+        bound.MockCsv = ResolveValue(step.MockCsv, inputRecord);
+        bound.MockData = ResolveValue(step.MockData, inputRecord);
 
         foreach (var (name, source) in step.MockDataSources)
         {
@@ -328,33 +354,50 @@ public sealed class IntegrationRunner
 
     private OutputStep BindOutputStep(OutputStep step, IntegrationRecord? inputRecord)
     {
-        return new OutputStep
+        OutputStep bound = step switch
         {
-            Id = step.Id,
-            Kind = step.Kind,
-            FilePath = ResolveFieldOrValue(step.FilePath, step.FilePathFromField, inputRecord),
-            FilePathFromField = step.FilePathFromField,
-            ConnectionString = ResolveFieldOrValue(step.ConnectionString, step.ConnectionStringFromField, inputRecord),
-            ConnectionStringFromField = step.ConnectionStringFromField,
-            TableName = ResolveFieldOrValue(step.TableName, step.TableNameFromField, inputRecord),
-            TableNameFromField = step.TableNameFromField,
-            Query = ResolveFieldOrValue(step.Query, step.QueryFromField, inputRecord),
-            QueryFromField = step.QueryFromField,
-            HttpConfiguration = step.HttpConfiguration,
-            Endpoint = ResolveFieldOrValue(step.Endpoint, step.EndpointFromField, inputRecord),
-            EndpointFromField = step.EndpointFromField,
-            HttpMethod = ResolveValue(step.HttpMethod, inputRecord),
-            PayloadFormat = step.PayloadFormat,
-            JsonPath = ResolveFieldOrValue(step.JsonPath, step.JsonPathFromField, inputRecord),
-            JsonPathFromField = step.JsonPathFromField,
-            XmlItemElement = ResolveFieldOrValue(step.XmlItemElement, step.XmlItemElementFromField, inputRecord),
-            XmlItemElementFromField = step.XmlItemElementFromField,
-            XmlRootElement = ResolveFieldOrValue(step.XmlRootElement, step.XmlRootElementFromField, inputRecord),
-            XmlRootElementFromField = step.XmlRootElementFromField,
-            XmlRecordElement = ResolveFieldOrValue(step.XmlRecordElement, step.XmlRecordElementFromField, inputRecord),
-            XmlRecordElementFromField = step.XmlRecordElementFromField,
-            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, inputRecord)
+            CsvOutputProviderOptions csv => new CsvOutputStep
+            {
+                FilePath = ResolveFieldOrValue(csv.FilePath, csv.FilePathFromField, inputRecord),
+                FilePathFromField = csv.FilePathFromField
+            },
+            SqlOutputProviderOptions sql => new SqlOutputStep
+            {
+                ConnectionString = ResolveFieldOrValue(sql.ConnectionString, sql.ConnectionStringFromField, inputRecord),
+                ConnectionStringFromField = sql.ConnectionStringFromField,
+                TableName = ResolveFieldOrValue(sql.TableName, sql.TableNameFromField, inputRecord),
+                TableNameFromField = sql.TableNameFromField,
+                Query = ResolveFieldOrValue(sql.Query, sql.QueryFromField, inputRecord),
+                QueryFromField = sql.QueryFromField
+            },
+            HttpOutputProviderOptions http => new HttpOutputStep
+            {
+                HttpConfiguration = http.HttpConfiguration,
+                Endpoint = ResolveFieldOrValue(http.Endpoint, http.EndpointFromField, inputRecord),
+                EndpointFromField = http.EndpointFromField,
+                HttpMethod = ResolveValue(http.HttpMethod, inputRecord),
+                PayloadFormat = http.PayloadFormat,
+                ResolvedHttpConfiguration = BindHttpConfiguration(http.ResolvedHttpConfiguration, inputRecord)
+            },
+            JsonOutputProviderOptions json => new JsonOutputStep
+            {
+                FilePath = ResolveFieldOrValue(json.FilePath, json.FilePathFromField, inputRecord),
+                FilePathFromField = json.FilePathFromField
+            },
+            XmlOutputProviderOptions xml => new XmlOutputStep
+            {
+                FilePath = ResolveFieldOrValue(xml.FilePath, xml.FilePathFromField, inputRecord),
+                FilePathFromField = xml.FilePathFromField,
+                XmlRootElement = ResolveFieldOrValue(xml.XmlRootElement, xml.XmlRootElementFromField, inputRecord),
+                XmlRootElementFromField = xml.XmlRootElementFromField,
+                XmlRecordElement = ResolveFieldOrValue(xml.XmlRecordElement, xml.XmlRecordElementFromField, inputRecord),
+                XmlRecordElementFromField = xml.XmlRecordElementFromField
+            },
+            _ => throw new InvalidOperationException($"Unsupported output step type: {step.GetType().Name}")
         };
+
+        bound.Id = step.Id;
+        return bound;
     }
 
     private HttpProviderSettings? BindHttpConfiguration(HttpProviderSettings? settings, IntegrationRecord? inputRecord)
@@ -386,13 +429,13 @@ public sealed class IntegrationRunner
         };
     }
 
-    private static string GetOutputCacheKey(OutputStep step) => step.Kind switch
+    private static string GetOutputCacheKey(OutputStep step) => step switch
     {
-        OutputKind.CSVWriter => $"csv:{step.Id}:{step.FilePath}",
-        OutputKind.JsonWriter => $"json:{step.Id}:{step.FilePath}",
-        OutputKind.XmlWriter => $"xml:{step.Id}:{step.FilePath}:{step.XmlRootElement}:{step.XmlRecordElement}",
-        OutputKind.SqlWriter => $"sql:{step.Id}:{step.ConnectionString}:{step.TableName}:{step.Query}",
-        OutputKind.HttpWriter => $"http:{step.Id}:{step.Endpoint}:{step.HttpMethod}:{step.PayloadFormat}:{step.ResolvedHttpConfiguration?.BaseUrl}:{step.ResolvedHttpConfiguration?.OAuthClientId}:{step.ResolvedHttpConfiguration?.OAuthTokenUrl}:{string.Join(";", step.ResolvedHttpConfiguration?.Headers.Select(h => $"{h.Name}={h.Value}") ?? [])}",
+        CsvOutputProviderOptions csv => $"csv:{csv.Id}:{csv.FilePath}",
+        JsonOutputProviderOptions json => $"json:{json.Id}:{json.FilePath}",
+        XmlOutputProviderOptions xml => $"xml:{xml.Id}:{xml.FilePath}:{xml.XmlRootElement}:{xml.XmlRecordElement}",
+        SqlOutputProviderOptions sql => $"sql:{sql.Id}:{sql.ConnectionString}:{sql.TableName}:{sql.Query}",
+        HttpOutputProviderOptions http => $"http:{http.Id}:{http.Endpoint}:{http.HttpMethod}:{http.PayloadFormat}:{http.ResolvedHttpConfiguration?.BaseUrl}:{http.ResolvedHttpConfiguration?.OAuthClientId}:{http.ResolvedHttpConfiguration?.OAuthTokenUrl}:{string.Join(";", http.ResolvedHttpConfiguration?.Headers.Select(h => $"{h.Name}={h.Value}") ?? [])}",
         _ => $"{step.Kind}:{step.Id}"
     };
 
@@ -421,15 +464,15 @@ public sealed class IntegrationRunner
             return new MockOutputProvider();
         }
 
-        return step.Kind switch
+        return step switch
         {
-            OutputKind.CSVWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new CsvOutputProvider(step.FilePath),
-            OutputKind.JsonWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new JsonOutputProvider(step.FilePath),
-            OutputKind.XmlWriter when !string.IsNullOrWhiteSpace(step.FilePath) => new XmlOutputProvider(step.FilePath, step.XmlRootElement, step.XmlRecordElement),
-            OutputKind.SqlWriter when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(step.ConnectionString), step.TableName, step.Query),
-            OutputKind.HttpWriter when step.ResolvedHttpConfiguration is not null => new HttpOutputProvider(step.ResolvedHttpConfiguration, step.Endpoint, step.HttpMethod, step.PayloadFormat, _options.HttpClientFactory),
-            OutputKind.SqlWriter => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration."),
-            OutputKind.HttpWriter => throw new InvalidOperationException("HTTP output requires a resolved HTTP configuration."),
+            CsvOutputProviderOptions csv when !string.IsNullOrWhiteSpace(csv.FilePath) => new CsvOutputProvider(csv.FilePath),
+            JsonOutputProviderOptions json when !string.IsNullOrWhiteSpace(json.FilePath) => new JsonOutputProvider(json.FilePath),
+            XmlOutputProviderOptions xml when !string.IsNullOrWhiteSpace(xml.FilePath) => new XmlOutputProvider(xml.FilePath, xml.XmlRootElement, xml.XmlRecordElement),
+            SqlOutputProviderOptions sql when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(sql.ConnectionString), sql.TableName, sql.Query),
+            HttpOutputProviderOptions http when http.ResolvedHttpConfiguration is not null => new HttpOutputProvider(http.ResolvedHttpConfiguration, http.Endpoint, http.HttpMethod, http.PayloadFormat, _options.HttpClientFactory),
+            SqlOutputProviderOptions => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration."),
+            HttpOutputProviderOptions => throw new InvalidOperationException("HTTP output requires a resolved HTTP configuration."),
             _ => throw new InvalidOperationException("Output provider configuration is missing or unsupported.")
         };
     }

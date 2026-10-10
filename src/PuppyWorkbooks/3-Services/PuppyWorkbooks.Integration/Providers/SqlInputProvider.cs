@@ -14,6 +14,11 @@ public sealed class SqlInputProvider : IInputProvider
         _connection = connection;
         _query = query;
     }
+
+    public SqlInputProvider(DbConnection connection, SqlInputProviderOptions options)
+        : this(connection, options.Query)
+    {
+    }
     public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (_connection.State != ConnectionState.Open)

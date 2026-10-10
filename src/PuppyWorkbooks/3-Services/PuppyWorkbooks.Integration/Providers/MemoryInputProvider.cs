@@ -14,6 +14,11 @@ public sealed class MemoryInputProvider : IInputProvider
         _data = data;
     }
 
+    public MemoryInputProvider(MemoryInputProviderOptions options)
+        : this(options.Data)
+    {
+    }
+
     public MemoryInputProvider(string? jsonData)
     {
         _data = jsonData;

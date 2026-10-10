@@ -18,6 +18,11 @@ public sealed class HttpInputProvider : HttpProviderBase, IInputProvider
         _jsonPath = jsonPath;
     }
 
+    public HttpInputProvider(HttpInputProviderOptions options, IHttpClientFactory? httpClientFactory = null)
+        : this(options.ResolvedHttpConfiguration ?? throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."), options.Endpoint, options.HttpMethod, options.JsonPath, httpClientFactory)
+    {
+    }
+
     public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(_method, _endpoint, null, cancellationToken);

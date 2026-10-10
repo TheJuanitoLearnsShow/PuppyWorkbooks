@@ -80,7 +80,7 @@ public sealed class IntegrationTests
         Assert.Equal("Item", (string?)steps[4].Attribute("XmlRecordElement"));
 
         var legacy = serializer.DeserializeFile(Path.Combine(sampleDirectory, "LegacySqlOutput.xml"));
-        var legacyOutput = Assert.IsType<OutputStep>(legacy.Steps.Single());
+        var legacyOutput = Assert.IsType<SqlOutputStep>(legacy.Steps.Single());
         Assert.Equal("LegacyResults", legacyOutput.TableName);
         Assert.Equal("SELECT 1", legacyOutput.Query);
     }
@@ -288,7 +288,7 @@ public sealed class IntegrationTests
         var definition = new IntegrationDefinition
         {
             Steps = [
-                new InputStep { Kind = InputKind.CSVReader, FilePath = "dummy.csv" },
+                new CsvInputStep { FilePath = "dummy.csv" },
                 switchStep
             ]
         };

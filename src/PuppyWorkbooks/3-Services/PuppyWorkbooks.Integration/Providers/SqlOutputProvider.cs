@@ -16,6 +16,11 @@ public sealed class SqlOutputProvider : IOutputProvider
         _tableName = tableName;
         _query = query;
     }
+
+    public SqlOutputProvider(DbConnection connection, SqlOutputProviderOptions options)
+        : this(connection, options.TableName, options.Query)
+    {
+    }
     public async ValueTask<OutputStatus> WriteAsync(IntegrationRecord record, CancellationToken cancellationToken = default)
     {
         if (_connection.State != ConnectionState.Open)

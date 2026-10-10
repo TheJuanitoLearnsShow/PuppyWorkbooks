@@ -33,17 +33,17 @@ public sealed class MockManager
             throw new InvalidOperationException($"Mock data was requested for input step '{step.Id}', but no mock CSV data or file path was defined in the step.");
         }
 
-        if (step.Kind == InputKind.HttpReader)
+        if (step is HttpInputProviderOptions httpStep)
         {
             if (!string.IsNullOrWhiteSpace(mockSource.FilePath))
             {
-                return JsonInputProvider.FromFile(mockSource.FilePath, step.JsonPath);
+                return JsonInputProvider.FromFile(mockSource.FilePath, httpStep.JsonPath);
             }
 
             var inlineJson = !string.IsNullOrWhiteSpace(mockSource.Content) ? mockSource.Content : mockSource.RawText;
             if (!string.IsNullOrWhiteSpace(inlineJson))
             {
-                return JsonInputProvider.FromText(inlineJson.Trim(), step.JsonPath);
+                return JsonInputProvider.FromText(inlineJson.Trim(), httpStep.JsonPath);
             }
 
             throw new InvalidOperationException($"Mock data was requested for HTTP input step '{step.Id}', but no mock JSON data or file path was defined in the step.");
