@@ -25,13 +25,19 @@
     </xs:sequence>
     <xs:attribute name="Name" type="xs:string" use="required" />
     <xs:attribute name="BaseUrl" type="xs:string" use="optional" />
+    <xs:attribute name="BaseUrlFromField" type="xs:string" use="optional" />
     <xs:attribute name="HttpClientName" type="xs:string" use="optional" />
     <xs:attribute name="OAuthClientId" type="xs:string" use="optional" />
+    <xs:attribute name="OAuthClientIdFromField" type="xs:string" use="optional" />
     <xs:attribute name="OAuthClientSecret" type="xs:string" use="optional" />
+    <xs:attribute name="OAuthClientSecretFromField" type="xs:string" use="optional" />
     <xs:attribute name="OAuthScope" type="xs:string" use="optional" />
+    <xs:attribute name="OAuthScopeFromField" type="xs:string" use="optional" />
     <xs:attribute name="OAuthTokenUrl" type="xs:string" use="optional" />
+    <xs:attribute name="OAuthTokenUrlFromField" type="xs:string" use="optional" />
     <xs:attribute name="OAuthHttpClientName" type="xs:string" use="optional" />
     <xs:attribute name="ClientCertificateThumbprint" type="xs:string" use="optional" />
+    <xs:attribute name="ClientCertificateThumbprintFromField" type="xs:string" use="optional" />
   </xs:complexType>
 
   <xs:complexType name="HttpHeadersType">
@@ -42,7 +48,8 @@
 
   <xs:complexType name="HttpHeaderType">
     <xs:attribute name="Name" type="xs:string" use="required" />
-    <xs:attribute name="Value" type="xs:string" use="required" />
+    <xs:attribute name="Value" type="xs:string" use="optional" />
+    <xs:attribute name="ValueFromField" type="xs:string" use="optional" />
   </xs:complexType>
 
   <!-- Secret Management -->
@@ -221,6 +228,7 @@
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="Worksheet" type="WorksheetStepType" />
       <xs:element name="Query" type="xs:string" />
+      <xs:element name="QueryFromField" type="xs:string" />
       <xs:element name="MockCsv" type="MockDataType" />
       <xs:element name="MockData" type="MockDataType" />
       <xs:element name="MockDataSources" type="MockDataSourcesType" />
@@ -229,15 +237,26 @@
     <xs:attribute name="Id" type="xs:string" use="optional" />
     <xs:attribute name="Kind" type="InputKindType" use="optional" />
     <xs:attribute name="FilePath" type="xs:string" use="optional" />
+    <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
     <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
+    <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
     <xs:attribute name="TableName" type="xs:string" use="optional" />
+    <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
     <xs:attribute name="Query" type="xs:string" use="optional" />
+    <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
     <xs:attribute name="MockCsvFilePath" type="xs:string" use="optional" />
     <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
     <xs:attribute name="Endpoint" type="xs:string" use="optional" />
+    <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
     <xs:attribute name="HttpMethod" type="xs:string" use="optional" default="GET" />
     <xs:attribute name="JsonPath" type="xs:string" use="optional" default="$" />
+    <xs:attribute name="JsonPathFromField" type="xs:string" use="optional" />
     <xs:attribute name="XmlItemElement" type="xs:string" use="optional" />
+    <xs:attribute name="XmlItemElementFromField" type="xs:string" use="optional" />
+    <xs:attribute name="XmlRootElement" type="xs:string" use="optional" />
+    <xs:attribute name="XmlRootElementFromField" type="xs:string" use="optional" />
+    <xs:attribute name="XmlRecordElement" type="xs:string" use="optional" />
+    <xs:attribute name="XmlRecordElementFromField" type="xs:string" use="optional" />
   </xs:complexType>
 
   <xs:complexType name="InputProviderCommonType">
@@ -263,6 +282,7 @@
     <xs:complexContent>
       <xs:extension base="InputProviderCommonType">
         <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -270,11 +290,16 @@
   <xs:complexType name="SqlInputStepType">
     <xs:complexContent>
       <xs:extension base="InputProviderCommonType">
-        <xs:sequence>
-          <xs:element name="Query" type="xs:string" minOccurs="0" />
-        </xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="Query" type="xs:string" />
+          <xs:element name="QueryFromField" type="xs:string" />
+        </xs:choice>
         <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
+        <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
+        <xs:attribute name="TableName" type="xs:string" use="optional" />
+        <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
         <xs:attribute name="Query" type="xs:string" use="optional" />
+        <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -284,8 +309,10 @@
       <xs:extension base="InputProviderCommonType">
         <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
         <xs:attribute name="Endpoint" type="xs:string" use="optional" />
+        <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
         <xs:attribute name="HttpMethod" type="xs:string" use="optional" default="GET" />
         <xs:attribute name="JsonPath" type="xs:string" use="optional" default="$" />
+        <xs:attribute name="JsonPathFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -294,7 +321,9 @@
     <xs:complexContent>
       <xs:extension base="InputProviderCommonType">
         <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
         <xs:attribute name="JsonPath" type="xs:string" use="optional" default="$" />
+        <xs:attribute name="JsonPathFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -303,7 +332,9 @@
     <xs:complexContent>
       <xs:extension base="InputProviderCommonType">
         <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
         <xs:attribute name="XmlItemElement" type="xs:string" use="optional" />
+        <xs:attribute name="XmlItemElementFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -385,20 +416,33 @@
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="Worksheet" type="WorksheetStepType" />
       <xs:element name="TableName" type="xs:string" />
+      <xs:element name="TableNameFromField" type="xs:string" />
       <xs:element name="Query" type="xs:string" />
+      <xs:element name="QueryFromField" type="xs:string" />
     </xs:choice>
     <xs:attribute name="Id" type="xs:string" use="optional" />
     <xs:attribute name="Kind" type="OutputKindType" use="optional" />
     <xs:attribute name="FilePath" type="xs:string" use="optional" />
+    <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
     <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
+    <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
     <xs:attribute name="TableName" type="xs:string" use="optional" />
+    <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
     <xs:attribute name="Query" type="xs:string" use="optional" />
+    <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
     <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
     <xs:attribute name="Endpoint" type="xs:string" use="optional" />
+    <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
     <xs:attribute name="HttpMethod" type="xs:string" use="optional" default="POST" />
     <xs:attribute name="PayloadFormat" type="HttpPayloadFormatType" use="optional" default="Json" />
+    <xs:attribute name="JsonPath" type="xs:string" use="optional" />
+    <xs:attribute name="JsonPathFromField" type="xs:string" use="optional" />
+    <xs:attribute name="XmlItemElement" type="xs:string" use="optional" />
+    <xs:attribute name="XmlItemElementFromField" type="xs:string" use="optional" />
     <xs:attribute name="XmlRootElement" type="xs:string" use="optional" />
+    <xs:attribute name="XmlRootElementFromField" type="xs:string" use="optional" />
     <xs:attribute name="XmlRecordElement" type="xs:string" use="optional" />
+    <xs:attribute name="XmlRecordElementFromField" type="xs:string" use="optional" />
   </xs:complexType>
 
   <xs:complexType name="OutputProviderCommonType">
@@ -409,6 +453,7 @@
     <xs:complexContent>
       <xs:extension base="OutputProviderCommonType">
         <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -418,11 +463,16 @@
       <xs:extension base="OutputProviderCommonType">
         <xs:choice minOccurs="0" maxOccurs="unbounded">
           <xs:element name="TableName" type="xs:string" />
+          <xs:element name="TableNameFromField" type="xs:string" />
           <xs:element name="Query" type="xs:string" />
+          <xs:element name="QueryFromField" type="xs:string" />
         </xs:choice>
         <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
+        <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
         <xs:attribute name="TableName" type="xs:string" use="optional" />
+        <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
         <xs:attribute name="Query" type="xs:string" use="optional" />
+        <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -432,6 +482,7 @@
       <xs:extension base="OutputProviderCommonType">
         <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
         <xs:attribute name="Endpoint" type="xs:string" use="optional" />
+        <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
         <xs:attribute name="HttpMethod" type="xs:string" use="optional" default="POST" />
         <xs:attribute name="PayloadFormat" type="HttpPayloadFormatType" use="optional" default="Json" />
       </xs:extension>
@@ -442,6 +493,7 @@
     <xs:complexContent>
       <xs:extension base="OutputProviderCommonType">
         <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -450,8 +502,11 @@
     <xs:complexContent>
       <xs:extension base="OutputProviderCommonType">
         <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
         <xs:attribute name="XmlRootElement" type="xs:string" use="optional" />
+        <xs:attribute name="XmlRootElementFromField" type="xs:string" use="optional" />
         <xs:attribute name="XmlRecordElement" type="xs:string" use="optional" />
+        <xs:attribute name="XmlRecordElementFromField" type="xs:string" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

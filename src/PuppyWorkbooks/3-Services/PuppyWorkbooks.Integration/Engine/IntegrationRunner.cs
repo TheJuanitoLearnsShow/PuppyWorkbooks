@@ -29,13 +29,36 @@ public sealed class IntegrationRunner
         var input = definition.Steps.OfType<InputStep>().FirstOrDefault();
         if (input is null) throw new InvalidOperationException("An integration must contain an IOInput step.");
         await using var inputProvider = CreateInput(input);
-        var outputs = new List<IOutputProvider>();
+        var createdOutputs = new List<IOutputProvider>();
+        var outputProviderCache = new Dictionary<string, IOutputProvider>(StringComparer.OrdinalIgnoreCase);
+
+        IOutputProvider GetOrCreateOutput(OutputStep rawStep, IntegrationRecord? record)
+        {
+            var bound = BindOutputStep(rawStep, record);
+            if (_mockManager.ShouldUseMock(bound))
+            {
+                var mockKey = $"mock:{bound.Id}";
+                if (!outputProviderCache.TryGetValue(mockKey, out var mockProvider))
+                {
+                    mockProvider = new MockOutputProvider();
+                    outputProviderCache[mockKey] = mockProvider;
+                    createdOutputs.Add(mockProvider);
+                }
+                return mockProvider;
+            }
+
+            var cacheKey = GetOutputCacheKey(bound);
+            if (!outputProviderCache.TryGetValue(cacheKey, out var provider))
+            {
+                provider = CreateOutput(bound);
+                outputProviderCache[cacheKey] = provider;
+                createdOutputs.Add(provider);
+            }
+            return provider;
+        }
+
         try
         {
-            foreach (var output in definition.Steps.OfType<OutputStep>())
-            {
-                outputs.Add(CreateOutput(output));
-            }
             var reduceSteps = GetReduceSteps(definition.Steps).ToList();
             var reduceStates = reduceSteps.ToDictionary(step => step, step => ValueBinder.ParseInitialState(step.InitialStateJson));
             var outputSteps = definition.Steps.OfType<OutputStep>().ToList();
@@ -61,7 +84,8 @@ public sealed class IntegrationRunner
                     for (var outputIndex = 0; outputIndex < outputSteps.Count; outputIndex++)
                     {
                         var output = outputSteps[outputIndex];
-                        var status = await outputs[outputIndex].WriteAsync(final, cancellationToken);
+                        var provider = GetOrCreateOutput(output, final);
+                        var status = await provider.WriteAsync(final, cancellationToken);
                         final[output.Id + ".Status"] = status.Succeeded;
                         final[output.Id + ".StatusMessage"] = status.Message;
                         final[output.Id + ".AffectedRows"] = status.AffectedRows;
@@ -72,7 +96,7 @@ public sealed class IntegrationRunner
 
             async Task ProcessTopLevelInput(IInputProvider provider)
             {
-                await foreach (var sourceRecord in provider.ReadAsync(cancellationToken))
+                await foreach (var sourceRecord in provider.ReadAsync(cancellationToken: cancellationToken))
                 {
                     read++;
                     var rowDebug = isDebug
@@ -143,7 +167,8 @@ public sealed class IntegrationRunner
 
                     case OutputStep output when !deferOutput:
                         IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
-                        var status = await outputs[outputSteps.IndexOf(output)].WriteAsync(record, cancellationToken);
+                        var outputProvider = GetOrCreateOutput(output, record);
+                        var status = await outputProvider.WriteAsync(record, cancellationToken);
                         record[output.Id + ".Status"] = status.Succeeded;
                         record[output.Id + ".StatusMessage"] = status.Message;
                         record[output.Id + ".AffectedRows"] = status.AffectedRows;
@@ -161,7 +186,7 @@ public sealed class IntegrationRunner
                 IntegrationRecord record, IntegrationDebugRow? rowDebug, int stepIndex, IntegrationRecord sourceRecord)
             {
                 await using var provider = CreateInput(inputStep, record);
-                await foreach (var providerRecord in provider.ReadAsync(cancellationToken2))
+                await foreach (var providerRecord in provider.ReadAsync(record, cancellationToken2))
                 {
                     var merged = new Dictionary<string, object?>(record.Values, StringComparer.OrdinalIgnoreCase);
                     foreach (var field in providerRecord.Values)
@@ -175,7 +200,7 @@ public sealed class IntegrationRunner
         }
         finally
         {
-            foreach (var output in outputs) await output.DisposeAsync();
+            foreach (var output in createdOutputs) await output.DisposeAsync();
         }
     }
 
@@ -218,8 +243,27 @@ public sealed class IntegrationRunner
         };
     }
 
+    private string ResolveFieldOrValue(string staticValue, string fromField, IntegrationRecord? inputRecord)
+    {
+        if (!string.IsNullOrWhiteSpace(fromField))
+        {
+            if (inputRecord is not null)
+            {
+                var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fromField, StringComparison.OrdinalIgnoreCase));
+                if (field.Key is not null)
+                {
+                    return FormatInputValue(field.Value);
+                }
+                throw new InvalidOperationException($"Step references missing input field '{fromField}'.");
+            }
+        }
+
+        return ResolveValue(staticValue, inputRecord);
+    }
+
     private string ResolveValue(string value, IntegrationRecord? inputRecord = null)
     {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
         var resolved = _secretManager!.Resolve(value);
         if (inputRecord is null) return resolved;
         
@@ -233,25 +277,40 @@ public sealed class IntegrationRunner
         });
     }
 
-    private InputStep BindInputStep(InputStep step, IntegrationRecord inputRecord)
+    private InputStep BindInputStep(InputStep step, IntegrationRecord? inputRecord)
     {
         var bound = new InputStep
         {
             Id = step.Id,
             Kind = step.Kind,
-            FilePath = ResolveValue(step.FilePath, inputRecord),
-            ConnectionString = ResolveValue(step.ConnectionString, inputRecord),
-            Query = ResolveValue(step.Query, inputRecord),
+            FilePath = ResolveFieldOrValue(step.FilePath, step.FilePathFromField, inputRecord),
+            FilePathFromField = step.FilePathFromField,
+            ConnectionString = ResolveFieldOrValue(step.ConnectionString, step.ConnectionStringFromField, inputRecord),
+            ConnectionStringFromField = step.ConnectionStringFromField,
+            TableName = ResolveFieldOrValue(step.TableName, step.TableNameFromField, inputRecord),
+            TableNameFromField = step.TableNameFromField,
+            Query = ResolveFieldOrValue(step.Query, step.QueryFromField, inputRecord),
+            QueryFromField = step.QueryFromField,
             Data = step.Data,
             MockCsvFilePath = ResolveValue(step.MockCsvFilePath, inputRecord),
             MockCsv = ResolveValue(step.MockCsv, inputRecord),
             MockData = ResolveValue(step.MockData, inputRecord),
             HttpConfiguration = step.HttpConfiguration,
-            Endpoint = ResolveValue(step.Endpoint, inputRecord),
+            Endpoint = ResolveFieldOrValue(step.Endpoint, step.EndpointFromField, inputRecord),
+            EndpointFromField = step.EndpointFromField,
             HttpMethod = ResolveValue(step.HttpMethod, inputRecord),
-            JsonPath = ResolveValue(step.JsonPath, inputRecord),
-            XmlItemElement = ResolveValue(step.XmlItemElement, inputRecord),
-            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, v => ResolveValue(v, inputRecord))
+            JsonPath = ResolveFieldOrValue(step.JsonPath, step.JsonPathFromField, inputRecord),
+            JsonPathFromField = step.JsonPathFromField,
+            XmlItemElement = ResolveFieldOrValue(step.XmlItemElement, step.XmlItemElementFromField, inputRecord),
+            XmlItemElementFromField = step.XmlItemElementFromField,
+            XmlRootElement = ResolveFieldOrValue(step.XmlRootElement, step.XmlRootElementFromField, inputRecord),
+            XmlRootElementFromField = step.XmlRootElementFromField,
+            XmlRecordElement = ResolveFieldOrValue(step.XmlRecordElement, step.XmlRecordElementFromField, inputRecord),
+            XmlRecordElementFromField = step.XmlRecordElementFromField,
+            AddFileSizeField = step.AddFileSizeField,
+            AddCreatedOnDate = step.AddCreatedOnDate,
+            AddLastModifiedDateField = step.AddLastModifiedDateField,
+            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, inputRecord)
         };
 
         foreach (var (name, source) in step.MockDataSources)
@@ -267,27 +326,75 @@ public sealed class IntegrationRunner
         return bound;
     }
 
-    private static HttpProviderSettings? BindHttpConfiguration(HttpProviderSettings? settings, Func<string, string> bind)
+    private OutputStep BindOutputStep(OutputStep step, IntegrationRecord? inputRecord)
+    {
+        return new OutputStep
+        {
+            Id = step.Id,
+            Kind = step.Kind,
+            FilePath = ResolveFieldOrValue(step.FilePath, step.FilePathFromField, inputRecord),
+            FilePathFromField = step.FilePathFromField,
+            ConnectionString = ResolveFieldOrValue(step.ConnectionString, step.ConnectionStringFromField, inputRecord),
+            ConnectionStringFromField = step.ConnectionStringFromField,
+            TableName = ResolveFieldOrValue(step.TableName, step.TableNameFromField, inputRecord),
+            TableNameFromField = step.TableNameFromField,
+            Query = ResolveFieldOrValue(step.Query, step.QueryFromField, inputRecord),
+            QueryFromField = step.QueryFromField,
+            HttpConfiguration = step.HttpConfiguration,
+            Endpoint = ResolveFieldOrValue(step.Endpoint, step.EndpointFromField, inputRecord),
+            EndpointFromField = step.EndpointFromField,
+            HttpMethod = ResolveValue(step.HttpMethod, inputRecord),
+            PayloadFormat = step.PayloadFormat,
+            JsonPath = ResolveFieldOrValue(step.JsonPath, step.JsonPathFromField, inputRecord),
+            JsonPathFromField = step.JsonPathFromField,
+            XmlItemElement = ResolveFieldOrValue(step.XmlItemElement, step.XmlItemElementFromField, inputRecord),
+            XmlItemElementFromField = step.XmlItemElementFromField,
+            XmlRootElement = ResolveFieldOrValue(step.XmlRootElement, step.XmlRootElementFromField, inputRecord),
+            XmlRootElementFromField = step.XmlRootElementFromField,
+            XmlRecordElement = ResolveFieldOrValue(step.XmlRecordElement, step.XmlRecordElementFromField, inputRecord),
+            XmlRecordElementFromField = step.XmlRecordElementFromField,
+            ResolvedHttpConfiguration = BindHttpConfiguration(step.ResolvedHttpConfiguration, inputRecord)
+        };
+    }
+
+    private HttpProviderSettings? BindHttpConfiguration(HttpProviderSettings? settings, IntegrationRecord? inputRecord)
     {
         if (settings is null) return null;
         return new HttpProviderSettings
         {
             Name = settings.Name,
-            BaseUrl = bind(settings.BaseUrl),
-            HttpClientName = bind(settings.HttpClientName),
-            OAuthClientId = bind(settings.OAuthClientId),
-            OAuthClientSecret = bind(settings.OAuthClientSecret),
-            OAuthScope = bind(settings.OAuthScope),
-            OAuthTokenUrl = bind(settings.OAuthTokenUrl),
-            OAuthHttpClientName = bind(settings.OAuthHttpClientName),
-            ClientCertificateThumbprint = bind(settings.ClientCertificateThumbprint),
+            BaseUrl = ResolveFieldOrValue(settings.BaseUrl, settings.BaseUrlFromField, inputRecord),
+            BaseUrlFromField = settings.BaseUrlFromField,
+            HttpClientName = ResolveValue(settings.HttpClientName, inputRecord),
+            OAuthClientId = ResolveFieldOrValue(settings.OAuthClientId, settings.OAuthClientIdFromField, inputRecord),
+            OAuthClientIdFromField = settings.OAuthClientIdFromField,
+            OAuthClientSecret = ResolveFieldOrValue(settings.OAuthClientSecret, settings.OAuthClientSecretFromField, inputRecord),
+            OAuthClientSecretFromField = settings.OAuthClientSecretFromField,
+            OAuthScope = ResolveFieldOrValue(settings.OAuthScope, settings.OAuthScopeFromField, inputRecord),
+            OAuthScopeFromField = settings.OAuthScopeFromField,
+            OAuthTokenUrl = ResolveFieldOrValue(settings.OAuthTokenUrl, settings.OAuthTokenUrlFromField, inputRecord),
+            OAuthTokenUrlFromField = settings.OAuthTokenUrlFromField,
+            OAuthHttpClientName = ResolveValue(settings.OAuthHttpClientName, inputRecord),
+            ClientCertificateThumbprint = ResolveFieldOrValue(settings.ClientCertificateThumbprint, settings.ClientCertificateThumbprintFromField, inputRecord),
+            ClientCertificateThumbprintFromField = settings.ClientCertificateThumbprintFromField,
             Headers = settings.Headers.Select(header => new HttpHeader
             {
-                Name = bind(header.Name),
-                Value = bind(header.Value)
+                Name = ResolveValue(header.Name, inputRecord),
+                Value = ResolveFieldOrValue(header.Value, header.ValueFromField, inputRecord),
+                ValueFromField = header.ValueFromField
             }).ToList()
         };
     }
+
+    private static string GetOutputCacheKey(OutputStep step) => step.Kind switch
+    {
+        OutputKind.CSVWriter => $"csv:{step.Id}:{step.FilePath}",
+        OutputKind.JsonWriter => $"json:{step.Id}:{step.FilePath}",
+        OutputKind.XmlWriter => $"xml:{step.Id}:{step.FilePath}:{step.XmlRootElement}:{step.XmlRecordElement}",
+        OutputKind.SqlWriter => $"sql:{step.Id}:{step.ConnectionString}:{step.TableName}:{step.Query}",
+        OutputKind.HttpWriter => $"http:{step.Id}:{step.Endpoint}:{step.HttpMethod}:{step.PayloadFormat}:{step.ResolvedHttpConfiguration?.BaseUrl}:{step.ResolvedHttpConfiguration?.OAuthClientId}:{step.ResolvedHttpConfiguration?.OAuthTokenUrl}:{string.Join(";", step.ResolvedHttpConfiguration?.Headers.Select(h => $"{h.Name}={h.Value}") ?? [])}",
+        _ => $"{step.Kind}:{step.Id}"
+    };
 
     private static string FormatInputValue(object? value) => value switch
     {

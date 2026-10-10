@@ -23,7 +23,7 @@ public sealed class CsvInputProvider : IInputProvider
         return new CsvInputProvider(() => new StringReader(csvText));
     }
 
-    public async IAsyncEnumerable<IntegrationRecord> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var reader = _readerFactory();
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);

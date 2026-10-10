@@ -31,7 +31,7 @@ public sealed class JsonInputProvider : IInputProvider
         return new JsonInputProvider(jsonText, jsonPath);
     }
 
-    public async IAsyncEnumerable<IntegrationRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await using var stream = _streamFactory();
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);

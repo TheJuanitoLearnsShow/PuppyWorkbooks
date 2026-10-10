@@ -30,12 +30,22 @@ public sealed class IntegrationXmlSerializer
         foreach (var httpConfig in definition.HttpConfigurations)
         {
             httpConfig.BaseUrl = secretManager.Resolve(httpConfig.BaseUrl);
+            httpConfig.BaseUrlFromField = secretManager.Resolve(httpConfig.BaseUrlFromField);
             httpConfig.OAuthClientId = secretManager.Resolve(httpConfig.OAuthClientId);
+            httpConfig.OAuthClientIdFromField = secretManager.Resolve(httpConfig.OAuthClientIdFromField);
             httpConfig.OAuthClientSecret = secretManager.Resolve(httpConfig.OAuthClientSecret);
+            httpConfig.OAuthClientSecretFromField = secretManager.Resolve(httpConfig.OAuthClientSecretFromField);
             httpConfig.OAuthScope = secretManager.Resolve(httpConfig.OAuthScope);
+            httpConfig.OAuthScopeFromField = secretManager.Resolve(httpConfig.OAuthScopeFromField);
             httpConfig.OAuthTokenUrl = secretManager.Resolve(httpConfig.OAuthTokenUrl);
+            httpConfig.OAuthTokenUrlFromField = secretManager.Resolve(httpConfig.OAuthTokenUrlFromField);
+            httpConfig.ClientCertificateThumbprint = secretManager.Resolve(httpConfig.ClientCertificateThumbprint);
+            httpConfig.ClientCertificateThumbprintFromField = secretManager.Resolve(httpConfig.ClientCertificateThumbprintFromField);
             foreach (var header in httpConfig.Headers)
+            {
                 header.Value = secretManager.Resolve(header.Value);
+                header.ValueFromField = secretManager.Resolve(header.ValueFromField);
+            }
         }
 
         ResolveSecretsInSteps(definition.Steps, secretManager);
@@ -65,15 +75,27 @@ public sealed class IntegrationXmlSerializer
                     break;
                 case InputStep input:
                     input.FilePath = secretManager.Resolve(input.FilePath);
+                    input.FilePathFromField = secretManager.Resolve(input.FilePathFromField);
                     input.ConnectionString = secretManager.Resolve(input.ConnectionString);
+                    input.ConnectionStringFromField = secretManager.Resolve(input.ConnectionStringFromField);
+                    input.TableName = secretManager.Resolve(input.TableName);
+                    input.TableNameFromField = secretManager.Resolve(input.TableNameFromField);
                     input.Query = secretManager.Resolve(input.Query);
+                    input.QueryFromField = secretManager.Resolve(input.QueryFromField);
                     input.MockCsvFilePath = secretManager.Resolve(input.MockCsvFilePath);
                     input.MockCsv = secretManager.Resolve(input.MockCsv);
                     input.MockData = secretManager.Resolve(input.MockData);
                     input.Endpoint = secretManager.Resolve(input.Endpoint);
+                    input.EndpointFromField = secretManager.Resolve(input.EndpointFromField);
                     input.HttpMethod = secretManager.Resolve(input.HttpMethod);
                     input.JsonPath = secretManager.Resolve(input.JsonPath);
+                    input.JsonPathFromField = secretManager.Resolve(input.JsonPathFromField);
                     input.XmlItemElement = secretManager.Resolve(input.XmlItemElement);
+                    input.XmlItemElementFromField = secretManager.Resolve(input.XmlItemElementFromField);
+                    input.XmlRootElement = secretManager.Resolve(input.XmlRootElement);
+                    input.XmlRootElementFromField = secretManager.Resolve(input.XmlRootElementFromField);
+                    input.XmlRecordElement = secretManager.Resolve(input.XmlRecordElement);
+                    input.XmlRecordElementFromField = secretManager.Resolve(input.XmlRecordElementFromField);
                     foreach (var dataSource in input.MockDataSources.Values)
                     {
                         dataSource.FilePath = secretManager.Resolve(dataSource.FilePath);
@@ -82,11 +104,24 @@ public sealed class IntegrationXmlSerializer
                     break;
                 case OutputStep output:
                     output.FilePath = secretManager.Resolve(output.FilePath);
+                    output.FilePathFromField = secretManager.Resolve(output.FilePathFromField);
                     output.ConnectionString = secretManager.Resolve(output.ConnectionString);
+                    output.ConnectionStringFromField = secretManager.Resolve(output.ConnectionStringFromField);
                     output.TableName = secretManager.Resolve(output.TableName);
+                    output.TableNameFromField = secretManager.Resolve(output.TableNameFromField);
                     output.Query = secretManager.Resolve(output.Query);
+                    output.QueryFromField = secretManager.Resolve(output.QueryFromField);
                     output.Endpoint = secretManager.Resolve(output.Endpoint);
+                    output.EndpointFromField = secretManager.Resolve(output.EndpointFromField);
                     output.HttpMethod = secretManager.Resolve(output.HttpMethod);
+                    output.JsonPath = secretManager.Resolve(output.JsonPath);
+                    output.JsonPathFromField = secretManager.Resolve(output.JsonPathFromField);
+                    output.XmlItemElement = secretManager.Resolve(output.XmlItemElement);
+                    output.XmlItemElementFromField = secretManager.Resolve(output.XmlItemElementFromField);
+                    output.XmlRootElement = secretManager.Resolve(output.XmlRootElement);
+                    output.XmlRootElementFromField = secretManager.Resolve(output.XmlRootElementFromField);
+                    output.XmlRecordElement = secretManager.Resolve(output.XmlRecordElement);
+                    output.XmlRecordElementFromField = secretManager.Resolve(output.XmlRecordElementFromField);
                     break;
             }
         }
@@ -155,7 +190,7 @@ public sealed class IntegrationXmlSerializer
 
             if (element.Name.LocalName == "IOOutput" || OutputKindXmlNames.TryParseElementName(element.Name.LocalName, out _))
             {
-                foreach (var childName in new[] { "TableName", "Query" })
+                foreach (var childName in new[] { "TableName", "Query", "TableNameFromField", "QueryFromField" })
                 {
                     var child = element.Element(childName);
                     if (child is null) continue;

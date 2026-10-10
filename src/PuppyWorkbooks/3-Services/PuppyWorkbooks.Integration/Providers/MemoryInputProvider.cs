@@ -19,7 +19,7 @@ public sealed class MemoryInputProvider : IInputProvider
         _data = jsonData;
     }
 
-    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(
+    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, 
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await Task.Yield();

@@ -21,3 +21,30 @@ Have class that has common settings for both HTTP providers, with options for:
 - optional Client certificate thumbprint to be loaded from the windows certificate storage
 
 Allow the providers to point to the base HTTP configuration object
+==============
+for the following attributes of the input and output providers and the HttpConfiguration:
+- FilePath
+- ConnectionString
+- TableName
+- Query
+- Endpoint
+- JsonPath
+- XmlItemElement
+- XmlRootElement
+- XmlRecordElement
+- BaseUrl
+- OAuthClientId
+- OAuthClientSecret
+- OAuthScope
+- OAuthTokenUrl
+- ClientCertificateThumbprint
+- Under HttpHeader, Value of Header
+
+, allow an alternate attribute that can pull the value from the inputRow. E.g.: 
+
+```xml
+<XmlOutput Id="xml" FilePathFromField="MyFieldNameFromInputRow" XmlRootElement="Items" XmlRecordElement="Item" />
+```
+
+
+Then in the integration execution, inject that value.

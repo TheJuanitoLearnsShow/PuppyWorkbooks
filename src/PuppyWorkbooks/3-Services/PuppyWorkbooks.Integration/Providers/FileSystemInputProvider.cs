@@ -17,7 +17,7 @@ public sealed class FileSystemInputProvider : IInputProvider
         _addLastModifiedDate = addLastModifiedDate;
     }
 
-    public async IAsyncEnumerable<IntegrationRecord> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(_directoryPath)) yield break;
 

@@ -18,7 +18,7 @@ public sealed class HttpInputProvider : HttpProviderBase, IInputProvider
         _jsonPath = jsonPath;
     }
 
-    public async IAsyncEnumerable<IntegrationRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(_method, _endpoint, null, cancellationToken);
         response.EnsureSuccessStatusCode();

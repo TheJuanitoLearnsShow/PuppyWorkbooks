@@ -26,7 +26,7 @@ public sealed class XmlInputProvider : IInputProvider
         return new XmlInputProvider(() => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(xmlText)), itemElement);
     }
 
-    public async IAsyncEnumerable<IntegrationRecord> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<IntegrationRecord> ReadAsync(IntegrationRecord? input = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await using var stream = _streamFactory();
         var document = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
