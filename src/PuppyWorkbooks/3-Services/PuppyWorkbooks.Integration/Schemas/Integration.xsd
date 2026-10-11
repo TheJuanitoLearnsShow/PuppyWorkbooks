@@ -94,8 +94,6 @@
   <!-- Steps Container -->
   <xs:complexType name="StepsType">
     <xs:choice minOccurs="0" maxOccurs="unbounded">
-      <xs:element name="IOInput" type="InputStepType" />
-      
       <xs:element name="MemoryInput" type="MemoryInputStepType" />
       <xs:element name="CsvInput" type="CsvInputStepType" />
       <xs:element name="SqlInput" type="SqlInputStepType" />
@@ -227,44 +225,6 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:complexType name="InputStepType">
-    <xs:choice minOccurs="0" maxOccurs="unbounded">
-      <xs:element name="Worksheet" type="WorksheetStepType" />
-      <xs:element name="Query" type="xs:string" />
-      <xs:element name="QueryFromField" type="xs:string" />
-      <xs:element name="MockCsv" type="MockDataType" />
-      <xs:element name="MockData" type="MockDataType" />
-      <xs:element name="MockDataSources" type="MockDataSourcesType" />
-      <xs:element name="Mocks" type="MockDataSourcesType" />
-    </xs:choice>
-    <xs:attribute name="Id" type="xs:string" use="optional" />
-    <xs:attribute name="Kind" type="InputKindType" use="optional" />
-    <xs:attribute name="FilePath" type="xs:string" use="optional" />
-    <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
-    <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
-    <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
-    <xs:attribute name="TableName" type="xs:string" use="optional" />
-    <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
-    <xs:attribute name="Query" type="xs:string" use="optional" />
-    <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
-    <xs:attribute name="MockCsvFilePath" type="xs:string" use="optional" />
-    <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
-    <xs:attribute name="Endpoint" type="xs:string" use="optional" />
-    <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
-    <xs:attribute name="HttpMethod" type="xs:string" use="optional" default="GET" />
-    <xs:attribute name="JsonPath" type="xs:string" use="optional" default="$" />
-    <xs:attribute name="JsonPathFromField" type="xs:string" use="optional" />
-    <xs:attribute name="XmlItemElement" type="xs:string" use="optional" />
-    <xs:attribute name="XmlItemElementFromField" type="xs:string" use="optional" />
-    <xs:attribute name="XmlRootElement" type="xs:string" use="optional" />
-    <xs:attribute name="XmlRootElementFromField" type="xs:string" use="optional" />
-    <xs:attribute name="XmlRecordElement" type="xs:string" use="optional" />
-    <xs:attribute name="XmlRecordElementFromField" type="xs:string" use="optional" />
-    <xs:attribute name="AddFileSizeField" type="xs:boolean" use="optional" />
-    <xs:attribute name="AddCreatedOnDate" type="xs:boolean" use="optional" />
-    <xs:attribute name="AddLastModifiedDateField" type="xs:boolean" use="optional" />
-  </xs:complexType>
-
   <xs:complexType name="InputProviderCommonType">
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="MockCsv" type="MockDataType" />
@@ -299,6 +259,7 @@
         <xs:choice minOccurs="0" maxOccurs="unbounded">
           <xs:element name="Query" type="xs:string" />
           <xs:element name="QueryFromField" type="xs:string" />
+          <xs:element name="SqlParam" type="SqlParamType" />
         </xs:choice>
         <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
         <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
@@ -306,6 +267,7 @@
         <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
         <xs:attribute name="Query" type="xs:string" use="optional" />
         <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
+        <xs:attribute name="CommandType" type="SqlCommandTypeType" use="optional" default="Text" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -392,8 +354,6 @@
       <xs:element name="Filter" type="FilterStepType" />
       <xs:element name="Reduce" type="ReduceStepType" />
       <xs:element name="Switch" type="SwitchStepType" />
-      <xs:element name="IOOutput" type="OutputStepType" />
-      <xs:element name="IOInput" type="InputStepType" />
       <xs:element name="CsvOutput" type="CsvOutputStepType" />
       <xs:element name="SqlOutput" type="SqlOutputStepType" />
       <xs:element name="HttpOutput" type="HttpOutputStepType" />
@@ -424,6 +384,19 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="SqlCommandTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Text" />
+      <xs:enumeration value="StoredProcedure" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="SqlParamType">
+    <xs:attribute name="Name" type="xs:string" use="required" />
+    <xs:attribute name="FromField" type="xs:string" use="optional" />
+    <xs:attribute name="FromValue" type="xs:string" use="optional" />
+  </xs:complexType>
+
   <xs:simpleType name="HttpPayloadFormatType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="Json" />
@@ -439,6 +412,7 @@
       <xs:element name="TableNameFromField" type="xs:string" />
       <xs:element name="Query" type="xs:string" />
       <xs:element name="QueryFromField" type="xs:string" />
+      <xs:element name="SqlParam" type="SqlParamType" />
     </xs:choice>
     <xs:attribute name="Id" type="xs:string" use="optional" />
     <xs:attribute name="Kind" type="OutputKindType" use="optional" />
@@ -450,6 +424,7 @@
     <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
     <xs:attribute name="Query" type="xs:string" use="optional" />
     <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
+    <xs:attribute name="CommandType" type="SqlCommandTypeType" use="optional" default="Text" />
     <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
     <xs:attribute name="Endpoint" type="xs:string" use="optional" />
     <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
@@ -486,6 +461,7 @@
           <xs:element name="TableNameFromField" type="xs:string" />
           <xs:element name="Query" type="xs:string" />
           <xs:element name="QueryFromField" type="xs:string" />
+          <xs:element name="SqlParam" type="SqlParamType" />
         </xs:choice>
         <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
         <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
@@ -493,6 +469,7 @@
         <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
         <xs:attribute name="Query" type="xs:string" use="optional" />
         <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
+        <xs:attribute name="CommandType" type="SqlCommandTypeType" use="optional" default="Text" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

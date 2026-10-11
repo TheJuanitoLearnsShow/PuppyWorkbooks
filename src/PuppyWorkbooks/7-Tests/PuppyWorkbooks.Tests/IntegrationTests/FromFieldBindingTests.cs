@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Data;
 using System.Data.Common;
 using System.Net;
@@ -11,6 +12,33 @@ namespace PuppyWorkbooks.Tests;
 
 public sealed class FromFieldBindingTests
 {
+    [Fact]
+    public async Task SqlOutput_BindsFieldAndConstantParametersToStoredProcedure()
+    {
+        var connection = new RecordingDbConnection();
+        await using var provider = new SqlOutputProvider(connection, new SqlOutputStep
+        {
+            Query = "SaveOrder",
+            CommandType = SqlCommandType.StoredProcedure,
+            SqlParams =
+            [
+                new SqlParameterOption { Name = "OrderId", FromField = "Id" },
+                new SqlParameterOption { Name = "Mode", FromValue = "5" }
+            ]
+        });
+
+        await provider.WriteAsync(new IntegrationRecord(new Dictionary<string, object?>
+        {
+            ["Id"] = 42
+        }));
+
+        var command = Assert.IsType<RecordingDbCommand>(connection.LastCommand);
+        Assert.Equal("SaveOrder", command.CommandText);
+        Assert.Equal(CommandType.StoredProcedure, command.CommandType);
+        Assert.Equal(42, command.Parameters[0].Value);
+        Assert.Equal("5", command.Parameters[1].Value);
+    }
+
     [Fact]
     public void FromFieldAttributes_RoundTripAndSerializeProperly()
     {
@@ -27,12 +55,17 @@ public sealed class FromFieldBindingTests
               </HttpConfigurations>
               <Steps>
                 <CsvInput Id="csvIn" FilePathFromField="CsvInputPathField" />
-                <SqlInput Id="sqlIn" ConnectionStringFromField="ConnStrField" QueryFromField="QueryField" TableNameFromField="TableNameField" />
+                <SqlInput Id="sqlIn" ConnectionStringFromField="ConnStrField" QueryFromField="QueryField" TableNameFromField="TableNameField" CommandType="StoredProcedure">
+                  <SqlParam Name="CustomerId" FromField="CustomerIdField" />
+                  <SqlParam Name="Status" FromValue="5" />
+                </SqlInput>
                 <HttpInput Id="httpIn" HttpConfiguration="Api" EndpointFromField="EndpointField" JsonPathFromField="JsonPathField" />
                 <JsonInput Id="jsonIn" FilePathFromField="JsonInputPathField" JsonPathFromField="JsonPathField" />
                 <XmlInput Id="xmlIn" FilePathFromField="XmlInputPathField" XmlItemElementFromField="ItemElemField" />
                 <CsvOutput Id="csvOut" FilePathFromField="CsvOutputPathField" />
-                <SqlOutput Id="sqlOut" ConnectionStringFromField="ConnStrField" TableNameFromField="TableNameField" QueryFromField="QueryField" />
+                <SqlOutput Id="sqlOut" ConnectionStringFromField="ConnStrField" TableNameFromField="TableNameField" QueryFromField="QueryField" CommandType="StoredProcedure">
+                  <SqlParam Name="CustomerId" FromField="CustomerIdField" />
+                </SqlOutput>
                 <HttpOutput Id="httpOut" HttpConfiguration="Api" EndpointFromField="EndpointField" />
                 <JsonOutput Id="jsonOut" FilePathFromField="JsonOutputPathField" />
                 <XmlOutput Id="xmlOut" FilePathFromField="XmlOutputPathField" XmlRootElementFromField="RootElemField" XmlRecordElementFromField="RecordElemField" />
@@ -60,6 +93,9 @@ public sealed class FromFieldBindingTests
         Assert.Equal("ConnStrField", sqlIn.ConnectionStringFromField);
         Assert.Equal("QueryField", sqlIn.QueryFromField);
         Assert.Equal("TableNameField", sqlIn.TableNameFromField);
+        Assert.Equal(SqlCommandType.StoredProcedure, sqlIn.CommandType);
+        Assert.Equal("CustomerIdField", sqlIn.SqlParams[0].FromField);
+        Assert.Equal("5", sqlIn.SqlParams[1].FromValue);
 
         var httpIn = Assert.IsType<HttpInputStep>(steps[2]);
         Assert.Equal("EndpointField", httpIn.EndpointFromField);
@@ -80,6 +116,8 @@ public sealed class FromFieldBindingTests
         Assert.Equal("ConnStrField", sqlOut.ConnectionStringFromField);
         Assert.Equal("TableNameField", sqlOut.TableNameFromField);
         Assert.Equal("QueryField", sqlOut.QueryFromField);
+        Assert.Equal(SqlCommandType.StoredProcedure, sqlOut.CommandType);
+        Assert.Equal("CustomerIdField", Assert.Single(sqlOut.SqlParams).FromField);
 
         var httpOut = Assert.IsType<HttpOutputStep>(steps[7]);
         Assert.Equal("EndpointField", httpOut.EndpointFromField);
@@ -100,6 +138,9 @@ public sealed class FromFieldBindingTests
         Assert.Equal("ConnStrField", (string?)serializedSteps[1].Attribute("ConnectionStringFromField"));
         Assert.Equal("QueryField", (string?)serializedSteps[1].Attribute("QueryFromField"));
         Assert.Equal("TableNameField", (string?)serializedSteps[1].Attribute("TableNameFromField"));
+        Assert.Equal("StoredProcedure", (string?)serializedSteps[1].Attribute("CommandType"));
+        Assert.Equal("CustomerIdField", (string?)serializedSteps[1].Element("SqlParam")?.Attribute("FromField"));
+        Assert.Equal("5", (string?)serializedSteps[1].Elements("SqlParam").ElementAt(1).Attribute("FromValue"));
         Assert.Equal("EndpointField", (string?)serializedSteps[2].Attribute("EndpointFromField"));
         Assert.Equal("JsonPathField", (string?)serializedSteps[2].Attribute("JsonPathFromField"));
         Assert.Equal("JsonInputPathField", (string?)serializedSteps[3].Attribute("FilePathFromField"));
@@ -109,6 +150,8 @@ public sealed class FromFieldBindingTests
         Assert.Equal("ConnStrField", (string?)serializedSteps[6].Attribute("ConnectionStringFromField"));
         Assert.Equal("TableNameField", (string?)serializedSteps[6].Attribute("TableNameFromField"));
         Assert.Equal("QueryField", (string?)serializedSteps[6].Attribute("QueryFromField"));
+        Assert.Equal("StoredProcedure", (string?)serializedSteps[6].Attribute("CommandType"));
+        Assert.Equal("CustomerIdField", (string?)serializedSteps[6].Element("SqlParam")?.Attribute("FromField"));
         Assert.Equal("EndpointField", (string?)serializedSteps[7].Attribute("EndpointFromField"));
         Assert.Equal("JsonOutputPathField", (string?)serializedSteps[8].Attribute("FilePathFromField"));
         Assert.Equal("XmlOutputPathField", (string?)serializedSteps[9].Attribute("FilePathFromField"));
@@ -319,12 +362,17 @@ public sealed class FromFieldBindingTests
               </HttpConfigurations>
               <Steps>
                 <CsvInput Id="csvIn" FilePathFromField="CsvInputPathField" />
-                <SqlInput Id="sqlIn" ConnectionStringFromField="ConnStrField" QueryFromField="QueryField" TableNameFromField="TableNameField" />
+                <SqlInput Id="sqlIn" ConnectionStringFromField="ConnStrField" QueryFromField="QueryField" TableNameFromField="TableNameField" CommandType="StoredProcedure">
+                  <SqlParam Name="CustomerId" FromField="CustomerIdField" />
+                  <SqlParam Name="Status" FromValue="5" />
+                </SqlInput>
                 <HttpInput Id="httpIn" HttpConfiguration="Api" EndpointFromField="EndpointField" JsonPathFromField="JsonPathField" />
                 <JsonInput Id="jsonIn" FilePathFromField="JsonInputPathField" JsonPathFromField="JsonPathField" />
                 <XmlInput Id="xmlIn" FilePathFromField="XmlInputPathField" XmlItemElementFromField="ItemElemField" />
                 <CsvOutput Id="csvOut" FilePathFromField="CsvOutputPathField" />
-                <SqlOutput Id="sqlOut" ConnectionStringFromField="ConnStrField" TableNameFromField="TableNameField" QueryFromField="QueryField" />
+                <SqlOutput Id="sqlOut" ConnectionStringFromField="ConnStrField" TableNameFromField="TableNameField" QueryFromField="QueryField" CommandType="Text">
+                  <SqlParam Name="CustomerId" FromField="CustomerIdField" />
+                </SqlOutput>
                 <HttpOutput Id="httpOut" HttpConfiguration="Api" EndpointFromField="EndpointField" />
                 <JsonOutput Id="jsonOut" FilePathFromField="JsonOutputPathField" />
                 <XmlOutput Id="xmlOut" FilePathFromField="XmlOutputPathField" XmlRootElementFromField="RootElemField" XmlRecordElementFromField="RecordElemField" />
@@ -409,6 +457,107 @@ public sealed class FromFieldBindingTests
             var auth = request.Headers.TryGetValues("Authorization", out var values) ? string.Join(",", values) : null;
             SentRequests.Add((request.RequestUri!, auth, body ?? string.Empty));
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") };
+        }
+    }
+
+    private sealed class RecordingDbConnection : DbConnection
+    {
+        private ConnectionState _state;
+
+        public RecordingDbCommand? LastCommand { get; private set; }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public override string ConnectionString { get; set; } = string.Empty;
+        public override string Database => "test";
+        public override string DataSource => "test";
+        public override string ServerVersion => "1";
+        public override ConnectionState State => _state;
+
+        public override void ChangeDatabase(string databaseName) { }
+        public override void Close() => _state = ConnectionState.Closed;
+        public override void Open() => _state = ConnectionState.Open;
+        protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) =>
+            throw new NotSupportedException();
+
+        protected override DbCommand CreateDbCommand()
+        {
+            LastCommand = new RecordingDbCommand { Connection = this };
+            return LastCommand;
+        }
+    }
+
+    private sealed class RecordingDbCommand : DbCommand
+    {
+        private readonly RecordingDbParameterCollection _parameters = new();
+
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public override string CommandText { get; set; } = string.Empty;
+        public override int CommandTimeout { get; set; }
+        public override CommandType CommandType { get; set; }
+        public override bool DesignTimeVisible { get; set; }
+        public override UpdateRowSource UpdatedRowSource { get; set; }
+        protected override DbConnection? DbConnection { get; set; }
+        protected override DbParameterCollection DbParameterCollection => _parameters;
+        protected override DbTransaction? DbTransaction { get; set; }
+
+        public override void Cancel() { }
+        public override int ExecuteNonQuery() => 1;
+        public override object? ExecuteScalar() => null;
+        public override void Prepare() { }
+        protected override DbParameter CreateDbParameter() => new RecordingDbParameter();
+        protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class RecordingDbParameter : DbParameter
+    {
+        public override DbType DbType { get; set; }
+        public override ParameterDirection Direction { get; set; } = ParameterDirection.Input;
+        public override bool IsNullable { get; set; }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public override string ParameterName { get; set; } = string.Empty;
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public override string SourceColumn { get; set; } = string.Empty;
+        public override object? Value { get; set; }
+        public override bool SourceColumnNullMapping { get; set; }
+        public override int Size { get; set; }
+        public override void ResetDbType() { }
+    }
+
+    private sealed class RecordingDbParameterCollection : DbParameterCollection
+    {
+        private readonly List<DbParameter> _parameters = [];
+
+        public override int Count => _parameters.Count;
+        public override object SyncRoot => ((ICollection)_parameters).SyncRoot;
+        public override int Add(object value)
+        {
+            _parameters.Add((DbParameter)value);
+            return _parameters.Count - 1;
+        }
+        public override void AddRange(Array values)
+        {
+            foreach (var value in values) Add(value!);
+        }
+        public override void Clear() => _parameters.Clear();
+        public override bool Contains(object value) => _parameters.Contains((DbParameter)value);
+        public override bool Contains(string value) => IndexOf(value) >= 0;
+        public override void CopyTo(Array array, int index) => ((ICollection)_parameters).CopyTo(array, index);
+        public override IEnumerator GetEnumerator() => _parameters.GetEnumerator();
+        public override int IndexOf(object value) => _parameters.IndexOf((DbParameter)value);
+        public override int IndexOf(string parameterName) =>
+            _parameters.FindIndex(parameter => parameter.ParameterName == parameterName);
+        public override void Insert(int index, object value) => _parameters.Insert(index, (DbParameter)value);
+        public override void Remove(object value) => _parameters.Remove((DbParameter)value);
+        public override void RemoveAt(int index) => _parameters.RemoveAt(index);
+        public override void RemoveAt(string parameterName) => RemoveAt(IndexOf(parameterName));
+        protected override DbParameter GetParameter(int index) => _parameters[index];
+        protected override DbParameter GetParameter(string parameterName) => _parameters[IndexOf(parameterName)];
+        protected override void SetParameter(int index, DbParameter value) => _parameters[index] = value;
+        protected override void SetParameter(string parameterName, DbParameter value)
+        {
+            var index = IndexOf(parameterName);
+            if (index < 0) _parameters.Add(value);
+            else _parameters[index] = value;
         }
     }
 }

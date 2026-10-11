@@ -108,6 +108,11 @@ public sealed class SecretManager
                     sqlIn.TableNameFromField = secretManager.Resolve(sqlIn.TableNameFromField);
                     sqlIn.Query = secretManager.Resolve(sqlIn.Query);
                     sqlIn.QueryFromField = secretManager.Resolve(sqlIn.QueryFromField);
+                    foreach (var parameter in sqlIn.SqlParams)
+                    {
+                        if (parameter.FromValue is not null)
+                            parameter.FromValue = secretManager.Resolve(parameter.FromValue);
+                    }
                     ResolveInputMocks(sqlIn, secretManager);
                     break;
                 case HttpInputProviderOptions httpIn:
@@ -154,6 +159,11 @@ public sealed class SecretManager
                     sqlOut.TableNameFromField = secretManager.Resolve(sqlOut.TableNameFromField);
                     sqlOut.Query = secretManager.Resolve(sqlOut.Query);
                     sqlOut.QueryFromField = secretManager.Resolve(sqlOut.QueryFromField);
+                    foreach (var parameter in sqlOut.SqlParams)
+                    {
+                        if (parameter.FromValue is not null)
+                            parameter.FromValue = secretManager.Resolve(parameter.FromValue);
+                    }
                     break;
                 case HttpOutputProviderOptions httpOut:
                     httpOut.Endpoint = secretManager.Resolve(httpOut.Endpoint);

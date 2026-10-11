@@ -247,7 +247,7 @@ public sealed class IntegrationRunner
             JsonInputProviderOptions json when !string.IsNullOrWhiteSpace(json.FilePath) => JsonInputProvider.FromFile(json.FilePath, json.JsonPath),
             XmlInputProviderOptions xml when !string.IsNullOrWhiteSpace(xml.FilePath) => new XmlInputProvider(xml.FilePath, xml.XmlItemElement),
             FileSystemInputProviderOptions fs when !string.IsNullOrWhiteSpace(fs.FilePath) => new FileSystemInputProvider(fs.FilePath, fs.AddFileSizeField, fs.AddCreatedOnDate, fs.AddLastModifiedDateField),
-            SqlInputProviderOptions sql when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(sql.ConnectionString), sql.Query),
+            SqlInputProviderOptions sql when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(sql.ConnectionString), sql),
             HttpInputProviderOptions http when http.ResolvedHttpConfiguration is not null => new HttpInputProvider(http.ResolvedHttpConfiguration, http.Endpoint, http.HttpMethod, http.JsonPath, _options.HttpClientFactory),
             MemoryInputProviderOptions mem => new MemoryInputProvider(mem.Data),
             SqlInputProviderOptions => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
@@ -306,7 +306,9 @@ public sealed class IntegrationRunner
                 TableName = ResolveFieldOrValue(sql.TableName, sql.TableNameFromField, inputRecord),
                 TableNameFromField = sql.TableNameFromField,
                 Query = ResolveFieldOrValue(sql.Query, sql.QueryFromField, inputRecord),
-                QueryFromField = sql.QueryFromField
+                QueryFromField = sql.QueryFromField,
+                CommandType = sql.CommandType,
+                SqlParams = sql.SqlParams
             },
             HttpInputProviderOptions http => new HttpInputStep
             {
@@ -381,7 +383,9 @@ public sealed class IntegrationRunner
                 TableName = ResolveFieldOrValue(sql.TableName, sql.TableNameFromField, inputRecord),
                 TableNameFromField = sql.TableNameFromField,
                 Query = ResolveFieldOrValue(sql.Query, sql.QueryFromField, inputRecord),
-                QueryFromField = sql.QueryFromField
+                QueryFromField = sql.QueryFromField,
+                CommandType = sql.CommandType,
+                SqlParams = sql.SqlParams
             },
             HttpOutputProviderOptions http => new HttpOutputStep
             {
@@ -451,7 +455,7 @@ public sealed class IntegrationRunner
         CsvOutputProviderOptions csv => $"csv:{csv.Id}:{csv.FilePath}",
         JsonOutputProviderOptions json => $"json:{json.Id}:{json.FilePath}",
         XmlOutputProviderOptions xml => $"xml:{xml.Id}:{xml.FilePath}:{xml.XmlRootElement}:{xml.XmlRecordElement}",
-        SqlOutputProviderOptions sql => $"sql:{sql.Id}:{sql.ConnectionString}:{sql.TableName}:{sql.Query}",
+        SqlOutputProviderOptions sql => $"sql:{sql.Id}:{sql.ConnectionString}:{sql.TableName}:{sql.Query}:{sql.CommandType}:{string.Join(";", sql.SqlParams.Select(parameter => $"{parameter.Name}={parameter.FromField}:{parameter.FromValue}"))}",
         HttpOutputProviderOptions http => $"http:{http.Id}:{http.Endpoint}:{http.HttpMethod}:{http.PayloadFormat}:{http.ResolvedHttpConfiguration?.BaseUrl}:{http.ResolvedHttpConfiguration?.OAuthClientId}:{http.ResolvedHttpConfiguration?.OAuthTokenUrl}:{string.Join(";", http.ResolvedHttpConfiguration?.Headers.Select(h => $"{h.Name}={h.Value}") ?? [])}",
         MemoryOutputProviderOptions mem => $"memory:{mem.Id}",
         _ => $"{step.Kind}:{step.Id}"
@@ -487,7 +491,7 @@ public sealed class IntegrationRunner
             CsvOutputProviderOptions csv when !string.IsNullOrWhiteSpace(csv.FilePath) => new CsvOutputProvider(csv.FilePath),
             JsonOutputProviderOptions json when !string.IsNullOrWhiteSpace(json.FilePath) => new JsonOutputProvider(json.FilePath),
             XmlOutputProviderOptions xml when !string.IsNullOrWhiteSpace(xml.FilePath) => new XmlOutputProvider(xml.FilePath, xml.XmlRootElement, xml.XmlRecordElement),
-            SqlOutputProviderOptions sql when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(sql.ConnectionString), sql.TableName, sql.Query),
+            SqlOutputProviderOptions sql when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(sql.ConnectionString), sql),
             HttpOutputProviderOptions http when http.ResolvedHttpConfiguration is not null => new HttpOutputProvider(http.ResolvedHttpConfiguration, http.Endpoint, http.HttpMethod, http.PayloadFormat, _options.HttpClientFactory),
             MemoryOutputProviderOptions mem => new MemoryOutputProvider(mem),
             SqlOutputProviderOptions => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration."),
