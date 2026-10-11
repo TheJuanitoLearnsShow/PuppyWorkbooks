@@ -92,8 +92,8 @@ public sealed class FileProviderTests
         {
             var file1 = Path.Combine(directory, "file1.txt");
             var file2 = Path.Combine(directory, "file2.csv");
-            File.WriteAllText(file1, "content1");
-            File.WriteAllText(file2, "content2");
+            await File.WriteAllTextAsync(file1, "content1");
+            await File.WriteAllTextAsync(file2, "content2");
 
             var provider = new FileSystemInputProvider(directory, addFileSize: true, addCreatedOnDate: true, addLastModifiedDate: true);
             var records = await ReadAllAsync(provider);

@@ -30,97 +30,21 @@
       <ProjectReference Include="..\..\5-Presentation\CLI\PuppyWorkbooks.CLI\PuppyWorkbooks.CLI.csproj" />
     </ItemGroup>
 
+  <ItemGroup>
+    <None Update="SampleFiles\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleFiles\Integration\SampleData\FileEnumeration\File2.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleFiles\Integration\SampleData\FileEnumeration\File3.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleFiles\Integration\TestFileEnumeration.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
     <ItemGroup>
-      <None Update="SampleFiles\Input1.csv">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\TestWorkbook.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\TestIntegration.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\TestIntegrationWithFileReferences.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\Map.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\Filter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\Reduce.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\Switch.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\InterpreterSample.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\HttpProviders.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\InputProviders.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\OutputProviders.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\LegacySqlOutput.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\AdditionalInput.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockCsvInline.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockCsvFilePath.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockDataMissing.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockNotMatched.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockDataVariousFormats.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockOutput.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockSqlOutput.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MockDeferredOutput.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MultipleMockScenarios.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\ScenarioFallback.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\HttpMockData.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\HttpMockDataFile.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\MultipleMockDataSources.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\CliMockData.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\CliMockDataAll.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="SampleFiles\Integration\CliScenario.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Include="..\..\3-Services\PuppyWorkbooks.Integration\Schemas\Integration.xsd">
         <Link>SampleFiles\Integration\Integration.xsd</Link>
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -129,13 +53,6 @@
         <Link>SampleFiles\Integration\WorkSheet.xsd</Link>
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="SampleFiles\Integration\SampleData\**\*">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="SampleFiles\Integration\SampleData\" />
     </ItemGroup>
 
 </Project>
