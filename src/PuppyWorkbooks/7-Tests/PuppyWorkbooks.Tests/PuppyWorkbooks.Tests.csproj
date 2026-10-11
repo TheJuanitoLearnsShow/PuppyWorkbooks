@@ -40,7 +40,13 @@
     <None Update="SampleFiles\Integration\SampleData\FileEnumeration\File3.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="SampleFiles\Integration\TestFileEnumeration.xml">
+    <None Update="SampleFiles\Integration\FileEnumerationTest\FileSystemInput.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleFiles\Integration\FileEnumerationTest\Reduce.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SampleFiles\Integration\FileEnumerationTest\TestFileEnumeration.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -102,6 +102,7 @@
       <xs:element name="HttpInput" type="HttpInputStepType" />
       <xs:element name="JsonInput" type="JsonInputStepType" />
       <xs:element name="XmlInput" type="XmlInputStepType" />
+      <xs:element name="FileSystemInput" type="FileSystemInputStepType" />
       <xs:element name="Map" type="MapStepType" />
       <xs:element name="Filter" type="FilterStepType" />
       <xs:element name="Reduce" type="ReduceStepType" />
@@ -222,6 +223,7 @@
       <xs:enumeration value="HttpReader" />
       <xs:enumeration value="JsonReader" />
       <xs:enumeration value="XmlReader" />
+      <xs:enumeration value="FileSystemReader" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -258,6 +260,9 @@
     <xs:attribute name="XmlRootElementFromField" type="xs:string" use="optional" />
     <xs:attribute name="XmlRecordElement" type="xs:string" use="optional" />
     <xs:attribute name="XmlRecordElementFromField" type="xs:string" use="optional" />
+    <xs:attribute name="AddFileSizeField" type="xs:boolean" use="optional" />
+    <xs:attribute name="AddCreatedOnDate" type="xs:boolean" use="optional" />
+    <xs:attribute name="AddLastModifiedDateField" type="xs:boolean" use="optional" />
   </xs:complexType>
 
   <xs:complexType name="InputProviderCommonType">
@@ -336,6 +341,18 @@
         <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
         <xs:attribute name="XmlItemElement" type="xs:string" use="optional" />
         <xs:attribute name="XmlItemElementFromField" type="xs:string" use="optional" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="FileSystemInputStepType">
+    <xs:complexContent>
+      <xs:extension base="InputProviderCommonType">
+        <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
+        <xs:attribute name="AddFileSizeField" type="xs:boolean" use="optional" />
+        <xs:attribute name="AddCreatedOnDate" type="xs:boolean" use="optional" />
+        <xs:attribute name="AddLastModifiedDateField" type="xs:boolean" use="optional" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

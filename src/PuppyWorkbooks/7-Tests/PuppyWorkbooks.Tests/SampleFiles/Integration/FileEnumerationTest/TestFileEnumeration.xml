@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Integration Name="Sales total"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:noNamespaceSchemaLocation="../../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
+
+    <Steps>
+        <FileSystemInput Id="input" 
+                         FilePath="SampleFiles/Integration/SampleData/FileEnumeration"
+        /> <!-- pats relative to the bin folder, not the path of the integration file -->
+        
+        <CsvInput Id="csvInput" FilePathFromField="FilePath"/>
+        
+        <Reduce Id="reduce" OutputField="Total">
+            <InitialStateJson>0</InitialStateJson>
+            <Worksheet FilePath="Reduce.xml"/>
+        </Reduce>
+        <CsvOutput Id="output" FilePath="FileEnumerationTotals.csv"/>
+    </Steps>
+</Integration>
