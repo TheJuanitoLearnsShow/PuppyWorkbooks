@@ -7,11 +7,11 @@ namespace PuppyWorkbooks.Integration.Models;
  XmlInclude(typeof(CsvInputStep)), XmlInclude(typeof(SqlInputStep)), XmlInclude(typeof(HttpInputStep)),
  XmlInclude(typeof(JsonInputStep)), XmlInclude(typeof(XmlInputStep)), XmlInclude(typeof(FileSystemInputStep)), XmlInclude(typeof(MemoryInputStep)),
  XmlInclude(typeof(CsvOutputStep)), XmlInclude(typeof(SqlOutputStep)), XmlInclude(typeof(HttpOutputStep)),
- XmlInclude(typeof(JsonOutputStep)), XmlInclude(typeof(XmlOutputStep)),
+ XmlInclude(typeof(JsonOutputStep)), XmlInclude(typeof(XmlOutputStep)), XmlInclude(typeof(MemoryOutputStep)),
  XmlInclude(typeof(CsvInputProviderOptions)), XmlInclude(typeof(SqlInputProviderOptions)), XmlInclude(typeof(HttpInputProviderOptions)),
  XmlInclude(typeof(JsonInputProviderOptions)), XmlInclude(typeof(XmlInputProviderOptions)), XmlInclude(typeof(FileSystemInputProviderOptions)), XmlInclude(typeof(MemoryInputProviderOptions)),
  XmlInclude(typeof(CsvOutputProviderOptions)), XmlInclude(typeof(SqlOutputProviderOptions)), XmlInclude(typeof(HttpOutputProviderOptions)),
- XmlInclude(typeof(JsonOutputProviderOptions)), XmlInclude(typeof(XmlOutputProviderOptions))]
+ XmlInclude(typeof(JsonOutputProviderOptions)), XmlInclude(typeof(XmlOutputProviderOptions)), XmlInclude(typeof(MemoryOutputProviderOptions))]
 public abstract class IntegrationStep
 {
     [XmlAttribute] public string Id { get; set; } = string.Empty;

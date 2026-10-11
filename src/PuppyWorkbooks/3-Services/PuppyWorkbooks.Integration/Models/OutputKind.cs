@@ -1,6 +1,6 @@
 ﻿namespace PuppyWorkbooks.Integration.Models;
 
-public enum OutputKind { CSVWriter, SqlWriter, HttpWriter, JsonWriter, XmlWriter }
+public enum OutputKind { CSVWriter, SqlWriter, HttpWriter, JsonWriter, XmlWriter, MemoryWriter }
 
 public static class OutputKindXmlNames
 {
@@ -11,6 +11,7 @@ public static class OutputKindXmlNames
         OutputKind.HttpWriter => "HttpOutput",
         OutputKind.JsonWriter => "JsonOutput",
         OutputKind.XmlWriter => "XmlOutput",
+        OutputKind.MemoryWriter => "MemoryOutput",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported output provider kind.")
     };
 
@@ -23,9 +24,10 @@ public static class OutputKindXmlNames
             "HttpOutput" => OutputKind.HttpWriter,
             "JsonOutput" => OutputKind.JsonWriter,
             "XmlOutput" => OutputKind.XmlWriter,
+            "MemoryOutput" => OutputKind.MemoryWriter,
             _ => default
         };
 
-        return elementName is "CsvOutput" or "SqlOutput" or "HttpOutput" or "JsonOutput" or "XmlOutput";
+        return elementName is "CsvOutput" or "SqlOutput" or "HttpOutput" or "JsonOutput" or "XmlOutput" or "MemoryOutput";
     }
 }

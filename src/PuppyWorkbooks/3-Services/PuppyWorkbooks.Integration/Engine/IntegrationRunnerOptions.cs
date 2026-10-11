@@ -35,4 +35,14 @@ public sealed class IntegrationRunnerOptions
     public string? Scenario { get; set; }
 
     public object? InputData { get; set; }
+
+    /// <summary>
+    /// Optional action callback invoked when rows are yielded by memory output providers.
+    /// </summary>
+    public Action<Models.IntegrationRecord>? Action { get; set; }
+
+    /// <summary>
+    /// Alias for Action.
+    /// </summary>
+    public Action<Models.IntegrationRecord>? OutputAction { get => Action; set => Action = value; }
 }

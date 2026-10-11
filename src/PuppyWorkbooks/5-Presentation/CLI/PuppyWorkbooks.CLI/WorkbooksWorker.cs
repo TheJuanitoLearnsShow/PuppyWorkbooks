@@ -235,6 +235,18 @@ public sealed class WorkbooksWorker : IHostedService
 
 
 
+    public static void OutputRecord(IntegrationRecord record)
+    {
+        var json = JsonSerializer.Serialize(record.Values, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        Console.WriteLine(json);
+    }
+
+    public static void WriteRecordToConsole(IntegrationRecord record) => OutputRecord(record);
+    public static void OutputRow(IntegrationRecord record) => OutputRecord(record);
+
     Task IHostedService.StopAsync(CancellationToken cancellationToken)
     {
         _logger?.LogInformation("7. StopAsync has been called.");

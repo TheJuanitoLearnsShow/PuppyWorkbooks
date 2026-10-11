@@ -27,7 +27,7 @@ public class PuppyIntegrationWorker
         _settings = settings;
     }
     
-    public async Task ExecuteIntegration(string path, bool isDebug, string? mockSteps, string? scenario, CancellationToken cancellationToken)
+    public async Task ExecuteIntegration(string path, bool isDebug, string? mockSteps, string? scenario, CancellationToken cancellationToken, Action<IntegrationRecord>? action = null)
     {
         try
         {
@@ -40,6 +40,7 @@ public class PuppyIntegrationWorker
                 UseMockDataForSteps = mockSteps ?? string.Empty,
                 Scenario = scenario,
                 InputData = inputValues,
+                Action = action ?? WorkbooksWorker.OutputRecord
             });
             var result = await runner.RunAsync(definition, cancellationToken);
             if (isDebug && result.DebugData is not null)

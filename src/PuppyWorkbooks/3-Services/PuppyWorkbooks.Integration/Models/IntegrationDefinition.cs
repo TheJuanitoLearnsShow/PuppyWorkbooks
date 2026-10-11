@@ -27,6 +27,7 @@ public sealed class IntegrationDefinition
     [XmlArrayItem("HttpOutput", typeof(HttpOutputStep))]
     [XmlArrayItem("JsonOutput", typeof(JsonOutputStep))]
     [XmlArrayItem("XmlOutput", typeof(XmlOutputStep))]
+    [XmlArrayItem("MemoryOutput", typeof(MemoryOutputStep))]
     [XmlArrayItem("IOOutput", typeof(OutputStep))]
     public List<IntegrationStep> Steps { get; set; } = [];
 

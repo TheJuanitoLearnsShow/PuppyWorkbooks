@@ -99,3 +99,13 @@ public class XmlOutputProviderOptions : OutputStep
 public sealed class XmlOutputStep : XmlOutputProviderOptions
 {
 }
+
+public class MemoryOutputProviderOptions : OutputStep
+{
+    [XmlIgnore] public override OutputKind Kind { get; set; } = OutputKind.MemoryWriter;
+    [XmlIgnore] public Action<IntegrationRecord>? Action { get; set; }
+}
+
+public sealed class MemoryOutputStep : MemoryOutputProviderOptions
+{
+}

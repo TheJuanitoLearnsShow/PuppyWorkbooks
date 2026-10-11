@@ -112,6 +112,7 @@
       <xs:element name="HttpOutput" type="HttpOutputStepType" />
       <xs:element name="JsonOutput" type="JsonOutputStepType" />
       <xs:element name="XmlOutput" type="XmlOutputStepType" />
+      <xs:element name="MemoryOutput" type="MemoryOutputStepType" />
     </xs:choice>
   </xs:complexType>
 
@@ -381,6 +382,7 @@
       <xs:element name="HttpOutput" type="HttpOutputStepType" />
       <xs:element name="JsonOutput" type="JsonOutputStepType" />
       <xs:element name="XmlOutput" type="XmlOutputStepType" />
+      <xs:element name="MemoryOutput" type="MemoryOutputStepType" />
     </xs:choice>
     <xs:attribute name="WorkCell" type="xs:string" use="optional" />
   </xs:complexType>
@@ -401,6 +403,7 @@
       <xs:enumeration value="HttpWriter" />
       <xs:enumeration value="JsonWriter" />
       <xs:enumeration value="XmlWriter" />
+      <xs:enumeration value="MemoryWriter" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -507,6 +510,13 @@
         <xs:attribute name="XmlRootElementFromField" type="xs:string" use="optional" />
         <xs:attribute name="XmlRecordElement" type="xs:string" use="optional" />
         <xs:attribute name="XmlRecordElementFromField" type="xs:string" use="optional" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="MemoryOutputStepType">
+    <xs:complexContent>
+      <xs:extension base="OutputProviderCommonType">
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

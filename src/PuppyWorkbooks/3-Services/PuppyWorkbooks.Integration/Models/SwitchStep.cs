@@ -31,6 +31,7 @@ public sealed class SwitchBranch
     [XmlElement("HttpOutput", typeof(HttpOutputStep))]
     [XmlElement("JsonOutput", typeof(JsonOutputStep))]
     [XmlElement("XmlOutput", typeof(XmlOutputStep))]
+    [XmlElement("MemoryOutput", typeof(MemoryOutputStep))]
     [XmlElement("IOOutput", typeof(OutputStep))]
     public List<IntegrationStep> Steps { get; set; } = [];
 }

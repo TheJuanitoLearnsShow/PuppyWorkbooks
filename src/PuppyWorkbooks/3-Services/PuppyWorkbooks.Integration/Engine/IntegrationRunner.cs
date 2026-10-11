@@ -26,6 +26,7 @@ public sealed class IntegrationRunner
     {
         _secretManager = new SecretManager(definition.SecretManager);
         AssignDataToMemoryInputProviders(definition);
+        AssignActionToMemoryOutputProviders(definition);
         var input = definition.Steps.OfType<InputStep>().FirstOrDefault();
         if (input is null) throw new InvalidOperationException("An integration must contain an IOInput step.");
         await using var inputProvider = CreateInput(input);
@@ -217,6 +218,18 @@ public sealed class IntegrationRunner
         }
     }
 
+    private void AssignActionToMemoryOutputProviders(IntegrationDefinition definition)
+    {
+        var outputAction = _options.Action ?? _options.OutputAction;
+        if (outputAction is not null)
+        {
+            foreach (var outputStep in definition.Steps.OfType<MemoryOutputProviderOptions>())
+            {
+                outputStep.Action ??= outputAction;
+            }
+        }
+    }
+
 
     private IInputProvider CreateInput(InputStep step, IntegrationRecord? inputRecord = null)
     {
@@ -393,6 +406,10 @@ public sealed class IntegrationRunner
                 XmlRecordElement = ResolveFieldOrValue(xml.XmlRecordElement, xml.XmlRecordElementFromField, inputRecord),
                 XmlRecordElementFromField = xml.XmlRecordElementFromField
             },
+            MemoryOutputProviderOptions mem => new MemoryOutputStep
+            {
+                Action = mem.Action
+            },
             _ => throw new InvalidOperationException($"Unsupported output step type: {step.GetType().Name}")
         };
 
@@ -436,6 +453,7 @@ public sealed class IntegrationRunner
         XmlOutputProviderOptions xml => $"xml:{xml.Id}:{xml.FilePath}:{xml.XmlRootElement}:{xml.XmlRecordElement}",
         SqlOutputProviderOptions sql => $"sql:{sql.Id}:{sql.ConnectionString}:{sql.TableName}:{sql.Query}",
         HttpOutputProviderOptions http => $"http:{http.Id}:{http.Endpoint}:{http.HttpMethod}:{http.PayloadFormat}:{http.ResolvedHttpConfiguration?.BaseUrl}:{http.ResolvedHttpConfiguration?.OAuthClientId}:{http.ResolvedHttpConfiguration?.OAuthTokenUrl}:{string.Join(";", http.ResolvedHttpConfiguration?.Headers.Select(h => $"{h.Name}={h.Value}") ?? [])}",
+        MemoryOutputProviderOptions mem => $"memory:{mem.Id}",
         _ => $"{step.Kind}:{step.Id}"
     };
 
@@ -471,6 +489,7 @@ public sealed class IntegrationRunner
             XmlOutputProviderOptions xml when !string.IsNullOrWhiteSpace(xml.FilePath) => new XmlOutputProvider(xml.FilePath, xml.XmlRootElement, xml.XmlRecordElement),
             SqlOutputProviderOptions sql when _options.ConnectionFactory is not null => new SqlOutputProvider(_options.ConnectionFactory(sql.ConnectionString), sql.TableName, sql.Query),
             HttpOutputProviderOptions http when http.ResolvedHttpConfiguration is not null => new HttpOutputProvider(http.ResolvedHttpConfiguration, http.Endpoint, http.HttpMethod, http.PayloadFormat, _options.HttpClientFactory),
+            MemoryOutputProviderOptions mem => new MemoryOutputProvider(mem),
             SqlOutputProviderOptions => throw new InvalidOperationException("SQL output requires ConnectionFactory; unsupported or missing output configuration."),
             HttpOutputProviderOptions => throw new InvalidOperationException("HTTP output requires a resolved HTTP configuration."),
             _ => throw new InvalidOperationException("Output provider configuration is missing or unsupported.")

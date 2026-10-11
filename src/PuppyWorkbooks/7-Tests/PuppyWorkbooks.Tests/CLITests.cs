@@ -4,6 +4,7 @@ using Xunit.Abstractions;
 
 namespace PuppyWorkbooks.Tests;
 
+[Collection("ConsoleTests")]
 public class CLITests
 {
     private readonly ITestOutputHelper _testOutputHelper;
