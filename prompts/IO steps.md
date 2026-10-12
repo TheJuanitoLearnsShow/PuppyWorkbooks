@@ -48,3 +48,9 @@ for the following attributes of the input and output providers and the HttpConfi
 
 
 Then in the integration execution, inject that value.
+
+===================
+Add a new integration step (RunIntegration) to allow calling another integration and pass the current row or just one of the fields in the current row. The data would be sent to the child integration via a memory input provider. If one does not exist in the called provider, then ignore data passed. If the data passed is a powerfx table, adjut the input provider so that it can support yielding rows from that table.
+===================
+
+Add new step (ForEach) that yields input rows from a PowerFX table from the current input row. For example, if there was a mapping step that assigned a powerfx table to FieldB then this new step would allow the steps within the ForEach section to run per every row in  FieldB. Alternatively, it could call another integration in another file and pass that table as the input to the other in-memory input (you may need to adjust the memory input provider to support getting collection of InputRows as inputs). The new step is basically a for each loop. 
