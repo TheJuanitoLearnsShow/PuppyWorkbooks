@@ -100,13 +100,13 @@ public sealed class FileProviderTests
 
             Assert.Equal(2, records.Count);
             
-            var file1Record = records.FirstOrDefault(r => r["File Name"] as string == "file1.txt");
+            var file1Record = records.FirstOrDefault(r => r["FileName"] as string == "file1.txt");
             Assert.NotNull(file1Record);
-            Assert.Equal(".txt", file1Record["file extension"]);
-            Assert.Equal(8L, file1Record["file size in bytes"]);
-            Assert.NotNull(file1Record["file created date"]);
-            Assert.NotNull(file1Record["file last modified date"]);
-            Assert.Equal(file1, file1Record["file path"]);
+            Assert.Equal(".txt", file1Record["FileExtension"]);
+            Assert.Equal(8L, file1Record["FileSizeInBytes"]);
+            Assert.NotNull(file1Record["FileCreatedDate"]);
+            Assert.NotNull(file1Record["FileLastModifiedDate"]);
+            Assert.Equal(file1, file1Record["FilePath"]);
         }
         finally
         {
