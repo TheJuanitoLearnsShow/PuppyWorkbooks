@@ -42,4 +42,21 @@ public class InterpreterTests
         Assert.Equal("Total", expectedCell.Name);
         Assert.Equal("15", expectedCell.Value);
     }
+
+    [Fact]
+    public async Task ExecuteTestScenariosAsync_UsesScenarioInputsAndReportsExpectedCellValues()
+    {
+        var worksheet = _workSheetSerializer.DeserializeFromXmlFile("SampleFiles/TestScenarioWorkbook.xml");
+
+        var result = Assert.Single(await new WorkbookInterpreter().ExecuteTestScenariosAsync(worksheet,
+            scenarioName: "triplemultiplier"));
+
+        Assert.Equal("TripleMultiplier", result.Name);
+        Assert.True(result.Passed);
+        var expectedCell = Assert.Single(result.ExpectedCells);
+        Assert.Equal("Total", expectedCell.CellName);
+        Assert.Equal("15", expectedCell.ActualValue);
+        Assert.True(expectedCell.Passed);
+        Assert.Equal("2", worksheet.Variables["Multiplier"]);
+    }
 }

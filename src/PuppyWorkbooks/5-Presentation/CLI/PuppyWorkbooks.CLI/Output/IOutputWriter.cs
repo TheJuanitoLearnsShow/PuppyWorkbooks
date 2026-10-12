@@ -6,6 +6,7 @@ public interface IOutputWriter : IDisposable
 {
     void OpenWriter();
     void WriteCellResult(CellResult result);
+    void WriteTestScenarioResult(WorkSheetTestScenarioResult result);
     void StartWorkbookResult(string workbookName);
     void EndWorkbookResult();
     void CloseWriter();
@@ -15,6 +16,7 @@ public class ConsoleOutputWriter : IOutputWriter, IAsyncDisposable
 {
     private Utf8JsonWriter? _writer;
     private Stream _consoleStream;
+    private bool _testScenariosStarted;
 
     public void OpenWriter()
     {
@@ -35,6 +37,7 @@ public class ConsoleOutputWriter : IOutputWriter, IAsyncDisposable
         _writer.WriteStartObject();
         _writer.WriteString("name", workbookName);
         _writer.WriteStartArray("cells");
+        _testScenariosStarted = false;
     }
 
     public void EndWorkbookResult()
@@ -52,6 +55,34 @@ public class ConsoleOutputWriter : IOutputWriter, IAsyncDisposable
         _writer.WriteString("output", result.DisplayOutput);
         _writer.WriteEndObject();
         return;
+    }
+
+    public void WriteTestScenarioResult(WorkSheetTestScenarioResult result)
+    {
+        if (_writer == null) return;
+        if (!_testScenariosStarted)
+        {
+            _writer.WriteEndArray();
+            _writer.WriteStartArray("testScenarios");
+            _testScenariosStarted = true;
+        }
+
+        _writer.WriteStartObject();
+        _writer.WriteString("name", result.Name);
+        _writer.WriteBoolean("passed", result.Passed);
+        _writer.WriteStartArray("expectedCells");
+        foreach (var cell in result.ExpectedCells)
+        {
+            _writer.WriteStartObject();
+            _writer.WriteString("cellName", cell.CellName);
+            _writer.WriteString("expectedValue", cell.ExpectedValue);
+            _writer.WriteString("actualValue", cell.ActualValue);
+            _writer.WriteBoolean("passed", cell.Passed);
+            if (!string.IsNullOrWhiteSpace(cell.Error)) _writer.WriteString("error", cell.Error);
+            _writer.WriteEndObject();
+        }
+        _writer.WriteEndArray();
+        _writer.WriteEndObject();
     }
 
     public void CloseWriter()

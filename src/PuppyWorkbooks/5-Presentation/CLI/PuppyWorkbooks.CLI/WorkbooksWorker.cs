@@ -62,13 +62,20 @@ public sealed class WorkbooksWorker : IHostedService
     {
         _settings.InputDataPath ??= GetInputDataPathArgument(cmdArgs);
         var isDebug = _settings.Debug || cmdArgs.Any(IsDebugArgument);
+        var testMode = _settings.TestMode || GetTestModeArgument(cmdArgs);
+        _settings.TestMode = testMode;
         var mockSteps = !string.IsNullOrWhiteSpace(_settings.UseMockDataForSteps)
             ? _settings.UseMockDataForSteps
             : GetMockArgument(cmdArgs);
         var scenario = !string.IsNullOrWhiteSpace(_settings.Scenario)
             ? _settings.Scenario
             : GetScenarioArgument(cmdArgs);
+        _settings.Scenario = scenario;
         var simplePaths = GetPositionalArguments(cmdArgs);
+        if ((_settings.WorkbookPaths is null || _settings.WorkbookPaths.Length == 0) && simplePaths.Count > 0)
+        {
+            _settings.WorkbookPaths = [.. simplePaths];
+        }
         if (simplePaths.Count == 1)
         {
             var rootName = GetFirstXmlNodeName(simplePaths[0]);
@@ -99,6 +106,11 @@ public sealed class WorkbooksWorker : IHostedService
         {
             var arg = cmdArgs[i];
             if (string.IsNullOrWhiteSpace(arg)) continue;
+            if (IsTestModeArgument(arg))
+            {
+                if (i + 1 < cmdArgs.Length && bool.TryParse(cmdArgs[i + 1], out _)) i++;
+                continue;
+            }
             if (arg.StartsWith('-') || arg.StartsWith('/'))
             {
                 if (!IsDebugArgument(arg) && !arg.Contains('=') && i + 1 < cmdArgs.Length && !cmdArgs[i + 1].StartsWith('-') && !cmdArgs[i + 1].StartsWith('/'))
@@ -110,6 +122,25 @@ public sealed class WorkbooksWorker : IHostedService
             result.Add(arg);
         }
         return result;
+    }
+
+    private static bool GetTestModeArgument(string[] cmdArgs)
+    {
+        for (var i = 1; i < cmdArgs.Length; i++)
+        {
+            var arg = cmdArgs[i];
+            var equalIndex = arg.IndexOf('=');
+            if (equalIndex > 0 && IsTestModeArgument(arg[..equalIndex]))
+            {
+                return bool.TryParse(arg[(equalIndex + 1)..], out var enabledFromEquals) && enabledFromEquals;
+            }
+
+            if (!IsTestModeArgument(arg)) continue;
+            if (i + 1 < cmdArgs.Length && bool.TryParse(cmdArgs[i + 1], out var enabled)) return enabled;
+            return true;
+        }
+
+        return false;
     }
 
     private static string? GetMockArgument(string[] cmdArgs)
@@ -232,6 +263,13 @@ public sealed class WorkbooksWorker : IHostedService
         string.Equals(arg, "-d", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(arg, "--Debug", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(arg, "debug", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsTestModeArgument(string arg) =>
+        string.Equals(arg, "--test-mode", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--testMode", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "-testMode", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "/testMode", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--test", StringComparison.OrdinalIgnoreCase);
 
 
 

@@ -102,10 +102,91 @@ public class WorkbookInterpreter
         return results;
     }
 
+    /// <summary>
+    /// Runs every test scenario declared by a worksheet. Scenario inputs override the
+    /// worksheet's default variables only for that scenario execution.
+    /// </summary>
+    public async Task<IReadOnlyList<WorkSheetTestScenarioResult>> ExecuteTestScenariosAsync(
+        WorkSheet worksheet,
+        string? scenarioName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var scenarioResults = new List<WorkSheetTestScenarioResult>();
+        var scenarios = string.IsNullOrWhiteSpace(scenarioName)
+            ? worksheet.TestScenarios
+            : worksheet.TestScenarios
+                .Where(scenario => string.Equals(scenario.Name, scenarioName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        if (!string.IsNullOrWhiteSpace(scenarioName) && scenarios.Count == 0)
+        {
+            throw new InvalidOperationException($"Worksheet '{worksheet.Name}' does not contain a test scenario named '{scenarioName}'.");
+        }
+
+        foreach (var scenario in scenarios)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var scenarioWorksheet = CreateScenarioWorksheet(worksheet, scenario);
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            await foreach (var result in ExecuteAsync(scenarioWorksheet, yieldResultsForEachCell: true,
+                               cancellationToken: cancellationToken))
+            {
+                values[result.CellName] = result.DisplayOutput;
+            }
+
+            var expectedCells = scenario.ExpectedCells.Select(expected =>
+            {
+                if (!values.TryGetValue(expected.Name, out var actualValue))
+                {
+                    return new WorkSheetExpectedCellResult
+                    {
+                        CellName = expected.Name,
+                        ExpectedValue = expected.Value,
+                        Passed = false,
+                        Error = $"Worksheet does not contain a formula cell named '{expected.Name}'."
+                    };
+                }
+
+                return new WorkSheetExpectedCellResult
+                {
+                    CellName = expected.Name,
+                    ExpectedValue = expected.Value,
+                    ActualValue = actualValue,
+                    Passed = string.Equals(expected.Value, actualValue, StringComparison.Ordinal)
+                };
+            }).ToList();
+
+            scenarioResults.Add(new WorkSheetTestScenarioResult
+            {
+                Name = scenario.Name,
+                ExpectedCells = expectedCells
+            });
+        }
+
+        return scenarioResults;
+    }
+
     private static List<WorkCell> GetExecutionCells(WorkSheet worksheet, int uptToRow = -1)
     {
         var cells = uptToRow == -1 ? worksheet.Cells : worksheet.Cells.Take(uptToRow);
         return [.. cells];
+    }
+
+    private static WorkSheet CreateScenarioWorksheet(WorkSheet worksheet, WorkSheetTestScenario scenario)
+    {
+        var variables = new Dictionary<string, string>(worksheet.Variables, StringComparer.OrdinalIgnoreCase);
+        foreach (var input in scenario.Inputs)
+        {
+            variables[input.Key] = input.Value;
+        }
+
+        return new WorkSheet
+        {
+            Name = worksheet.Name,
+            Variables = variables,
+            Cells = [.. worksheet.Cells.Select(cell => new WorkCell(cell.Id, cell.Name, cell.Formula, cell.Comments))]
+        };
     }
 
     private static bool CanBeUsedAsFormula(WorkCell cell)

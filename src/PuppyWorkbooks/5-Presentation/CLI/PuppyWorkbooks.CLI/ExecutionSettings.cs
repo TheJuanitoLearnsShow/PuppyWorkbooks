@@ -32,13 +32,19 @@ public class ExecutionSettings
     public bool Debug { get; set; }
 
     /// <summary>
+    /// When true, executes worksheet test scenarios after the worksheet's normal cells.
+    /// </summary>
+    public bool TestMode { get; set; }
+
+    /// <summary>
     /// When specified, configures the integration runner to use mock data for steps.
     /// Can be "ALL" to use mock data for all IO steps, or a comma-separated list of step IDs.
     /// </summary>
     public string? UseMockDataForSteps { get; set; }
 
     /// <summary>
-    /// When specified, defines the scenario name to select mock data for input steps.
+    /// When specified, selects mock data for integration inputs or a named worksheet
+    /// test scenario when <see cref="TestMode"/> is enabled.
     /// </summary>
     public string? Scenario { get; set; }
 }

@@ -73,23 +73,37 @@ public class PuppyWorksheetWorker
         {
             var workbook = _workSheetSerializer.DeserializeFromXmlFile(path);
             outputWriter.StartWorkbookResult(workbook.Name);
-            foreach (var inputValue in inputValues)
-            {
-                workbook.SetInputValue(inputValue.Key, inputValue.Value);
-            }
-
+            
+            
             var interpreter = new WorkbookInterpreter();
-            await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true,
-                               cancellationToken: cancellationToken))
+            if (_settings.TestMode)
             {
-                outputWriter.WriteCellResult(result);
+                var scenarioResults = await interpreter.ExecuteTestScenariosAsync(workbook,
+                    scenarioName: _settings.Scenario,
+                    cancellationToken: cancellationToken);
+                foreach (var scenarioResult in scenarioResults)
+                {
+                    outputWriter.WriteTestScenarioResult(scenarioResult);
+                }
             }
+            else
+            {
+                foreach (var inputValue in inputValues)
+                {
+                    workbook.SetInputValue(inputValue.Key, inputValue.Value);
+                }
 
+                await foreach (var result in interpreter.ExecuteAsync(workbook, yieldResultsForEachCell: true,
+                                   cancellationToken: cancellationToken))
+                {
+                    outputWriter.WriteCellResult(result);
+                }
+            }
             outputWriter.EndWorkbookResult();
         }
         catch (Exception e)
         {
-            _logger?.LogError(e.Message, "Error executing workbook at path: {Path}", path);
+            _logger?.LogError(e, "Error executing workbook at path: {Path}", path);
         }
     }
 
