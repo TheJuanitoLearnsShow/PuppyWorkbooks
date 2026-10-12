@@ -10,7 +10,7 @@
       <xs:element name="Comments" type="xs:string" minOccurs="1" />
       <xs:element name="Variables" type="VariablesType" minOccurs="0" />
       <xs:element name="Cells" type="CellsType" minOccurs="0" />
-      <xs:element name="TestScenarios" type="TestScenariosType" minOccurs="0" />
+      <xs:element name="TestScenarios" type="TestScenariosType" minOccurs="1" />
     </xs:sequence>
     <xs:attribute name="Comments" type="xs:string" use="optional" />
   </xs:complexType>
