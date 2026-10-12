@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Integration Name="CLI Mock Test All" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
     <Steps>
         <SqlInput Id="sqlInput" ConnectionString="Server=invalid;">
@@ -19,7 +19,8 @@ Cara,true,5
                         <Comments/>
                     </WorkCell>
                 </Cells>
-            </Worksheet>
+              <TestScenarios />
+</Worksheet>
         </Map>
         <CsvOutput Id="output" FilePath="__OUTPUT_PATH__" />
     </Steps>

@@ -20,6 +20,7 @@ public sealed class SchemaValidationTests
     [Theory]
     [InlineData("TestWorkbook.xml")]
     [InlineData("InterpreterSample.xml")]
+    [InlineData("TestScenarioWorkbook.xml")]
     public void WorkSheetSchema_ValidatesRootSampleWorksheets(string fileName)
     {
         var schemaPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "WorkSheet.xsd");

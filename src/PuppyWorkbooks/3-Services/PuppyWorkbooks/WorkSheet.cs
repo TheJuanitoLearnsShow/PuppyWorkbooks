@@ -19,6 +19,9 @@ public class WorkSheet
     }
     public List<WorkCell> Cells { get; set; } = new List<WorkCell>();
 
+    [XmlArray("TestScenarios"), XmlArrayItem("TestScenario")]
+    public List<WorkSheetTestScenario> TestScenarios { get; set; } = [];
+
     public void SetInputValue(string inputValueKey, string inputValueValue)
     {
         var worksheetVariable = Variables.FirstOrDefault(v => string.Equals(v.Key, inputValueKey, StringComparison.CurrentCulture));
@@ -35,5 +38,23 @@ public class WorkSheet
 public sealed class WorkSheetVariable
 {
     public string Key { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+}
+
+public sealed class WorkSheetTestScenario
+{
+    [XmlAttribute]
+    public string Name { get; set; } = string.Empty;
+
+    [XmlArray("Inputs"), XmlArrayItem("Variable")]
+    public List<WorkSheetVariable> Inputs { get; set; } = [];
+
+    [XmlArray("ExpectedCells"), XmlArrayItem("Cell")]
+    public List<WorkSheetExpectedCell> ExpectedCells { get; set; } = [];
+}
+
+public sealed class WorkSheetExpectedCell
+{
+    public string Name { get; set; } = string.Empty;
     public string Value { get; set; } = string.Empty;
 }

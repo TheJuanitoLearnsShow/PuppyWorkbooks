@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Integration Name="Sales total"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
 <Steps>
@@ -26,7 +26,8 @@
                         <Comments/>
                     </WorkCell>
                 </Cells>
-            </Worksheet>
+              <TestScenarios />
+</Worksheet>
         </Map>
         <Filter Id="filter">
             <Worksheet>
@@ -39,7 +40,8 @@
                         <Comments/>
                     </WorkCell>
                 </Cells>
-            </Worksheet>
+              <TestScenarios />
+</Worksheet>
         </Filter>
         <Reduce Id="reduce" OutputField="Total">
             <InitialStateJson>0</InitialStateJson>
@@ -53,7 +55,8 @@
                         <Comments/>
                     </WorkCell>
                 </Cells>
-            </Worksheet>
+              <TestScenarios />
+</Worksheet>
         </Reduce>
         <CsvOutput Id="output" FilePath="__OUTPUT_PATH__"/>
     </Steps>

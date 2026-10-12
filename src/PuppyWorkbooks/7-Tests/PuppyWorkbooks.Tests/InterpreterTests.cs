@@ -27,4 +27,19 @@ public class InterpreterTests
         }
         _workSheetSerializer.SerializeToXmlFile("TestWorkbook.xml", workbook);
     }
+
+    [Fact]
+    public void DeserializeFromXmlFile_ReadsTestScenarioInputsAndExpectedCellValues()
+    {
+        var worksheet = _workSheetSerializer.DeserializeFromXmlFile("SampleFiles/TestScenarioWorkbook.xml");
+
+        var scenario = Assert.Single(worksheet.TestScenarios);
+        Assert.Equal("TripleMultiplier", scenario.Name);
+        var input = Assert.Single(scenario.Inputs);
+        Assert.Equal("Multiplier", input.Key);
+        Assert.Equal("3", input.Value);
+        var expectedCell = Assert.Single(scenario.ExpectedCells);
+        Assert.Equal("Total", expectedCell.Name);
+        Assert.Equal("15", expectedCell.Value);
+    }
 }
