@@ -110,3 +110,13 @@ declaration order:
   </Branch>
 </Switch>
 ```
+
+`RunIntegration` runs another integration once for each incoming row. It supplies the
+complete row to the child integration's first `MemoryInput`; set `FromField` to supply
+only a field value. A Power Fx table field is yielded by the memory input as one child
+row per table row. If the child has no memory input, it runs normally and the passed
+data is ignored.
+
+```xml
+<RunIntegration Id="notify" FilePath="integrations/notify.xml" FromField="Recipients" />
+```

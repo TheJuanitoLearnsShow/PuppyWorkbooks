@@ -17,6 +17,7 @@ public sealed class IntegrationXmlSerializer
     {
         using var reader = new StringReader(NormalizeProviderElements(xml));
         var definition = (IntegrationDefinition)_serializer.Deserialize(reader)!;
+        definition.SourceDirectory = baseDirectory;
         ResolveHttpConfigurations(definition);
         LoadReferencedWorksheets(definition, xml, baseDirectory);
         SecretManager.ResolveSecrets(definition);

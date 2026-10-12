@@ -166,6 +166,11 @@ public sealed class IntegrationRunner
                         await ProcessStepsAsync(stepIndex + 1, switchRecord, rowDebug, sourceRecord);
                         break;
 
+                    case RunIntegrationStep runIntegration:
+                        await ExecuteRunIntegrationStep(runIntegration, record, definition.SourceDirectory, cancellationToken);
+                        await ProcessStepsAsync(stepIndex + 1, record, rowDebug, sourceRecord);
+                        break;
+
                     case OutputStep output when !deferOutput:
                         IntegrationDebugger.DebugOutputStep(rowDebug, output, record);
                         var outputProvider = GetOrCreateOutput(output, record);
@@ -217,6 +222,51 @@ public sealed class IntegrationRunner
             }
         }
     }
+
+    private async Task ExecuteRunIntegrationStep(RunIntegrationStep step, IntegrationRecord record,
+        string? parentDirectory, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(step.FilePath))
+            throw new InvalidOperationException($"RunIntegration '{step.Id}' requires a FilePath attribute.");
+
+        var path = ResolveValue(step.FilePath, record);
+        var fullPath = Path.IsPathRooted(path)
+            ? path
+            : Path.Combine(parentDirectory ?? Directory.GetCurrentDirectory(), path);
+        fullPath = Path.GetFullPath(fullPath);
+
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException($"Integration file '{path}' was not found.", fullPath);
+
+        object? inputData;
+        if (string.IsNullOrWhiteSpace(step.FromField))
+        {
+            inputData = record.Values;
+        }
+        else if (!record.Values.TryGetValue(step.FromField, out var fieldValue))
+        {
+            throw new InvalidOperationException($"RunIntegration '{step.Id}' references missing input field '{step.FromField}'.");
+        }
+        else
+        {
+            inputData = fieldValue;
+        }
+
+        var childDefinition = new IntegrationXmlSerializer().DeserializeFile(fullPath);
+        var childRunner = new IntegrationRunner(CreateChildRunnerOptions(inputData));
+        await childRunner.RunAsync(childDefinition, cancellationToken);
+    }
+
+    private IntegrationRunnerOptions CreateChildRunnerOptions(object? inputData) => new()
+    {
+        ConnectionFactory = _options.ConnectionFactory,
+        HttpClientFactory = _options.HttpClientFactory,
+        Debug = _options.Debug,
+        UseMockDataForSteps = _options.UseMockDataForSteps,
+        Scenario = _options.Scenario,
+        InputData = inputData,
+        Action = _options.Action
+    };
 
     private void AssignActionToMemoryOutputProviders(IntegrationDefinition definition)
     {

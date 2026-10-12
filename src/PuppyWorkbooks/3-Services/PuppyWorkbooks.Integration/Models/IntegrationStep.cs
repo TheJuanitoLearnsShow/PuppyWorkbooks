@@ -2,7 +2,7 @@
 
 namespace PuppyWorkbooks.Integration.Models;
 
-[XmlInclude(typeof(MapStep)), XmlInclude(typeof(FilterStep)), XmlInclude(typeof(ReduceStep)), XmlInclude(typeof(SwitchStep)),
+[XmlInclude(typeof(MapStep)), XmlInclude(typeof(FilterStep)), XmlInclude(typeof(ReduceStep)), XmlInclude(typeof(SwitchStep)), XmlInclude(typeof(RunIntegrationStep)),
  XmlInclude(typeof(InputStep)), XmlInclude(typeof(OutputStep)),
  XmlInclude(typeof(CsvInputStep)), XmlInclude(typeof(SqlInputStep)), XmlInclude(typeof(HttpInputStep)),
  XmlInclude(typeof(JsonInputStep)), XmlInclude(typeof(XmlInputStep)), XmlInclude(typeof(FileSystemInputStep)), XmlInclude(typeof(MemoryInputStep)),

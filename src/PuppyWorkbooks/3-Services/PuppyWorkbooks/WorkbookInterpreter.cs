@@ -94,7 +94,9 @@ public class WorkbookInterpreter
         foreach (var cell in worksheet.Cells.Where(c => !string.IsNullOrWhiteSpace(c.Formula)))
         {
             var result = await engine.EvalAsync(cell.Name, cancellationToken);
-            results[cell.Name] = result.ToObject();
+            // Preserve tables so integrations can pass Power Fx table values to
+            // memory inputs without flattening them into implementation-specific objects.
+            results[cell.Name] = result is Microsoft.PowerFx.Types.TableValue ? result : result.ToObject();
         }
 
         return results;

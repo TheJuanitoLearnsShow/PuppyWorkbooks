@@ -14,6 +14,7 @@ public sealed class IntegrationDefinition
     [XmlArrayItem("Filter", typeof(FilterStep))]
     [XmlArrayItem("Reduce", typeof(ReduceStep))]
     [XmlArrayItem("Switch", typeof(SwitchStep))]
+    [XmlArrayItem("RunIntegration", typeof(RunIntegrationStep))]
     [XmlArrayItem("CsvInput", typeof(CsvInputStep))]
     [XmlArrayItem("SqlInput", typeof(SqlInputStep))]
     [XmlArrayItem("HttpInput", typeof(HttpInputStep))]
@@ -30,6 +31,8 @@ public sealed class IntegrationDefinition
     [XmlArrayItem("MemoryOutput", typeof(MemoryOutputStep))]
     [XmlArrayItem("IOOutput", typeof(OutputStep))]
     public List<IntegrationStep> Steps { get; set; } = [];
+
+    [XmlIgnore] public string? SourceDirectory { get; set; }
 
     [XmlElement("SecretManager")]
     public SecretManagerConfiguration? SecretManager { get; set; }

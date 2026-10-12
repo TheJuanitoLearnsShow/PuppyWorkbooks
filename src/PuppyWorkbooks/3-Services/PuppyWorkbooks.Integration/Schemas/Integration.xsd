@@ -101,6 +101,7 @@
       <xs:element name="JsonInput" type="JsonInputStepType" />
       <xs:element name="XmlInput" type="XmlInputStepType" />
       <xs:element name="FileSystemInput" type="FileSystemInputStepType" />
+      <xs:element name="RunIntegration" type="RunIntegrationStepType" />
       <xs:element name="Map" type="MapStepType" />
       <xs:element name="Filter" type="FilterStepType" />
       <xs:element name="Reduce" type="ReduceStepType" />
@@ -320,6 +321,12 @@
   </xs:complexType>
 
   <!-- Map Step -->
+  <xs:complexType name="RunIntegrationStepType">
+    <xs:attribute name="Id" type="xs:string" use="optional" />
+    <xs:attribute name="FilePath" type="xs:string" use="required" />
+    <xs:attribute name="FromField" type="xs:string" use="optional" />
+  </xs:complexType>
+
   <xs:complexType name="MapStepType">
     <xs:sequence>
       <xs:element name="Worksheet" type="WorksheetStepType" minOccurs="0" />
