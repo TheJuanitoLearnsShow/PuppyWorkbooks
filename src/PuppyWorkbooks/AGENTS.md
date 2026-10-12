@@ -1,179 +1,95 @@
 # AGENTS.md
 
-## Project overview
+## Purpose and current shape
 
-PuppyWorkbooks is a .NET 10 solution for defining and evaluating worksheet-style
-Power Fx formulas. The repository includes the core workbook library, an XML-based
-integration pipeline, desktop and CLI presentation projects, and xUnit tests.
+PuppyWorkbooks is a .NET 10 solution for evaluating worksheet-style Power Fx formulas and executing XML-defined, record-oriented integrations. The checked-in solution contains:
 
-## Repository layout
+- `3-Services/PuppyWorkbooks/` — worksheet model, Power Fx interpreter, custom functions, worksheet XML/JSON serialization, and `WorkSheet.xsd`.
+- `3-Services/PuppyWorkbooks.Integration/` — integration model, XML serializer, runner, input/output providers, secret resolution, and integration schemas.
+- `5-Presentation/CLI/PuppyWorkbooks.CLI/` — the `puppyworkbooks` global-tool entry point and command-line execution settings.
+- `5-Presentation/PuppyWorkbooks.App.WinForms/` — Windows Forms worksheet editor using WebView2; its embedded editor is TypeScript under `wwwroot/worksheet-editor/`.
+- `5-Presentation/MinimalInterpreterExamples/` — small interpreter examples.
+- `7-Tests/PuppyWorkbooks.Tests/` — xUnit coverage and all XML/CSV/JSON fixtures.
 
-- `3-Services/PuppyWorkbooks/`: core workbook model, Power Fx interpreter, and XML serialization.
-- `3-Services/PuppyWorkbooks.Integration/`: CSV/SQL/JSON/HTTP integration pipeline and integration XML serializer.
-- `5-Presentation/`: Avalonia, WinForms, WPF, WinUI, CLI, and view-model projects.
-- `7-Tests/PuppyWorkbooks.Tests/`: xUnit tests and XML/CSV sample fixtures.
+`PuppyWorkbooks.slnx` is the source of truth for projects in the solution. There are folders reserved for other UI technologies, but they do not currently contain projects. Do not claim or build support for UI projects that are not in the solution.
 
-## Working conventions
+## Start here
 
-- Target framework is `net10.0`; preserve nullable-reference annotations and implicit usings.
-- Follow existing C# conventions: file-scoped namespaces, PascalCase public APIs, and async APIs ending in `Async`.
-- Keep domain behavior in the service projects. Presentation projects should consume view models/services rather than duplicate interpreter or serialization logic.
-- Keep integration XML parsing backward-compatible where aliases or legacy fields are already supported.
-- When changing XML-backed models, update the relevant sample files and tests together.
-- Do not commit IDE state from `.vs/` or `.idea/`, nor generated `bin/` and `obj/` output.
+1. Inspect the model, serializer, runner, and closest existing test before changing behavior. The integration serializer intentionally supports legacy XML forms.
+2. Keep behavior in the service projects. The CLI and WinForms app should call those services rather than reimplement formula evaluation, XML parsing, or pipeline logic.
+3. Make the smallest coherent change. For a changed serialized contract, update the model, serializer, XSD, representative sample fixture, and tests together.
+4. Preserve unrelated working-tree changes. Never add `.vs/`, `.idea/`, `bin/`, or `obj/` output.
 
----
+The projects use `net10.0` (the WinForms app uses `net10.0-windows`), nullable reference types, and implicit usings. Use file-scoped namespaces, PascalCase public APIs, and an `Async` suffix on asynchronous APIs. Prefer collection expressions and other syntax already used by the surrounding code; do not do broad style rewrites.
 
-## Integration XML Guidelines
+## Code ownership and change map
 
-Integration XML files describe end-to-end data pipelines executed record-by-record.
+- Formula evaluation or worksheet serialization: work in `3-Services/PuppyWorkbooks/`; extend `WorkbookInterpreter` and `FxExtentions/` for built-in/custom Power Fx behavior.
+- Pipeline execution, record merging, debug data, mocks, or provider behavior: work in `3-Services/PuppyWorkbooks.Integration/Engine/` and `Providers/`.
+- XML element/attribute compatibility: update `Models/`, `IntegrationXmlSerializer`, and `Schemas/Integration.xsd`. The serializer performs normalization beyond `XmlSerializer` attributes, so model changes alone are often insufficient.
+- Command-line options and output: work in `5-Presentation/CLI/PuppyWorkbooks.CLI/`, keeping execution semantics in the services.
+- WinForms/editor work: update the relevant C# view/view-model and, for editor behavior, its TypeScript source. The generated JavaScript under `wwwroot/worksheet-editor/js/generated/` is tracked and must be rebuilt when its TypeScript source changes.
+- Tests and fixtures: add focused xUnit tests under `7-Tests/PuppyWorkbooks.Tests/`. Integration fixtures live in `SampleFiles/Integration/` and are copied to the test output directory.
 
-### XML Pipeline Structure
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<Integration Name="PipelineName">
-  <HttpConfigurations>
-    <!-- Optional HTTP client configs -->
-    <HttpConfiguration Name="ApiConfig" BaseUrl="https://api.example.com/" HttpClientName="api-client">
-      <Headers><Header Name="Authorization" Value="Bearer token" /></Headers>
-    </HttpConfiguration>
-  </HttpConfigurations>
-  <Steps>
-    <!-- Steps run in sequential order -->
-  </Steps>
-</Integration>
-```
+## Worksheet and Power Fx contract
 
-### Supported Step Types
-1. **`IOInput`**: Primary record source.
-   - `Kind="CSVReader"` with `FilePath="data.csv"`
-   - `Kind="SqlReader"` with `ConnectionString="..."` and `Query="..."` (or child `<Query>`)
-   - `Kind="HttpReader"` with `HttpConfiguration="..."`, `Endpoint="..."`, `JsonPath="..."`, `HttpMethod="GET"`
-2. **`Map`**: Transforms record by evaluating a worksheet. Every formula cell name becomes a field in the output record.
-   - Referenced: `<Map Id="map1"><Worksheet FilePath="worksheets/map.xml" /></Map>`
-   - Inline: `<Map Id="map1"><Worksheet><Cells><WorkCell><Id>1</Id><Name>Total</Name><Formula>InputRecord.Price * 1.1</Formula></WorkCell></Cells></Worksheet></Map>`
-3. **`Filter`**: Evaluates the last formula cell as boolean.
-   - `<Filter Id="f1" KeepWhenTrue="true"><Worksheet FilePath="worksheets/filter.xml" /></Filter>`
-4. **`Reduce`**: Aggregates records into an accumulator state.
-   - Attributes: `InitialStateJson="0"`, `OutputField="Total"`. Worksheet receives `State` and `InputRecord`.
-5. **`Switch`**: Dispatches record to conditional branches based on boolean worksheet cells.
-   - Contains `<Worksheet>` and one or more `<Branch WorkCell="CellName">` blocks containing child `Map`, `Filter`, `Reduce`, or nested `Switch` steps.
-6. **`IOOutput`**: Writes records to sinks.
-   - `Kind="CSVWriter" FilePath="..."`
-   - `Kind="JsonWriter" FilePath="..."`
-   - `Kind="XmlWriter" FilePath="..." XmlRootElement="..." XmlRecordElement="..."`
-   - `Kind="SqlWriter" ConnectionString="..." TableName="..."`
-   - `Kind="HttpWriter" HttpConfiguration="..." Endpoint="..." HttpMethod="POST" PayloadFormat="Json"`
+Standalone worksheet XML uses a `<WorkSheet>` root with `Name`, optional `Variables`, and ordered `Cells` of `WorkCell` items. A variable contains `Key` and `Value`; a cell contains `Id`, `Name`, `Formula`, and `Comments`.
 
----
+- Formulas have no leading `=`.
+- XML-escape formula content (`&amp;`, `&quot;`, `&lt;`, and `&gt;`).
+- Cell order matters. Formula cells can reference earlier cells by name.
+- In integration worksheets, use `InputRecord.FieldName` for the current row and `State` in reduce steps. Direct input-field variables remain supported for compatibility.
+- Custom functions currently include `AddTax`, `FileLines`, and `AsyncSample`. Add tests for both valid values and error/blank behavior when extending them.
 
-## Workbook Mapping & Power Fx Guidelines
+## Integration XML contract
 
-Worksheet files (`<WorkSheet>`) define variables and formula cells evaluated with Power Fx.
+The canonical integration root is `<Integration>` with optional `HttpConfigurations`, optional `SecretManager`, and `Steps`. Prefer the concrete provider element names that serialization emits:
 
-### Worksheet Structure
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<WorkSheet>
-  <Name>SheetName</Name>
-  <Variables>
-    <Variable><Key>InputRecord</Key><Value>{Amount: 100, IsTaxExempt: false}</Value></Variable>
-  </Variables>
-  <Cells>
-    <WorkCell>
-      <Id>1</Id>
-      <Name>Tax</Name>
-      <Formula>If(InputRecord.IsTaxExempt, 0, Value(InputRecord.Amount) * 0.07)</Formula>
-      <Comments>Calculates tax</Comments>
-    </WorkCell>
-    <WorkCell>
-      <Id>2</Id>
-      <Name>Total</Name>
-      <Formula>Value(InputRecord.Amount) + Tax</Formula>
-      <Comments>Final sum</Comments>
-    </WorkCell>
-  </Cells>
-</WorkSheet>
-```
+- Inputs: `MemoryInput`, `CsvInput`, `SqlInput`, `HttpInput`, `JsonInput`, `XmlInput`, and `FileSystemInput`.
+- Transform steps: `Map`, `Filter`, `Reduce`, `Switch`, and `RunIntegration`.
+- Outputs: `CsvOutput`, `SqlOutput`, `HttpOutput`, `JsonOutput`, `XmlOutput`, and `MemoryOutput`.
 
-### Power Fx Syntax Summary
-- **No leading `=`**: Write `InputRecord.Amount * 2`, not `=InputRecord.Amount * 2`.
-- **XML escaping**: Always escape XML entities in formulas:
-  - `&` -> `&amp;` (e.g. `FirstName &amp; &quot; &quot; &amp; LastName`)
-  - `"` -> `&quot;`
-  - `<` -> `&lt;` (e.g. `Value(Age) &lt; 18`)
-  - `>` -> `&gt;` (e.g. `Value(Amount) &gt; 100`)
-- **Record access**: Access fields via `InputRecord.FieldName` or directly `FieldName`. In reduce steps, access accumulator via `State`.
-- **Core Functions & Operators**:
-  - *Logic*: `If(cond, trueVal, falseVal)`, `Switch(...)`, `And(...)` / `&&`, `Or(...)` / `||`, `Not(...)` / `!`, `IsBlank(...)`, `Blank()`, `Coalesce(...)`
-  - *Text*: `Concatenate(...)`, `Upper(...)`, `Lower(...)`, `Trim(...)`, `Left(...)`, `Right(...)`, `Mid(...)`, `Len(...)`, `Replace(...)`, `Substitute(...)`, `Text(...)`, `Value(...)`
-  - *Math*: `+`, `-`, `*`, `/`, `^`, `Round(...)`, `RoundUp(...)`, `RoundDown(...)`, `Abs(...)`, `Sqrt(...)`, `Power(...)`, `Mod(...)`, `Max(...)`, `Min(...)`, `Sum(...)`, `Average(...)`
-  - *Dates*: `Date(...)`, `Time(...)`, `DateTime(...)`, `Now()`, `Today()`, `DateAdd(...)`, `DateDiff(...)`
-  - *Tables*: `[item1, item2]`, `Table(...)`, `LookUp(...)`, `Filter(...)`, `First(...)`, `Last(...)`, `CountRows(...)`
-- **Custom Functions in PuppyWorkbooks**:
-  - `AddTax(decimal)`: Adds 7% tax.
-  - `FileLines(string)`: Reads lines from file into a table of decimal `Price` values.
-  - `AsyncSample(string)`: Returns record with `AsyncNewValue`.
-- **Official References**:
-  - [Power Fx Overview](https://learn.microsoft.com/en-us/power-platform/power-fx/overview)
-  - [Power Fx Formula Reference](https://learn.microsoft.com/en-us/power-platform/power-fx/formula-reference)
+`IOInput Kind="..."` and `IOOutput Kind="..."` are accepted legacy aliases. Keep that normalization backward-compatible unless a breaking change is explicitly requested. Nested `Switch` branch steps use the same rules. `RunIntegration` runs a child integration for every incoming row and supplies it to the child's first `MemoryInput`; `FromField` narrows the supplied value.
 
----
+Worksheets may be inline or referenced with `<Worksheet FilePath="..." />`. Referenced worksheet and mock-data paths are resolved relative to the integration file. `Path`, `File`, `Filename`, and `FileName` aliases are intentionally accepted. Maintain them when changing reference parsing.
 
-## Testing & Mock Execution via CLI
+Pipeline semantics worth preserving:
 
-The `puppyworkbooks` CLI executable is available in the system's `PATH`. Use it to execute integrations in mock mode and evaluate worksheets.
+- The first input establishes rows. A later input runs per incoming row, merges its rows into that row, and values from the later input win on name collisions.
+- A `Map` adds every named formula-cell result to the record; `OutputField` remains only for compatibility.
+- A `Filter` evaluates its final non-empty formula cell. `KeepWhenTrue` controls whether a true result is retained.
+- A `Reduce` receives `State` and `InputRecord`; its final cell supplies the next state and `OutputField` names the state field.
+- An output appends `<step-id>.Status`, `.StatusMessage`, and `.AffectedRows` to the record passed to following steps.
 
-### Defining Mock Data
-Define mock data on `IOInput` steps to test integrations safely:
-```xml
-<IOInput Id="source" Kind="CSVReader" FilePath="orders.csv">
-  <!-- Inline mock CSV -->
-  <MockCsv>
-Id,Amount,Status
-1,100,Active
-2,250,Inactive
-  </MockCsv>
-  <!-- Or named scenarios -->
-  <MockDataSources>
-    <MockData Name="ScenarioA">
-Id,Amount
-1,50
-    </MockData>
-    <MockData Name="ScenarioB" FilePath="mocks/scenario_b.csv" />
-  </MockDataSources>
-</IOInput>
-```
+Use `<MockDataSources>` (or the supported legacy mock forms) on input steps for safe tests. Run with `UseMockDataForSteps = "ALL"` or a comma-separated input/output step list; `ALL` also suppresses real outputs. A named scenario selects a matching mock source and falls back to the first one if no match exists.
 
-### CLI Execution Commands
-- **Run integration with mock data**:
-  ```powershell
-  puppyworkbooks path/to/integration.xml --use-mock-data-for-steps ALL --debug
-  ```
-- **Run a specific named mock scenario**:
-  ```powershell
-  puppyworkbooks path/to/integration.xml --use-mock-data-for-steps ALL --scenario ScenarioA --debug
-  ```
-- **Evaluate standalone worksheet / mapping**:
-  ```powershell
-  puppyworkbooks path/to/worksheet.xml
-  ```
-
----
+Keep credentials out of XML fixtures. The integration supports environment, Windows Credential Manager, and Azure Key Vault secret definitions; use placeholder values and mocks in test data.
 
 ## Validation
 
-Run the focused test project for core and integration changes:
+Run the focused test project for service, XML, CLI, or fixture changes:
 
 ```powershell
 dotnet test 7-Tests/PuppyWorkbooks.Tests/PuppyWorkbooks.Tests.csproj
 ```
 
-For a broader compile check, build the solution when the installed platform workloads support every UI project:
+For a narrow iteration, filter by the closest test class, for example:
+
+```powershell
+dotnet test 7-Tests/PuppyWorkbooks.Tests/PuppyWorkbooks.Tests.csproj --filter FullyQualifiedName~IntegrationTests
+```
+
+The schema tests validate representative integration and worksheet samples. Add a schema test and a runtime/round-trip test when introducing XML syntax. Build the solution only when the installed Windows and WebView2 prerequisites are available:
 
 ```powershell
 dotnet build PuppyWorkbooks.slnx
 ```
 
-Prefer focused tests for a changed behavior. Add or update an xUnit test in
-`7-Tests/PuppyWorkbooks.Tests` for bug fixes and new core/integration behavior.
+To manually exercise an installed CLI tool without real dependencies, pass an integration fixture and mock flags:
+
+```powershell
+puppyworkbooks path/to/integration.xml --use-mock-data-for-steps ALL --debug
+puppyworkbooks path/to/integration.xml --use-mock-data-for-steps inputId --scenario ScenarioA
+```
+
+If TypeScript editor sources changed, run `npm run build` from `5-Presentation/PuppyWorkbooks.App.WinForms/wwwroot/worksheet-editor/` and include the regenerated tracked JavaScript. Do not treat generated `bin/` or `obj/` files as source changes.
