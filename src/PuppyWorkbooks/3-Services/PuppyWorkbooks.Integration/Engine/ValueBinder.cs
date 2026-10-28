@@ -84,4 +84,12 @@ public sealed class ValueBinder
             return "[" + string.Join(",", enumerable.Cast<object?>().Select(ToFormulaLiteral)) + "]";
         return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "Blank()";
     }
+    
+    public static string FormatInputValue(object? value) => value switch
+    {
+        null => string.Empty,
+        JsonElement { ValueKind: JsonValueKind.String } json => json.GetString() ?? string.Empty,
+        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+        _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty
+    };
 }

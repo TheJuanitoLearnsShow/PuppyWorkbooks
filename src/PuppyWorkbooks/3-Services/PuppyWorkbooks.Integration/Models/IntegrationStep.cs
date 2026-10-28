@@ -16,9 +16,15 @@ public abstract class IntegrationStep
 {
     [XmlAttribute] public string Id { get; set; } = string.Empty;
     [XmlElement("Worksheet")] public WorkSheet? Worksheet { get; set; }
+    [XmlElement("TelemetryOptions")] public TelemetryOptions? TelemetryOptions { get; set; }
 
     // Populated by IntegrationXmlSerializer when the worksheet is loaded from
     // another XML file. It is intentionally not serialized as part of the
     // integration model.
     [XmlIgnore] public string? WorksheetPath { get; set; }
+}
+
+public sealed class TelemetryOptions
+{
+    [XmlElement("Field")] public List<string> FieldNames { get; set; } = [];
 }

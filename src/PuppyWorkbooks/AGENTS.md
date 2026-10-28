@@ -18,7 +18,7 @@ PuppyWorkbooks is a .NET 10 solution for evaluating worksheet-style Power Fx for
 1. Inspect the model, serializer, runner, and closest existing test before changing behavior. The integration serializer intentionally supports legacy XML forms.
 2. Keep behavior in the service projects. The CLI and WinForms app should call those services rather than reimplement formula evaluation, XML parsing, or pipeline logic.
 3. Make the smallest coherent change. For a changed serialized contract, update the model, serializer, XSD, representative sample fixture, and tests together.
-4. Preserve unrelated working-tree changes. Never add `.vs/`, `.idea/`, `bin/`, or `obj/` output.
+4. Preserve unrelated working-tree changes. Never add `.vs/`, `.idea/`, `bin/`, or `obj/` output, or generated editor folders such as `node_modules/` and `.parcel-cache/`.
 
 The projects use `net10.0` (the WinForms app uses `net10.0-windows`), nullable reference types, and implicit usings. Use file-scoped namespaces, PascalCase public APIs, and an `Async` suffix on asynchronous APIs. Prefer collection expressions and other syntax already used by the surrounding code; do not do broad style rewrites.
 
@@ -28,7 +28,7 @@ The projects use `net10.0` (the WinForms app uses `net10.0-windows`), nullable r
 - Pipeline execution, record merging, debug data, mocks, or provider behavior: work in `3-Services/PuppyWorkbooks.Integration/Engine/` and `Providers/`.
 - XML element/attribute compatibility: update `Models/`, `IntegrationXmlSerializer`, and `Schemas/Integration.xsd`. The serializer performs normalization beyond `XmlSerializer` attributes, so model changes alone are often insufficient.
 - Command-line options and output: work in `5-Presentation/CLI/PuppyWorkbooks.CLI/`, keeping execution semantics in the services.
-- WinForms/editor work: update the relevant C# view/view-model and, for editor behavior, its TypeScript source. The generated JavaScript under `wwwroot/worksheet-editor/js/generated/` is tracked and must be rebuilt when its TypeScript source changes.
+- WinForms/editor work: update the relevant C# view/view-model and, for editor behavior, its TypeScript source. The generated JavaScript under `wwwroot/worksheet-editor/js/generated/` is tracked and must be rebuilt when its TypeScript source changes. The source is built with Node/Parcel; `node_modules/` and `.parcel-cache/` are generated artifacts and not hand-edited.
 - Tests and fixtures: add focused xUnit tests under `7-Tests/PuppyWorkbooks.Tests/`. Integration fixtures live in `SampleFiles/Integration/` and are copied to the test output directory.
 
 ## Worksheet and Power Fx contract
@@ -64,6 +64,8 @@ Pipeline semantics worth preserving:
 Use `<MockDataSources>` (or the supported legacy mock forms) on input steps for safe tests. Run with `UseMockDataForSteps = "ALL"` or a comma-separated input/output step list; `ALL` also suppresses real outputs. A named scenario selects a matching mock source and falls back to the first one if no match exists.
 
 Keep credentials out of XML fixtures. The integration supports environment, Windows Credential Manager, and Azure Key Vault secret definitions; use placeholder values and mocks in test data.
+
+When changing integration behavior or XML compatibility, keep `3-Services/PuppyWorkbooks.Integration/README.md` aligned with the serializer and schema: it documents the canonical runtime semantics and is the easiest place for agentic changes to drift.
 
 ## Validation
 

@@ -6,6 +6,7 @@ namespace PuppyWorkbooks.Integration.Models;
 public sealed class IntegrationDefinition
 {
     [XmlAttribute] public string Name { get; set; } = string.Empty;
+    [XmlElement("TelemetryOptions")] public TelemetryOptions? TelemetryOptions { get; set; }
     [XmlArray("HttpConfigurations")]
     [XmlArrayItem("HttpConfiguration")]
     public List<HttpProviderSettings> HttpConfigurations { get; set; } = [];

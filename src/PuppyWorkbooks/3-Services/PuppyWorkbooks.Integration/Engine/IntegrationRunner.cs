@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -11,10 +12,12 @@ public sealed class IntegrationRunner
 {
     private static readonly Regex InputTemplatePattern = new(
         @"\{\{\s*InputRecord\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private readonly WorkbookInterpreter _interpreter = new();
     private readonly IntegrationRunnerOptions _options;
     private readonly MockManager _mockManager;
     private SecretManager? _secretManager;
+    private TelemetryManager _telemetryManager = new TelemetryManager();
 
     public IntegrationRunner(IntegrationRunnerOptions? options = null)
     {
@@ -25,6 +28,11 @@ public sealed class IntegrationRunner
     public async Task<IntegrationResult> RunAsync(IntegrationDefinition definition, CancellationToken cancellationToken = default)
     {
         _secretManager = new SecretManager(definition.SecretManager);
+        using var integrationActivity = _telemetryManager.StartActivity(
+            string.IsNullOrWhiteSpace(definition.Name) ? "Integration" : $"Integration:{definition.Name}",
+            definition.TelemetryOptions,
+            null);
+
         AssignDataToMemoryInputProviders(definition);
         AssignActionToMemoryOutputProviders(definition);
         var input = definition.Steps.OfType<InputStep>().FirstOrDefault();
@@ -100,6 +108,8 @@ public sealed class IntegrationRunner
                 await foreach (var sourceRecord in provider.ReadAsync(cancellationToken: cancellationToken))
                 {
                     read++;
+                    _telemetryManager.ApplyTelemetryFields(integrationActivity, sourceRecord, definition.TelemetryOptions);
+                    
                     var rowDebug = isDebug
                         ? new IntegrationDebugRow { InputRow = new Dictionary<string, object?>(sourceRecord.Values, StringComparer.OrdinalIgnoreCase) }
                         : null;
@@ -118,6 +128,7 @@ public sealed class IntegrationRunner
                 }
 
                 var step = definition.Steps[stepIndex];
+                using var stepActivity = _telemetryManager.StartActivity(step, record);
                 switch (step)
                 {
                     case InputStep inputStep when ReferenceEquals(inputStep, input):
@@ -315,7 +326,7 @@ public sealed class IntegrationRunner
                 var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fromField, StringComparison.OrdinalIgnoreCase));
                 if (field.Key is not null)
                 {
-                    return FormatInputValue(field.Value);
+                    return ValueBinder.FormatInputValue(field.Value);
                 }
                 throw new InvalidOperationException($"Step references missing input field '{fromField}'.");
             }
@@ -336,7 +347,7 @@ public sealed class IntegrationRunner
             var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fieldName, StringComparison.OrdinalIgnoreCase));
             if (field.Key is null)
                 throw new InvalidOperationException($"Input step references missing input field '{fieldName}'.");
-            return FormatInputValue(field.Value);
+            return ValueBinder.FormatInputValue(field.Value);
         });
     }
 
@@ -509,14 +520,6 @@ public sealed class IntegrationRunner
         HttpOutputProviderOptions http => $"http:{http.Id}:{http.Endpoint}:{http.HttpMethod}:{http.PayloadFormat}:{http.ResolvedHttpConfiguration?.BaseUrl}:{http.ResolvedHttpConfiguration?.OAuthClientId}:{http.ResolvedHttpConfiguration?.OAuthTokenUrl}:{string.Join(";", http.ResolvedHttpConfiguration?.Headers.Select(h => $"{h.Name}={h.Value}") ?? [])}",
         MemoryOutputProviderOptions mem => $"memory:{mem.Id}",
         _ => $"{step.Kind}:{step.Id}"
-    };
-
-    private static string FormatInputValue(object? value) => value switch
-    {
-        null => string.Empty,
-        JsonElement { ValueKind: JsonValueKind.String } json => json.GetString() ?? string.Empty,
-        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
-        _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty
     };
 
     private static IntegrationDebugRow? CloneDebugRow(IntegrationDebugRow? rowDebug)
