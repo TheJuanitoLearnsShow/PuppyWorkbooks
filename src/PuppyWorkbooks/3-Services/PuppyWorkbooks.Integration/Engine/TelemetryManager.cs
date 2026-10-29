@@ -5,8 +5,8 @@ namespace PuppyWorkbooks.Integration.Engine;
 
 public sealed class TelemetryManager
 {
-    private static readonly ActivitySource TelemetryActivitySource = new(SourceName);
-    private const string SourceName = "PuppyWorkbooks.Integration";
+    public const string ActivitySourceName = "PuppyWorkbooks.Integration";
+    private static readonly ActivitySource TelemetryActivitySource = new(ActivitySourceName);
 
     public Activity? StartActivity(string operationName, TelemetryOptions? telemetryOptions, IntegrationRecord? record)
     {
