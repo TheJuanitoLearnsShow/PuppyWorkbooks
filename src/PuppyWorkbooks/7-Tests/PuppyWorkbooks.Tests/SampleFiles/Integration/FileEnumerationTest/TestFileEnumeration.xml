@@ -6,7 +6,7 @@
     <Steps>
         <FileSystemInput Id="input" 
                          FilePath="SampleFiles/Integration/SampleData/FileEnumeration"
-        /> <!-- pats relative to the bin folder, not the path of the integration file -->
+        /> <!-- paths relative to the bin folder, not the path of the integration file -->
         
         <CsvInput Id="csvInput" FilePathFromField="FilePath"/>
         

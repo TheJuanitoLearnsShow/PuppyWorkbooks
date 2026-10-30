@@ -1,7 +1,7 @@
 ﻿using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
 
-namespace PuppyWorkbooks.Tests;
+namespace PuppyWorkbooks.Tests.IntegrationTests;
 
 public sealed class MockDataTests
 {

@@ -2,7 +2,7 @@ using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Integration.Models;
 
-namespace PuppyWorkbooks.Tests;
+namespace PuppyWorkbooks.Tests.IntegrationTests;
 
 public sealed class RunIntegrationTests
 {

@@ -8,7 +8,7 @@ using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Integration.Models;
 using PuppyWorkbooks.Integration.Providers;
 
-namespace PuppyWorkbooks.Tests;
+namespace PuppyWorkbooks.Tests.IntegrationTests;
 
 public sealed class FromFieldBindingTests
 {

@@ -1,12 +1,16 @@
 ﻿using System.Collections;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using PuppyWorkbooks.Integration.Models;
 
 namespace PuppyWorkbooks.Integration.Engine;
 
 public sealed class ValueBinder
 {
+    private static readonly Regex InputTemplatePattern = new(
+        @"\{\{\s*InputRecord\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     public static bool ToBoolean(object? value) => value is bool b
         ? b
         : bool.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), out var parsed) && parsed;
@@ -92,4 +96,39 @@ public sealed class ValueBinder
         IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
         _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty
     };
+    
+    public static string ResolveFieldOrValue(string staticValue, string fromField, 
+        IntegrationRecord? inputRecord, SecretManager? secretManager)
+    {
+        if (!string.IsNullOrWhiteSpace(fromField))
+        {
+            if (inputRecord is not null)
+            {
+                var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fromField, StringComparison.OrdinalIgnoreCase));
+                if (field.Key is not null)
+                {
+                    return ValueBinder.FormatInputValue(field.Value);
+                }
+                throw new InvalidOperationException($"Step references missing input field '{fromField}'.");
+            }
+        }
+
+        return ResolveValue(staticValue, inputRecord, secretManager);
+    }
+
+    public static string ResolveValue(string value, IntegrationRecord? inputRecord = null, SecretManager? secretManager = null)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        var resolved = secretManager?.Resolve(value) ?? value;
+        if (inputRecord is null) return resolved;
+        
+        return InputTemplatePattern.Replace(resolved, match =>
+        {
+            var fieldName = match.Groups[1].Value;
+            var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fieldName, StringComparison.OrdinalIgnoreCase));
+            if (field.Key is null)
+                throw new InvalidOperationException($"Input step references missing input field '{fieldName}'.");
+            return ValueBinder.FormatInputValue(field.Value);
+        });
+    }
 }

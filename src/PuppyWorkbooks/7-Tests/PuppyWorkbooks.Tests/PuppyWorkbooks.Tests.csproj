@@ -49,6 +49,9 @@
     <None Update="SampleFiles\Integration\FileEnumerationTest\TestFileEnumeration.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="SampleFiles\Integration\SqlTests\TestSqlOutput.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
     <ItemGroup>
       <None Include="..\..\3-Services\PuppyWorkbooks.Integration\Schemas\Integration.xsd">

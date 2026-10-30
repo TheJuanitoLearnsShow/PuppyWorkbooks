@@ -1,12 +1,10 @@
-using System.Text.Json;
 using PuppyWorkbooks.CLI;
 using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Integration.Models;
 using PuppyWorkbooks.Integration.Providers;
-using Xunit;
 
-namespace PuppyWorkbooks.Tests;
+namespace PuppyWorkbooks.Tests.IntegrationTests;
 
 [Collection("ConsoleTests")]
 public sealed class MemoryOutputTests

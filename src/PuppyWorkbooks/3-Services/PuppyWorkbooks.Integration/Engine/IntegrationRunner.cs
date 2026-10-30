@@ -10,9 +10,6 @@ namespace PuppyWorkbooks.Integration.Engine;
 
 public sealed class IntegrationRunner
 {
-    private static readonly Regex InputTemplatePattern = new(
-        @"\{\{\s*InputRecord\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
     private readonly WorkbookInterpreter _interpreter = new();
     private readonly IntegrationRunnerOptions _options;
     private readonly MockManager _mockManager;
@@ -319,36 +316,12 @@ public sealed class IntegrationRunner
 
     private string ResolveFieldOrValue(string staticValue, string fromField, IntegrationRecord? inputRecord)
     {
-        if (!string.IsNullOrWhiteSpace(fromField))
-        {
-            if (inputRecord is not null)
-            {
-                var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fromField, StringComparison.OrdinalIgnoreCase));
-                if (field.Key is not null)
-                {
-                    return ValueBinder.FormatInputValue(field.Value);
-                }
-                throw new InvalidOperationException($"Step references missing input field '{fromField}'.");
-            }
-        }
-
-        return ResolveValue(staticValue, inputRecord);
+        return ValueBinder.ResolveFieldOrValue(staticValue, fromField, inputRecord, _secretManager);
     }
 
     private string ResolveValue(string value, IntegrationRecord? inputRecord = null)
     {
-        if (string.IsNullOrEmpty(value)) return string.Empty;
-        var resolved = _secretManager!.Resolve(value);
-        if (inputRecord is null) return resolved;
-        
-        return InputTemplatePattern.Replace(resolved, match =>
-        {
-            var fieldName = match.Groups[1].Value;
-            var field = inputRecord.Values.FirstOrDefault(pair => string.Equals(pair.Key, fieldName, StringComparison.OrdinalIgnoreCase));
-            if (field.Key is null)
-                throw new InvalidOperationException($"Input step references missing input field '{fieldName}'.");
-            return ValueBinder.FormatInputValue(field.Value);
-        });
+        return ValueBinder.ResolveValue(value, inputRecord, _secretManager);
     }
 
     private InputStep BindInputStep(InputStep step, IntegrationRecord? inputRecord)

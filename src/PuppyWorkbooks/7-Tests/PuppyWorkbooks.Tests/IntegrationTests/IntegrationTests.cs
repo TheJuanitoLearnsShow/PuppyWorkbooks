@@ -1,11 +1,10 @@
+using System.Net;
+using System.Xml.Linq;
 using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Integration.Models;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Xml.Linq;
 
-namespace PuppyWorkbooks.Tests;
+namespace PuppyWorkbooks.Tests.IntegrationTests;
 
 public sealed class IntegrationTests
 {

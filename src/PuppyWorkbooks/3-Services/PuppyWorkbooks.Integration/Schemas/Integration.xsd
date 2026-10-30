@@ -5,6 +5,7 @@
 
   <xs:complexType name="IntegrationType">
     <xs:sequence>
+      <xs:element name="Comments" type="xs:string" minOccurs="1" maxOccurs="1" />
       <xs:element name="HttpConfigurations" type="HttpConfigurationsType" minOccurs="0" />
       <xs:element name="SecretManager" type="SecretManagerType" minOccurs="0" />
       <xs:element name="Steps" type="StepsType" minOccurs="0" />

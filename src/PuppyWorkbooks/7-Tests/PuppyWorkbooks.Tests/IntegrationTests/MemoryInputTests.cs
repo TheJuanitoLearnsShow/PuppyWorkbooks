@@ -3,9 +3,8 @@ using PuppyWorkbooks.CLI;
 using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Integration.Models;
 using PuppyWorkbooks.Integration.Providers;
-using Xunit;
 
-namespace PuppyWorkbooks.Tests;
+namespace PuppyWorkbooks.Tests.IntegrationTests;
 
 public sealed class MemoryInputTests
 {
