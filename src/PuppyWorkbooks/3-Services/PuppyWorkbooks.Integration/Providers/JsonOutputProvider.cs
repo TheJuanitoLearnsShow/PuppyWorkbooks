@@ -1,5 +1,6 @@
 using System.Text.Json;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Output;
 
 namespace PuppyWorkbooks.Integration.Providers;
 

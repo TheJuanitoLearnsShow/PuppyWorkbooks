@@ -1,4 +1,4 @@
-﻿namespace PuppyWorkbooks.Integration.Models;
+﻿namespace PuppyWorkbooks.Integration.Models.Output;
 
 public sealed record OutputStatus(bool Succeeded, string Message, int AffectedRows = 1)
 {

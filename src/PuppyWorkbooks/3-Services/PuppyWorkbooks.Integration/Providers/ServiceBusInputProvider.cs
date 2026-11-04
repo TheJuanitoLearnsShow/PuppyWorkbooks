@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Input;
 
 namespace PuppyWorkbooks.Integration.Providers;
 

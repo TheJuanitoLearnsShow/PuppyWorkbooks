@@ -3,6 +3,8 @@ using AdysTech.CredentialManager;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Input;
+using PuppyWorkbooks.Integration.Models.Output;
 
 namespace PuppyWorkbooks.Integration.Engine;
 

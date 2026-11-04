@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Data.Common;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Output;
 
 namespace PuppyWorkbooks.Integration.Providers;
 

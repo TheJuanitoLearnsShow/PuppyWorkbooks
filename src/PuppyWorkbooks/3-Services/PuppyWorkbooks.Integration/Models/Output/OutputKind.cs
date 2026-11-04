@@ -1,4 +1,4 @@
-﻿namespace PuppyWorkbooks.Integration.Models;
+﻿namespace PuppyWorkbooks.Integration.Models.Output;
 
 public enum OutputKind { CSVWriter, SqlWriter, HttpWriter, JsonWriter, XmlWriter, MemoryWriter }
 

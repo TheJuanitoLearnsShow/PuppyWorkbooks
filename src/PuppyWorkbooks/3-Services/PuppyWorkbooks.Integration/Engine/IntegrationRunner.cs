@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Input;
+using PuppyWorkbooks.Integration.Models.Output;
 using PuppyWorkbooks.Integration.Providers;
 
 namespace PuppyWorkbooks.Integration.Engine;

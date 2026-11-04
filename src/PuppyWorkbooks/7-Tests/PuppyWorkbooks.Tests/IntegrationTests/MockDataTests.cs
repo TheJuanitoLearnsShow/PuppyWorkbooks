@@ -1,5 +1,6 @@
 ﻿using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
+using PuppyWorkbooks.Integration.Models.Input;
 
 namespace PuppyWorkbooks.Tests.IntegrationTests;
 
@@ -91,16 +92,16 @@ public sealed class MockDataTests
         var serializer = new IntegrationXmlSerializer();
         var definition = serializer.Deserialize(xml, AppContext.BaseDirectory);
 
-        var step1 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[0];
+        var step1 = (InputStep)definition.Steps[0];
         Assert.Contains("Alice,10", step1.MockCsv);
 
-        var step2 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[1];
+        var step2 = (InputStep)definition.Steps[1];
         Assert.Contains("Bob,20", step2.MockData);
 
-        var step3 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[2];
+        var step3 = (InputStep)definition.Steps[2];
         Assert.True(File.Exists(step3.MockCsvFilePath));
 
-        var step4 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[3];
+        var step4 = (InputStep)definition.Steps[3];
         Assert.True(File.Exists(step4.MockCsvFilePath));
     }
 
@@ -287,14 +288,14 @@ public sealed class MockDataTests
         var serializer = new IntegrationXmlSerializer();
         var definition = serializer.Deserialize(xml, AppContext.BaseDirectory);
 
-        var step1 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[0];
+        var step1 = (InputStep)definition.Steps[0];
         Assert.Equal(2, step1.MockDataSources.Count);
         Assert.True(step1.MockDataSources.ContainsKey("ScenarioA"));
         Assert.True(step1.MockDataSources.ContainsKey("ScenarioB"));
         Assert.Contains("Alice,10", step1.MockDataSources["ScenarioA"].Content);
         Assert.True(File.Exists(step1.MockDataSources["ScenarioB"].FilePath));
 
-        var step2 = (PuppyWorkbooks.Integration.Models.InputStep)definition.Steps[1];
+        var step2 = (InputStep)definition.Steps[1];
         Assert.Equal(2, step2.MockDataSources.Count);
         Assert.True(step2.MockDataSources.ContainsKey("Scenario1"));
         Assert.True(step2.MockDataSources.ContainsKey("Scenario2"));

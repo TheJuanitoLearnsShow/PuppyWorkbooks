@@ -2,6 +2,7 @@ using System.Collections;
 using System.Text.Json;
 using Microsoft.PowerFx.Types;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Input;
 
 namespace PuppyWorkbooks.Integration.Providers;
 

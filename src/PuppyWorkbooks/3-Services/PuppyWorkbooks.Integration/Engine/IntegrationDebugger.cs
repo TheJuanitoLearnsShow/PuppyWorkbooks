@@ -1,4 +1,6 @@
 ﻿using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Input;
+using PuppyWorkbooks.Integration.Models.Output;
 
 namespace PuppyWorkbooks.Integration.Engine;
 

@@ -2,6 +2,8 @@ using PuppyWorkbooks.CLI;
 using PuppyWorkbooks.Integration;
 using PuppyWorkbooks.Integration.Engine;
 using PuppyWorkbooks.Integration.Models;
+using PuppyWorkbooks.Integration.Models.Input;
+using PuppyWorkbooks.Integration.Models.Output;
 using PuppyWorkbooks.Integration.Providers;
 
 namespace PuppyWorkbooks.Tests.IntegrationTests;
