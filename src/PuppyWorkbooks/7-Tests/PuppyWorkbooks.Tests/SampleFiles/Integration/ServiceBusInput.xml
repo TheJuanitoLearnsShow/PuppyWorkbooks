@@ -1,0 +1,9 @@
+<Integration Name="ServiceBusInput" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../3-Services/PuppyWorkbooks.Integration/Schemas/Integration.xsd">
+  <Comments />
+  <SecretManager>
+    <EnvSecret SecretName="ServiceBusConnection" EnvVarName="PUPPYWORKBOOKS_TEST_SERVICEBUS_CONNECTION" />
+  </SecretManager>
+  <Steps>
+    <ServiceBusInput Id="orders" TopicName="orders" SubscriptionName="processor" ConnectionString="{{ secrets.ServiceBusConnection }}" />
+  </Steps>
+</Integration>

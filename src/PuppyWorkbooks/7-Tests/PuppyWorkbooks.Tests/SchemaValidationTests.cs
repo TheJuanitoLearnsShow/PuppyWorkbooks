@@ -48,6 +48,7 @@ public sealed class SchemaValidationTests
     [InlineData("MultipleMockDataSources.xml")]
     [InlineData("MultipleMockScenarios.xml")]
     [InlineData("ScenarioFallback.xml")]
+    [InlineData("ServiceBusInput.xml")]
     [InlineData("Switch.xml")]
     [InlineData("TestIntegration.xml")]
     [InlineData("TestIntegrationWithFileReferences.xml")]
@@ -59,7 +60,6 @@ public sealed class SchemaValidationTests
         ValidateXml(xmlPath, schemaPath);
     }
 
-    
 
     private static void ValidateXml(string xmlPath, string schemaPath)
     {

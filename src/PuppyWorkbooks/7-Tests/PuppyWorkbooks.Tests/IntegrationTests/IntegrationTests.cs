@@ -12,6 +12,38 @@ public sealed class IntegrationTests
     private readonly WorksheetStepsTests _worksheetStepsTests = new WorksheetStepsTests();
 
     [Fact]
+    public void ServiceBusInput_ResolvesSecretAndRoundTripsConfiguration()
+    {
+        const string envVarName = "PUPPYWORKBOOKS_TEST_SERVICEBUS_CONNECTION";
+        var previousValue = Environment.GetEnvironmentVariable(envVarName);
+        Environment.SetEnvironmentVariable(envVarName,
+            "Endpoint=sb://example.test/;SharedAccessKeyName=test;SharedAccessKey=fake");
+
+        try
+        {
+            var serializer = new IntegrationXmlSerializer();
+            var sampleDirectory = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration");
+            var definition = serializer.DeserializeFile(Path.Combine(sampleDirectory, "ServiceBusInput.xml"));
+            var input = Assert.IsType<ServiceBusInputStep>(Assert.Single(definition.Steps));
+
+            Assert.Equal("orders", input.TopicName);
+            Assert.Equal("processor", input.SubscriptionName);
+            Assert.Equal(Environment.GetEnvironmentVariable(envVarName), input.ConnectionString);
+
+            var serialized = XDocument.Parse(serializer.Serialize(definition));
+            var step = Assert.Single(serialized.Root!.Element("Steps")!.Elements());
+            Assert.Equal("ServiceBusInput", step.Name.LocalName);
+            Assert.Equal("orders", (string?)step.Attribute("TopicName"));
+            Assert.Equal("processor", (string?)step.Attribute("SubscriptionName"));
+            Assert.Equal(input.ConnectionString, (string?)step.Attribute("ConnectionString"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(envVarName, previousValue);
+        }
+    }
+
+    [Fact]
     public void InputProviderElements_RoundTripWithProviderSpecificAttributes()
     {
         var serializer = new IntegrationXmlSerializer();

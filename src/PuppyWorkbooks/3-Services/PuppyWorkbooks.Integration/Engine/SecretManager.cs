@@ -10,7 +10,7 @@ public sealed class SecretManager
 {
     private static readonly Regex SecretPattern = new(
         @"\{\{\s*secrets\.([\w.]+)\s*\}\}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    
+
     private readonly SecretManagerConfiguration? _configuration;
     private readonly KeyVaultSecretManager _keyVaultSecretManager;
 
@@ -23,7 +23,7 @@ public sealed class SecretManager
     public string Resolve(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return value ?? string.Empty;
-        
+
         return SecretPattern.Replace(value, match =>
         {
             var secretName = match.Groups[1].Value;
@@ -45,7 +45,7 @@ public sealed class SecretManager
             _ => throw new NotSupportedException($"Secret provider type '{secretDef.GetType().Name}' is not supported.")
         };
     }
-    
+
     public static void ResolveSecrets(IntegrationDefinition definition)
     {
         var secretManager = new SecretManager(definition.SecretManager);
@@ -95,6 +95,7 @@ public sealed class SecretManager
                     {
                         ResolveSecretsInSteps(branch.Steps, secretManager);
                     }
+
                     break;
                 case CsvInputProviderOptions csvIn:
                     csvIn.FilePath = secretManager.Resolve(csvIn.FilePath);
@@ -113,6 +114,7 @@ public sealed class SecretManager
                         if (parameter.FromValue is not null)
                             parameter.FromValue = secretManager.Resolve(parameter.FromValue);
                     }
+
                     ResolveInputMocks(sqlIn, secretManager);
                     break;
                 case HttpInputProviderOptions httpIn:
@@ -122,6 +124,17 @@ public sealed class SecretManager
                     httpIn.JsonPath = secretManager.Resolve(httpIn.JsonPath);
                     httpIn.JsonPathFromField = secretManager.Resolve(httpIn.JsonPathFromField);
                     ResolveInputMocks(httpIn, secretManager);
+                    break;
+                case ServiceBusInputProviderOptions serviceBusIn:
+                    serviceBusIn.ConnectionString = secretManager.Resolve(serviceBusIn.ConnectionString);
+                    serviceBusIn.ConnectionStringFromField =
+                        secretManager.Resolve(serviceBusIn.ConnectionStringFromField);
+                    serviceBusIn.TopicName = secretManager.Resolve(serviceBusIn.TopicName);
+                    serviceBusIn.TopicNameFromField = secretManager.Resolve(serviceBusIn.TopicNameFromField);
+                    serviceBusIn.SubscriptionName = secretManager.Resolve(serviceBusIn.SubscriptionName);
+                    serviceBusIn.SubscriptionNameFromField =
+                        secretManager.Resolve(serviceBusIn.SubscriptionNameFromField);
+                    ResolveInputMocks(serviceBusIn, secretManager);
                     break;
                 case JsonInputProviderOptions jsonIn:
                     jsonIn.FilePath = secretManager.Resolve(jsonIn.FilePath);
@@ -164,6 +177,7 @@ public sealed class SecretManager
                         if (parameter.FromValue is not null)
                             parameter.FromValue = secretManager.Resolve(parameter.FromValue);
                     }
+
                     break;
                 case HttpOutputProviderOptions httpOut:
                     httpOut.Endpoint = secretManager.Resolve(httpOut.Endpoint);

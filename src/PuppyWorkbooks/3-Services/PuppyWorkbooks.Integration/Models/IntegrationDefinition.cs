@@ -23,6 +23,7 @@ public sealed class IntegrationDefinition
     [XmlArrayItem("XmlInput", typeof(XmlInputStep))]
     [XmlArrayItem("FileSystemInput", typeof(FileSystemInputStep))]
     [XmlArrayItem("MemoryInput", typeof(MemoryInputStep))]
+    [XmlArrayItem("ServiceBusInput", typeof(ServiceBusInputStep))]
     [XmlArrayItem("IOInput", typeof(InputStep))]
     [XmlArrayItem("CsvOutput", typeof(CsvOutputStep))]
     [XmlArrayItem("SqlOutput", typeof(SqlOutputStep))]

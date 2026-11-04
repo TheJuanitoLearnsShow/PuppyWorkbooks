@@ -50,6 +50,7 @@ public sealed class IntegrationRunner
                     outputProviderCache[mockKey] = mockProvider;
                     createdOutputs.Add(mockProvider);
                 }
+
                 return mockProvider;
             }
 
@@ -60,6 +61,7 @@ public sealed class IntegrationRunner
                 outputProviderCache[cacheKey] = provider;
                 createdOutputs.Add(provider);
             }
+
             return provider;
         }
 
@@ -106,7 +108,6 @@ public sealed class IntegrationRunner
                 {
                     read++;
                     _telemetryManager.ApplyTelemetryFields(integrationActivity, sourceRecord, definition.TelemetryOptions);
-                    
                     var rowDebug = isDebug
                         ? new IntegrationDebugRow { InputRow = new Dictionary<string, object?>(sourceRecord.Values, StringComparer.OrdinalIgnoreCase) }
                         : null;
@@ -152,6 +153,7 @@ public sealed class IntegrationRunner
                             if (rowDebug is not null) debugRows!.Add(rowDebug);
                             return;
                         }
+
                         await ProcessStepsAsync(stepIndex + 1, record, rowDebug, sourceRecord);
                         break;
 
@@ -171,6 +173,7 @@ public sealed class IntegrationRunner
                             if (rowDebug is not null) debugRows!.Add(rowDebug);
                             return;
                         }
+
                         await ProcessStepsAsync(stepIndex + 1, switchRecord, rowDebug, sourceRecord);
                         break;
 
@@ -196,6 +199,7 @@ public sealed class IntegrationRunner
                         break;
                 }
             }
+
             async Task ProcessChildInputProvider(CancellationToken cancellationToken2, InputStep inputStep,
                 IntegrationRecord record, IntegrationDebugRow? rowDebug, int stepIndex, IntegrationRecord sourceRecord)
             {
@@ -307,9 +311,16 @@ public sealed class IntegrationRunner
             FileSystemInputProviderOptions fs when !string.IsNullOrWhiteSpace(fs.FilePath) => new FileSystemInputProvider(fs.FilePath, fs.AddFileSizeField, fs.AddCreatedOnDate, fs.AddLastModifiedDateField),
             SqlInputProviderOptions sql when _options.ConnectionFactory is not null => new SqlInputProvider(_options.ConnectionFactory(sql.ConnectionString), sql),
             HttpInputProviderOptions http when http.ResolvedHttpConfiguration is not null => new HttpInputProvider(http.ResolvedHttpConfiguration, http.Endpoint, http.HttpMethod, http.JsonPath, _options.HttpClientFactory),
+            ServiceBusInputProviderOptions serviceBus
+                when !string.IsNullOrWhiteSpace(serviceBus.ConnectionString)
+                     && !string.IsNullOrWhiteSpace(serviceBus.TopicName)
+                     && !string.IsNullOrWhiteSpace(serviceBus.SubscriptionName)
+                => new ServiceBusInputProvider(serviceBus),
             MemoryInputProviderOptions mem => new MemoryInputProvider(mem.Data),
             SqlInputProviderOptions => throw new InvalidOperationException("SQL input requires ConnectionFactory; unsupported or missing input configuration."),
             HttpInputProviderOptions => throw new InvalidOperationException("HTTP input requires a resolved HTTP configuration."),
+            ServiceBusInputProviderOptions => throw new InvalidOperationException(
+                "Service Bus input requires a connection string, topic name, and subscription name."),
             _ => throw new InvalidOperationException("Input provider configuration is missing or unsupported.")
         };
     }
@@ -353,6 +364,17 @@ public sealed class IntegrationRunner
                 JsonPath = ResolveFieldOrValue(http.JsonPath, http.JsonPathFromField, inputRecord),
                 JsonPathFromField = http.JsonPathFromField,
                 ResolvedHttpConfiguration = BindHttpConfiguration(http.ResolvedHttpConfiguration, inputRecord)
+            },
+            ServiceBusInputProviderOptions serviceBus => new ServiceBusInputStep
+            {
+                ConnectionString = ResolveFieldOrValue(serviceBus.ConnectionString,
+                    serviceBus.ConnectionStringFromField, inputRecord),
+                ConnectionStringFromField = serviceBus.ConnectionStringFromField,
+                TopicName = ResolveFieldOrValue(serviceBus.TopicName, serviceBus.TopicNameFromField, inputRecord),
+                TopicNameFromField = serviceBus.TopicNameFromField,
+                SubscriptionName = ResolveFieldOrValue(serviceBus.SubscriptionName,
+                    serviceBus.SubscriptionNameFromField, inputRecord),
+                SubscriptionNameFromField = serviceBus.SubscriptionNameFromField
             },
             JsonInputProviderOptions json => new JsonInputStep
             {
@@ -412,7 +434,8 @@ public sealed class IntegrationRunner
             },
             SqlOutputProviderOptions sql => new SqlOutputStep
             {
-                ConnectionString = ResolveFieldOrValue(sql.ConnectionString, sql.ConnectionStringFromField, inputRecord),
+                ConnectionString =
+                    ResolveFieldOrValue(sql.ConnectionString, sql.ConnectionStringFromField, inputRecord),
                 ConnectionStringFromField = sql.ConnectionStringFromField,
                 TableName = ResolveFieldOrValue(sql.TableName, sql.TableNameFromField, inputRecord),
                 TableNameFromField = sql.TableNameFromField,
@@ -632,6 +655,7 @@ public sealed class IntegrationRunner
                 }
             }
         }
+
         return (record, false, switchDebug);
     }
 
@@ -671,6 +695,7 @@ public sealed class IntegrationRunner
                 ordered[cell.Name] = cellVal;
             }
         }
+
         return ordered;
     }
 }

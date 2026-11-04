@@ -50,6 +50,12 @@ from the later input take precedence when names match. Input settings can interp
 incoming fields with `{{ input.FieldName }}`, for example
 `<SqlInput Id="details" ConnectionString="..."><Query>SELECT * FROM Details WHERE CustomerId = '{{ input.CustomerId }}'</Query></SqlInput>`.
 
+`ServiceBusInput` reads JSON-object messages from an Azure Service Bus topic subscription.
+Provide `ConnectionString`, `TopicName`, and `SubscriptionName` attributes; the connection
+string can use a configured secret, such as `ConnectionString="{{ secrets.ServiceBusConnection }}"`.
+It drains available messages and ends after an empty receive interval. Each yielded message is
+completed only after downstream processing advances successfully.
+
 For SQL, provide a vendor-specific ADO.NET connection factory. The library deliberately
 does not reference a database vendor package:
 
