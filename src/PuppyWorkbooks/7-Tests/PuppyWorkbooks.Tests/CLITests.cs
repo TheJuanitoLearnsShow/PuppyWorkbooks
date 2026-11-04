@@ -28,8 +28,8 @@ public class CLITests
         });
         await worker.StartAsync(CancellationToken.None);
     }
-    
-    
+
+
     [Fact]
     public async Task Test_ReduceWorkSheet()
     {
@@ -85,6 +85,72 @@ public class CLITests
             Assert.Contains("\"StepType\": \"Map\"", outputText);
             Assert.Contains("\"StepType\": \"Filter\"", outputText);
             Assert.Contains("\"StepType\": \"Reduce\"", outputText);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Test_GenerateIntegrationHtmlReport_IncludesNestedIntegrationAndRedactsSecrets()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "PuppyWorkbooksTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var integrationPath = Path.Combine(directory, "parent.xml");
+        var childPath = Path.Combine(directory, "child.xml");
+        var worksheetPath = Path.Combine(directory, "worksheet.xml");
+        var reportPath = Path.Combine(directory, "reports", "audit.html");
+
+        try
+        {
+            await File.WriteAllTextAsync(worksheetPath, """
+                                                    <WorkSheet>
+                                                      <Cells>
+                                                        <WorkCell><Id>1</Id><Name>LessThan</Name><Formula>1 &lt; 2</Formula></WorkCell>
+                                                      </Cells>
+                                                    </WorkSheet>
+                                                    """);
+            await File.WriteAllTextAsync(childPath, """
+                                                    <Integration Name="Child Integration">
+                                                      <Steps>
+                                                        <MemoryInput Id="source" />
+                                                        <MemoryOutput Id="sink" />
+                                                      </Steps>
+                                                    </Integration>
+                                                    """);
+            await File.WriteAllTextAsync(integrationPath, """
+                                                          <Integration Name="Parent Integration">
+                                                            <HttpConfigurations>
+                                                              <HttpConfiguration Name="service" ConnectionString="Server=secret-db;" />
+                                                            </HttpConfigurations>
+                                                            <Steps>
+                                                              <Map Id="mapping">
+                                                                <Worksheet FilePath="worksheet.xml" />
+                                                              </Map>
+                                                              <RunIntegration Id="child" FilePath="child.xml" FromField="Items" />
+                                                            </Steps>
+                                                          </Integration>
+                                                          """);
+
+            var worker = new WorkbooksWorker(new ExecutionSettings
+            {
+                IntegrationPath = integrationPath,
+                HtmlReportPath = reportPath
+            });
+            await worker.StartAsync(CancellationToken.None);
+
+            var report = await File.ReadAllTextAsync(reportPath);
+            Assert.Contains("Parent Integration", report);
+            Assert.Contains("Child Integration", report);
+            Assert.Contains("href=\"#integration-2\"", report);
+            Assert.Contains("id=\"integration-2\"", report);
+            Assert.Contains("FromField", report);
+            Assert.Contains("Referenced worksheet", report);
+            Assert.Contains("worksheet.xml", report);
+            Assert.Contains("1 &amp;lt; 2", report);
+            Assert.Contains("[REDACTED]", report);
+            Assert.DoesNotContain("secret-db", report);
         }
         finally
         {
@@ -190,5 +256,4 @@ public class CLITests
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
-    
 }

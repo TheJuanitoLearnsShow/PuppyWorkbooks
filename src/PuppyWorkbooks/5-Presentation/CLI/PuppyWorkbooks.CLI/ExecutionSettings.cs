@@ -14,7 +14,7 @@ public class ExecutionSettings
     /// formula with the name in key of the value.
     /// </summary>
     public string? InputDataPath { get; set; }
-    
+
     public Dictionary<string, string> InputData { get; set; } = new();
 
     /// <summary>
@@ -24,6 +24,12 @@ public class ExecutionSettings
     public string[] WorkbookPaths { get; set; } = [];
 
     public string? OutputPath { get; set; }
+
+    /// <summary>
+    /// When specified, generates an HTML report for the integration instead of
+    /// executing it.
+    /// </summary>
+    public string? HtmlReportPath { get; set; }
 
     /// <summary>
     /// When true, enables debug mode during integration execution to capture input rows

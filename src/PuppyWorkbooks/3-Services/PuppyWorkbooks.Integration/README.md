@@ -126,3 +126,15 @@ data is ignored.
 ```xml
 <RunIntegration Id="notify" FilePath="integrations/notify.xml" FromField="Recipients" />
 ```
+
+The CLI can generate a standalone HTML audit report without executing the integration:
+
+```powershell
+puppyworkbooks path/to/integration.xml --html-report path/to/audit-report.html
+```
+
+The report includes the ordered step configuration and worksheet definitions embedded in
+the integration XML, records each source file's SHA-256 hash, and links referenced child
+integrations in the same page. Common credential fields are redacted. Child integrations
+are resolved relative to their parent file; missing or unspecified references are marked
+in the report.

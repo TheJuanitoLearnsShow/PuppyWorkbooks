@@ -76,6 +76,30 @@ public sealed class WorkbooksWorker : IHostedService
         {
             _settings.WorkbookPaths = [.. simplePaths];
         }
+
+        var htmlReportPath = !string.IsNullOrWhiteSpace(_settings.HtmlReportPath)
+            ? _settings.HtmlReportPath
+            : GetHtmlReportPathArgument(cmdArgs);
+        if (!string.IsNullOrWhiteSpace(htmlReportPath))
+        {
+            var integrationPath = _settings.IntegrationPath;
+            if (string.IsNullOrWhiteSpace(integrationPath) && simplePaths.Count == 1 &&
+                string.Equals(GetFirstXmlNodeName(simplePaths[0]), "Integration", StringComparison.Ordinal))
+            {
+                integrationPath = simplePaths[0];
+            }
+
+            if (string.IsNullOrWhiteSpace(integrationPath))
+            {
+                throw new InvalidOperationException(
+                    "An integration XML file path is required to generate an HTML report.");
+            }
+
+            await IntegrationHtmlReportGenerator.GenerateAsync(integrationPath, htmlReportPath, cancellationToken);
+            _logger?.LogInformation("HTML integration report written to {Path}", Path.GetFullPath(htmlReportPath));
+            return;
+        }
+
         if (simplePaths.Count == 1)
         {
             var rootName = GetFirstXmlNodeName(simplePaths[0]);
@@ -89,6 +113,7 @@ public sealed class WorkbooksWorker : IHostedService
                     return;
             }
         }
+
         if (!string.IsNullOrWhiteSpace(_settings.IntegrationPath))
         {
             await _integrationWorker.ExecuteIntegration(_settings.IntegrationPath, isDebug, mockSteps, scenario, cancellationToken);
@@ -163,6 +188,41 @@ public sealed class WorkbooksWorker : IHostedService
         return null;
     }
 
+    private static string? GetHtmlReportPathArgument(string[] cmdArgs)
+    {
+        for (var i = 1; i < cmdArgs.Length; i++)
+        {
+            var arg = cmdArgs[i];
+            var equalIndex = arg.IndexOf('=');
+            if (equalIndex > 0 && IsHtmlReportKey(arg[..equalIndex]))
+            {
+                var outputPath = arg[(equalIndex + 1)..];
+                return string.IsNullOrWhiteSpace(outputPath)
+                    ? throw new ArgumentException("The --html-report option requires an output file path.")
+                    : outputPath;
+            }
+
+            if (IsHtmlReportKey(arg))
+            {
+                if (i + 1 >= cmdArgs.Length || string.IsNullOrWhiteSpace(cmdArgs[i + 1]) ||
+                    cmdArgs[i + 1].StartsWith('-') || cmdArgs[i + 1].StartsWith('/'))
+                {
+                    throw new ArgumentException("The --html-report option requires an output file path.");
+                }
+
+                return cmdArgs[i + 1];
+            }
+        }
+        return null;
+    }
+
+    private static bool IsHtmlReportKey(string key) =>
+        string.Equals(key, "--html-report", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--html-report-path", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "--htmlReport", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "-htmlReport", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "/htmlReport", StringComparison.OrdinalIgnoreCase);
+
     private static bool IsMockKey(string key) =>
         string.Equals(key, "--use-mock-data-for-steps", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(key, "--useMockDataForSteps", StringComparison.OrdinalIgnoreCase) ||
@@ -222,6 +282,7 @@ public sealed class WorkbooksWorker : IHostedService
                 return cmdArgs[i + 1];
             }
         }
+
         return null;
     }
 
@@ -270,7 +331,6 @@ public sealed class WorkbooksWorker : IHostedService
         string.Equals(arg, "-testMode", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(arg, "/testMode", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(arg, "--test", StringComparison.OrdinalIgnoreCase);
-
 
 
     public static void OutputRecord(IntegrationRecord record)
