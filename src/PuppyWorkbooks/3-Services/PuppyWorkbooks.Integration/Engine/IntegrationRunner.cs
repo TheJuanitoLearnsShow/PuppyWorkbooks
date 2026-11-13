@@ -307,7 +307,7 @@ public sealed class IntegrationRunner
 
         return step switch
         {
-            CsvInputProviderOptions csv when !string.IsNullOrWhiteSpace(csv.FilePath) => new CsvInputProvider(csv.FilePath),
+            CsvInputProviderOptions csv when !string.IsNullOrWhiteSpace(csv.FilePath) => new CsvInputProvider(csv.FilePath, csv.Separator, csv.HasHeaderRecord),
             JsonInputProviderOptions json when !string.IsNullOrWhiteSpace(json.FilePath) => JsonInputProvider.FromFile(json.FilePath, json.JsonPath),
             XmlInputProviderOptions xml when !string.IsNullOrWhiteSpace(xml.FilePath) => new XmlInputProvider(xml.FilePath, xml.XmlItemElement),
             FileSystemInputProviderOptions fs when !string.IsNullOrWhiteSpace(fs.FilePath) => new FileSystemInputProvider(fs.FilePath, fs.AddFileSizeField, fs.AddCreatedOnDate, fs.AddLastModifiedDateField),

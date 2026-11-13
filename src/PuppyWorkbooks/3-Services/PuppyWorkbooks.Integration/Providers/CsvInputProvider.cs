@@ -7,6 +7,9 @@ namespace PuppyWorkbooks.Integration.Providers;
 
 public sealed class CsvInputProvider : IInputProvider
 {
+    private readonly string _csvFilePath;
+    private readonly char _csvSeparator;
+    private readonly bool _csvHasHeaderRecord;
     private readonly Func<TextReader> _readerFactory;
 
     public CsvInputProvider(string path)
@@ -24,6 +27,13 @@ public sealed class CsvInputProvider : IInputProvider
         _readerFactory = readerFactory;
     }
 
+    public CsvInputProvider(string csvFilePath, char csvSeparator, bool csvHasHeaderRecord)
+    {
+        _csvSeparator = csvSeparator;
+        _csvHasHeaderRecord = csvHasHeaderRecord;
+        _readerFactory = () => new StreamReader(csvFilePath);
+    }
+
     public static CsvInputProvider FromText(string csvText)
     {
         return new CsvInputProvider(() => new StringReader(csvText));
@@ -33,6 +43,7 @@ public sealed class CsvInputProvider : IInputProvider
     {
         using var reader = _readerFactory();
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+        
         if (!await csv.ReadAsync()) yield break;
         csv.ReadHeader();
         while (await csv.ReadAsync())
