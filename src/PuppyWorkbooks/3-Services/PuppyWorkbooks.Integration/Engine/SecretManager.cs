@@ -89,6 +89,7 @@ public sealed class SecretManager
                     ResolveSecretsInWorksheet(filter.Worksheet, secretManager);
                     break;
                 case ReduceStep reduce:
+                    reduce.GroupByField = secretManager.Resolve(reduce.GroupByField);
                     ResolveSecretsInWorksheet(reduce.Worksheet, secretManager);
                     break;
                 case SwitchStep @switch:

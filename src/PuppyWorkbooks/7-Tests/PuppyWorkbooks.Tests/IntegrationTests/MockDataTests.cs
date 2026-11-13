@@ -139,6 +139,7 @@ public sealed class MockDataTests
     [Fact]
     public async Task IntegrationRunner_WithMockDataForSqlOutput_DoesNotRequireConnectionFactoryOrConnect()
     {
+        Environment.SetEnvironmentVariable("TEST_SECRET", "dummy");
         var xmlPath = Path.Combine(AppContext.BaseDirectory, "SampleFiles", "Integration", "MockSqlOutput.xml");
         var definition = new IntegrationXmlSerializer().DeserializeFile(xmlPath);
         var runner = new IntegrationRunner(new IntegrationRunnerOptions

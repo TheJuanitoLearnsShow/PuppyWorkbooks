@@ -70,11 +70,14 @@ public sealed class IntegrationRunner
         try
         {
             var reduceSteps = GetReduceSteps(definition.Steps).ToList();
-            var reduceStates = reduceSteps.ToDictionary(step => step, step => ValueBinder.ParseInitialState(step.InitialStateJson));
+            var reduceStates = reduceSteps.ToDictionary(
+                step => step,
+                step => new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase));
             var outputSteps = definition.Steps.OfType<OutputStep>().ToList();
             var deferOutput = reduceSteps.Count > 0;
             long read = 0, written = 0, excluded = 0;
             IntegrationRecord? final = null;
+            var finalRecordsByGroup = new Dictionary<string, IntegrationRecord>(StringComparer.OrdinalIgnoreCase);
             var isDebug = _options.Debug;
             var debugRows = isDebug ? new List<IntegrationDebugRow>() : null;
 
@@ -89,17 +92,21 @@ public sealed class IntegrationRunner
 
             async Task ProcessDeferredOutput()
             {
-                if (deferOutput && final is not null)
+                if (deferOutput && finalRecordsByGroup.Count > 0)
                 {
-                    for (var outputIndex = 0; outputIndex < outputSteps.Count; outputIndex++)
+                    foreach (var finalRecord in finalRecordsByGroup.Values)
                     {
-                        var output = outputSteps[outputIndex];
-                        var provider = GetOrCreateOutput(output, final);
-                        var status = await provider.WriteAsync(final, cancellationToken);
-                        final[output.Id + ".Status"] = status.Succeeded;
-                        final[output.Id + ".StatusMessage"] = status.Message;
-                        final[output.Id + ".AffectedRows"] = status.AffectedRows;
-                        written += status.AffectedRows;
+                        final = finalRecord;
+                        for (var outputIndex = 0; outputIndex < outputSteps.Count; outputIndex++)
+                        {
+                            var output = outputSteps[outputIndex];
+                            var provider = GetOrCreateOutput(output, finalRecord);
+                            var status = await provider.WriteAsync(finalRecord, cancellationToken);
+                            finalRecord[output.Id + ".Status"] = status.Succeeded;
+                            finalRecord[output.Id + ".StatusMessage"] = status.Message;
+                            finalRecord[output.Id + ".AffectedRows"] = status.AffectedRows;
+                            written += status.AffectedRows;
+                        }
                     }
                 }
             }
@@ -123,6 +130,11 @@ public sealed class IntegrationRunner
                 if (stepIndex >= definition.Steps.Count)
                 {
                     final = record;
+                    if (deferOutput)
+                    {
+                        var pipelineKey = GetPipelineGroupKey(reduceSteps, record);
+                        finalRecordsByGroup[pipelineKey] = record;
+                    }
                     if (rowDebug is not null) debugRows!.Add(rowDebug);
                     return;
                 }
@@ -152,6 +164,11 @@ public sealed class IntegrationRunner
                         if (!keepFilter)
                         {
                             excluded++;
+                            if (deferOutput)
+                            {
+                                var pipelineKey = GetPipelineGroupKey(reduceSteps, record);
+                                finalRecordsByGroup.Remove(pipelineKey);
+                            }
                             if (rowDebug is not null) debugRows!.Add(rowDebug);
                             return;
                         }
@@ -160,8 +177,14 @@ public sealed class IntegrationRunner
                         break;
 
                     case ReduceStep reduce:
-                        var (reduceRecord, nextState, reduceDebug) = await ExecuteReduceStep(reduce, record, reduceStates[reduce], isDebug, cancellationToken);
-                        reduceStates[reduce] = nextState;
+                        var groupKey = GetGroupKey(reduce, record);
+                        var statesForStep = reduceStates[reduce];
+                        if (!statesForStep.TryGetValue(groupKey, out var currentState))
+                        {
+                            currentState = ValueBinder.ParseInitialState(reduce.InitialStateJson);
+                        }
+                        var (reduceRecord, nextState, reduceDebug) = await ExecuteReduceStep(reduce, record, currentState, isDebug, cancellationToken);
+                        statesForStep[groupKey] = nextState;
                         IntegrationDebugger.DebugWorksheetStep(reduceDebug, rowDebug);
                         await ProcessStepsAsync(stepIndex + 1, reduceRecord, rowDebug, sourceRecord);
                         break;
@@ -172,6 +195,11 @@ public sealed class IntegrationRunner
                         if (switchExcluded)
                         {
                             excluded++;
+                            if (deferOutput)
+                            {
+                                var pipelineKey = GetPipelineGroupKey(reduceSteps, record);
+                                finalRecordsByGroup.Remove(pipelineKey);
+                            }
                             if (rowDebug is not null) debugRows!.Add(rowDebug);
                             return;
                         }
@@ -596,13 +624,22 @@ public sealed class IntegrationRunner
         var next = values.TryGetValue(step.OutputField, out var fieldVal)
             ? fieldVal
             : values.Values.LastOrDefault();
-        return (ValueBinder.CreateStateRecord(step.OutputField, next), next, stepDebug);
+        var recordResult = ValueBinder.CreateStateRecord(step.OutputField, next);
+        if (!string.IsNullOrWhiteSpace(step.GroupByField))
+        {
+            if (record.Values.TryGetValue(step.GroupByField, out var groupVal) && !recordResult.Values.ContainsKey(step.GroupByField))
+            {
+                recordResult[step.GroupByField] = groupVal;
+            }
+        }
+
+        return (recordResult, next, stepDebug);
     }
 
     private async Task<(IntegrationRecord Record, bool Excluded, IntegrationStepDebug? Debug)> ExecuteSwitchStep(
         SwitchStep step,
         IntegrationRecord record,
-        Dictionary<ReduceStep, object?> reduceStates,
+        Dictionary<ReduceStep, Dictionary<string, object?>> reduceStates,
         bool isDebug,
         CancellationToken token)
     {
@@ -639,8 +676,14 @@ public sealed class IntegrationRunner
                         break;
 
                     case ReduceStep reduce:
-                        var (reduceRecord, newState, reduceDebug) = await ExecuteReduceStep(reduce, record, reduceStates[reduce], isDebug, token);
-                        reduceStates[reduce] = newState;
+                        var branchGroupKey = GetGroupKey(reduce, record);
+                        var branchStatesForStep = reduceStates[reduce];
+                        if (!branchStatesForStep.TryGetValue(branchGroupKey, out var currentBranchState))
+                        {
+                            currentBranchState = ValueBinder.ParseInitialState(reduce.InitialStateJson);
+                        }
+                        var (reduceRecord, newState, reduceDebug) = await ExecuteReduceStep(reduce, record, currentBranchState, isDebug, token);
+                        branchStatesForStep[branchGroupKey] = newState;
                         record = reduceRecord;
                         branchDebug?.AddStep(reduceDebug);
                         break;
@@ -659,6 +702,22 @@ public sealed class IntegrationRunner
         }
 
         return (record, false, switchDebug);
+    }
+
+    private static string GetGroupKey(ReduceStep step, IntegrationRecord record)
+    {
+        if (string.IsNullOrWhiteSpace(step.GroupByField)) return string.Empty;
+        return record.Values.TryGetValue(step.GroupByField, out var groupVal)
+            ? ValueBinder.FormatInputValue(groupVal)
+            : string.Empty;
+    }
+
+    private static string GetPipelineGroupKey(IEnumerable<ReduceStep> reduceSteps, IntegrationRecord record)
+    {
+        var grouped = reduceSteps.Where(s => !string.IsNullOrWhiteSpace(s.GroupByField)).ToList();
+        if (grouped.Count == 0) return string.Empty;
+        return string.Join("|", grouped.Select(s =>
+            record.Values.TryGetValue(s.GroupByField!, out var v) ? ValueBinder.FormatInputValue(v) : string.Empty));
     }
 
     private static IEnumerable<ReduceStep> GetReduceSteps(IEnumerable<IntegrationStep> steps)

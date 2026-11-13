@@ -5,7 +5,7 @@
 
   <xs:complexType name="IntegrationType">
     <xs:sequence>
-      <xs:element name="Comments" type="xs:string" minOccurs="1" maxOccurs="1" />
+      <xs:element name="Comments" type="xs:string" minOccurs="0" />
       <xs:element name="HttpConfigurations" type="HttpConfigurationsType" minOccurs="0" />
       <xs:element name="SecretManager" type="SecretManagerType" minOccurs="0" />
       <xs:element name="Steps" type="StepsType" minOccurs="0" />
@@ -95,6 +95,7 @@
   <!-- Steps Container -->
   <xs:complexType name="StepsType">
     <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="IOInput" type="InputStepType" />
       <xs:element name="MemoryInput" type="MemoryInputStepType" />
       <xs:element name="CsvInput" type="CsvInputStepType" />
       <xs:element name="SqlInput" type="SqlInputStepType" />
@@ -363,6 +364,43 @@
     </xs:complexContent>
   </xs:complexType>
 
+  <xs:complexType name="InputStepType">
+    <xs:complexContent>
+      <xs:extension base="InputProviderCommonType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="Query" type="xs:string" />
+          <xs:element name="QueryFromField" type="xs:string" />
+          <xs:element name="SqlParam" type="SqlParamType" />
+        </xs:choice>
+        <xs:attribute name="Kind" type="InputKindType" use="optional" />
+        <xs:attribute name="FilePath" type="xs:string" use="optional" />
+        <xs:attribute name="FilePathFromField" type="xs:string" use="optional" />
+        <xs:attribute name="ConnectionString" type="xs:string" use="optional" />
+        <xs:attribute name="ConnectionStringFromField" type="xs:string" use="optional" />
+        <xs:attribute name="TableName" type="xs:string" use="optional" />
+        <xs:attribute name="TableNameFromField" type="xs:string" use="optional" />
+        <xs:attribute name="Query" type="xs:string" use="optional" />
+        <xs:attribute name="QueryFromField" type="xs:string" use="optional" />
+        <xs:attribute name="CommandType" type="SqlCommandTypeType" use="optional" default="Text" />
+        <xs:attribute name="HttpConfiguration" type="xs:string" use="optional" />
+        <xs:attribute name="Endpoint" type="xs:string" use="optional" />
+        <xs:attribute name="EndpointFromField" type="xs:string" use="optional" />
+        <xs:attribute name="HttpMethod" type="xs:string" use="optional" default="GET" />
+        <xs:attribute name="JsonPath" type="xs:string" use="optional" default="$" />
+        <xs:attribute name="JsonPathFromField" type="xs:string" use="optional" />
+        <xs:attribute name="TopicName" type="xs:string" use="optional" />
+        <xs:attribute name="TopicNameFromField" type="xs:string" use="optional" />
+        <xs:attribute name="SubscriptionName" type="xs:string" use="optional" />
+        <xs:attribute name="SubscriptionNameFromField" type="xs:string" use="optional" />
+        <xs:attribute name="XmlItemElement" type="xs:string" use="optional" />
+        <xs:attribute name="XmlItemElementFromField" type="xs:string" use="optional" />
+        <xs:attribute name="AddFileSizeField" type="xs:boolean" use="optional" />
+        <xs:attribute name="AddCreatedOnDate" type="xs:boolean" use="optional" />
+        <xs:attribute name="AddLastModifiedDateField" type="xs:boolean" use="optional" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
   <!-- Map Step -->
   <xs:complexType name="RunIntegrationStepType">
     <xs:attribute name="Id" type="xs:string" use="optional" />
@@ -392,9 +430,13 @@
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="InitialStateJson" type="xs:string" />
       <xs:element name="Worksheet" type="WorksheetStepType" />
+      <xs:element name="GroupByField" type="xs:string" />
+      <xs:element name="GroupBy" type="xs:string" />
     </xs:choice>
     <xs:attribute name="Id" type="xs:string" use="optional" />
     <xs:attribute name="OutputField" type="xs:string" use="optional" default="State" />
+    <xs:attribute name="GroupByField" type="xs:string" use="optional" />
+    <xs:attribute name="GroupBy" type="xs:string" use="optional" />
   </xs:complexType>
 
   <!-- Switch Step -->

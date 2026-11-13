@@ -105,6 +105,26 @@ public sealed class IntegrationXmlSerializer
                 }
             }
 
+            if (element.Name.LocalName.Equals("Reduce", StringComparison.OrdinalIgnoreCase))
+            {
+                var groupByAttr = element.Attribute("GroupBy") ?? element.Attribute("GroupByField");
+                if (groupByAttr is not null && element.Attribute("GroupByField") is null)
+                {
+                    element.SetAttributeValue("GroupByField", groupByAttr.Value);
+                }
+                if (element.Attribute("GroupBy") is not null)
+                {
+                    element.Attribute("GroupBy")?.Remove();
+                }
+                foreach (var childName in new[] { "GroupBy", "GroupByField" })
+                {
+                    var child = element.Element(childName);
+                    if (child is null) continue;
+                    element.SetAttributeValue("GroupByField", child.Value);
+                    child.Remove();
+                }
+            }
+
             if (element.Name.LocalName.Equals("Switch", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var branch in element.Elements("Branch"))

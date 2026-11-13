@@ -36,7 +36,7 @@ public sealed class SchemaValidationTests
     [InlineData("HttpMockData.xml")]
     [InlineData("HttpMockDataFile.xml")]
     [InlineData("HttpProviders.xml")]
-    [InlineData("FileSystemInput.xml")]
+    [InlineData("FileEnumerationTest/FileSystemInput.xml")]
     [InlineData("MockCsvFilePath.xml")]
     [InlineData("MockCsvInline.xml")]
     [InlineData("MockDataMissing.xml")]

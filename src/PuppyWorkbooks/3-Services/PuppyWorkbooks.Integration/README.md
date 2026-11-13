@@ -97,7 +97,9 @@ Direct input-column variables are also supplied for compatibility. Every formula
 becomes a field in the output record, keyed by the cell name. `OutputField` is retained for
 XML compatibility but is no longer needed by map execution.
 Filters keep records when their final value is `true`. Reduce worksheets receive `State`
-and the current record, and their final value becomes the configured state field.
+and the current record, and their final value becomes the configured state field. When
+`GroupByField` (or `GroupBy`) is specified on a reduce step, reduction maintains a separate
+state per distinct value of that field, yielding one resulting row per distinct group value.
 Outputs add `<step-id>.Status`, `<step-id>.StatusMessage`, and
 `<step-id>.AffectedRows` to the record yielded to subsequent steps.
 
